@@ -5,6 +5,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/FX/GeoIndicatorComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/ZoneLayer/GeoZoneShape.h"
 
 bool UGeoZoneIndicatorCue::OnExecute_Implementation(AActor* MyTarget, FGameplayCueParameters const& Parameters) const
 {
@@ -20,7 +21,10 @@ bool UGeoZoneIndicatorCue::OnExecute_Implementation(AActor* MyTarget, FGameplayC
 	State.Location = AttachParent ? AttachParent->GetComponentTransform().InverseTransformPosition(Parameters.Location)
 								  : FVector(Parameters.Location);
 	State.Size.X = Parameters.RawMagnitude;
-	State.Colors = GeoASLib::GetCueMeaningColors(Parameters);
+	FGeoColorParam Color;
+	TArray<FGeoColorParam> SecondaryColors;
+	GeoASLib::GetCueColors(Parameters, Color, SecondaryColors);
+	State.ColorMask = GeoZoneLayer::MakeColorMask(Color, SecondaryColors);
 	State.StartServerTime = GeoLib::GetServerTime(MyTarget, true) - Parameters.Normal.Y;
 	State.Duration = Parameters.Normal.X;
 	UGeoIndicatorComponent::SpawnIndicator(MyTarget, State, AttachParent);

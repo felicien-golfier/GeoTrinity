@@ -5,9 +5,9 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/Component/FX/GeoIndicatorComponent.h"
-#include "NiagaraComponent.h"
 #include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 void UZonePattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
@@ -25,7 +25,7 @@ void UZonePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 		FGeoIndicatorState State;
 		State.Location = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 		State.Size.X = ZoneParams.Size;
-		State.Colors = GeoColor::GetMeaningColors(ZoneParams.Color, ZoneParams.SecondaryColors);
+		State.ColorMask = GeoZoneLayer::MakeColorMask(ZoneParams.Color, ZoneParams.SecondaryColors);
 		State.StartServerTime = StoredPayload.ServerSpawnTime;
 		State.Duration = StartDelay;
 		IndicatorComponent = UGeoIndicatorComponent::SpawnIndicator(this, State);

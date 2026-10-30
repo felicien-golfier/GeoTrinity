@@ -20,7 +20,6 @@ ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/LateralWave"
 OLD_ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/TutorialWaves"
 OLD_CASTER = "/Game/Characters/Enemies/Tutorial/BP_HiddenCaster_TutorialWaves"
 CATALOG = "/Game/AbilitySystem/Data/DA_AbilityInfo"
-BEAM_SYSTEM = "/Game/Art/VFX/Generic/Niagara/NS_Beam"
 MASK_COLLECTION = "/Game/Art/VFX/Abilities/Enemies/PillarsAOE/MPC_MaskedArea"
 WAVE_START_TAG ="TargetPoint.Tutorial.WaveStart"
 WAVE_TAG = "Ability.Spell.LateralWave"
@@ -79,7 +78,6 @@ def build_wave():
     cdo.set_editor_property("HalfWidth", HALF_WIDTH)
     cdo.set_editor_property("SpotRadius", LANE_WIDTH * 0.5)
     cdo.set_editor_property("SafeSpotSources", [unreal.SafeSpotSource.FIXED, unreal.SafeSpotSource.ADDS])
-    cdo.set_editor_property("BeamVfxSystem", unreal.load_asset(BEAM_SYSTEM))
     color = unreal.GeoColorParam()
     color.import_text("(Color=LethalDamage)")
     cdo.set_editor_property("BeamColor", color)

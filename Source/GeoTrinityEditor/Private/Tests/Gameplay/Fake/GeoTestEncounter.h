@@ -294,6 +294,7 @@ public:
 		ZoneParams.Size = 100.f;
 		ZoneParams.GrowToSize = FScalableFloat(600.f);
 		ZoneParams.GrowSeconds = FScalableFloat(10.f);
+		ZoneParams.Color.Color = EGeoColor::Damage;
 		AllyClass = AEnemyCharacter::StaticClass();
 		AllySetup.Team = ETeam::Player;
 		AllySetup.Tag = TEXT("Ally");

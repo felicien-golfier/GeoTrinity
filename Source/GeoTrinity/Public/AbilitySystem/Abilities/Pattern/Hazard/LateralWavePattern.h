@@ -27,8 +27,8 @@ struct GEOTRINITY_API FLateralWavePatternData : public FPatternData
  * [front - BandWidth, front] (along the travel) hits everything within HalfWidth of the origin across the travel,
  * except what stands in a safe spot's lane (ESafeSpotShadow::Lane, parallel to the travel). Spots come from
  * SafeSpotSources, read every tick so a dead add drops its lane at once: Fixed from the firing's
- * FLateralWavePatternData, Adds from the caster's arena (server only, the tutorial is solo). The band is one beam VFX:
- * the whole travel during the wind-up, the moving band after; the beam materials cut the lanes out of it from the
+ * FLateralWavePatternData, Adds from the caster's arena (server only, the tutorial is solo). The band is one beam
+ * shape: the whole travel during the wind-up, the moving band after; the zone layer cuts the lanes out of it from the
  * safe spot mask.
  */
 UCLASS(Blueprintable)
@@ -44,8 +44,8 @@ protected:
 	virtual float GetHazardDuration() const override;
 	/** True when Location lies in the band, across the wave's width, outside every safe spot's lane. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
-	/** Lays the beam VFX over the whole travel while SpentTime is negative, on the band after, uploads the safe spots
-	 * to the mask and opts the VFX into it (GeoNiagaraParams::SafeSpotCut). */
+	/** Lays the beam over the whole travel while SpentTime is negative, on the band after, uploads the safe spots to
+	 * the mask and opts the shape into it (UGeoZoneVisualComponent::bSafeSpotCut). */
 	virtual void MoveBeamVfx(float SpentTime) override;
 	/** Frees the safe spot mask. */
 	virtual void EndPattern(bool bForceStop = false) override;
@@ -86,7 +86,7 @@ private:
 			  meta = (ClampMin = "1.0", AllowPrivateAccess = "true"))
 	float SpotRadius = 150.f;
 
-	/** MPC_MaskedArea — receives the safe spots, which the beam materials cut out of the wave. */
+	/** MPC_MaskedArea — receives the safe spots, which the zone layer cuts out of the wave. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|VFX", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
 };

@@ -21,7 +21,6 @@ class UGameplayEffect;
 class USoundBase;
 class USoundClass;
 class USoundConcurrency;
-class UNiagaraSystem;
 class UGeoBuffFXDataAsset;
 class UPlayerClassDataAsset;
 class UGeoGemCatalog;
@@ -204,16 +203,14 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
 	TSoftObjectPtr<UGeoBuffFXDataAsset> BuffFX;
 
-	/** Shared windup telegraph of every beam (Ray Zone Indicator): UGeoIndicatorComponent's Ray shape (player channel
-	 * beams) and UBeamPattern (enemy/boss beams). One project-wide asset — no per-ability/per-pattern configuration
-	 * needed. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
-	TSoftObjectPtr<UNiagaraSystem> RayIndicatorSystem;
+	/** The zone layer's ground plane (MI_ZoneLayer_Ground): every Ground zone shape, its overlaps mixing colours
+	 * (World/ZoneLayer/CLAUDE.md). */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|ZoneLayer")
+	TSoftObjectPtr<UMaterialInterface> ZoneLayerGroundMaterial;
 
-	/** Shared telegraph of every circle about to be hit or covered (Round Zone Indicator): UGeoIndicatorComponent's
-	 * Round shape. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel")
-	TSoftObjectPtr<UNiagaraSystem> RoundIndicatorSystem;
+	/** The zone layer's telegraph plane (MI_ZoneLayer_Telegraph), drawn over the ground one. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameFeel|ZoneLayer")
+	TSoftObjectPtr<UMaterialInterface> ZoneLayerTelegraphMaterial;
 };
 
 template <typename T>

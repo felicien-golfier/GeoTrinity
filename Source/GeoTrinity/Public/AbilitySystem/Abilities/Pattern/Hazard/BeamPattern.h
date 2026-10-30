@@ -6,12 +6,10 @@
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
 #include "CoreMinimal.h"
 #include "Tool/Visual/GeoColor.h"
-#include "Tool/Visual/GeoNiagaraParams.h" // FBeamVfxAssetSet, ApplySwappableAsset
 
 #include "BeamPattern.generated.h"
 
-class UNiagaraComponent;
-class UNiagaraSystem;
+class UGeoZoneVisualComponent;
 
 /**
  * Beam fired from the payload origin along the payload yaw, staying on for BeamDuration.
@@ -29,18 +27,19 @@ public:
 	UBeamPattern();
 
 protected:
-	/** Spawns the deactivated beam Niagara component; the pattern instance and its component are reused per activation.
-	 */
+	/** Creates the hidden beam shape on rendering machines; the pattern instance and its shape are reused per
+	 * activation. */
 	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
 
-	/** Reads SweepAngle from PatternData and stores the activation payload for use during the tick sweep. */
+	/** Stores the activation payload for use during the tick sweep and shows the beam as a telegraph, filling over the
+	 * wind-up. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
-	/** Swaps the telegraph for the real beam VFX the moment the beam goes live. */
+	/** Turns the telegraph into the live beam, on the ground layer, filling over the hazard's duration. */
 	virtual void StartPattern() override;
 	/** Keeps the windup telegraph aimed while the boss moves and turns. */
 	virtual void TickDuringInit(float SpentTime) override;
-	/** Aims the beam VFX for the elapsed sweep fraction; the server also draws the hit rectangle when debugging. */
+	/** Aims the beam for the elapsed sweep fraction; the server also draws the hit rectangle when debugging. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** The beam is live for BeamDuration. */
 	virtual float GetHazardDuration() const override;
@@ -48,9 +47,9 @@ protected:
 	 * follows it as Target's screen showed it then — GeoLib::GetReplicationDelay earlier, the boss reaching it through
 	 * replication. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
-	/** Lets the beam VFX fade out. */
+	/** Hides the beam. */
 	virtual void OnHazardEnd() override;
-	/** Removes the beam VFX at once on a force-stop. */
+	/** Hides the beam, still up when force-stopped. */
 	virtual void EndPattern(bool bForceStop = false) override;
 	/** Adds the beam length so the telegraph cue can size itself. */
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
@@ -63,8 +62,8 @@ protected:
 	 * otherwise. The current server time follows the boss this machine shows. */
 	FVector GetBeamOrigin(float BossServerTime) const;
 
-	/** Places the beam VFX where GetBeamOrigin/GetBeamYaw put it at SpentTime. Ticked in the wind-up (negative
-	 * SpentTime) too. */
+	/** Places the beam where GetBeamOrigin/GetBeamYaw put it at SpentTime. Ticked in the wind-up (negative SpentTime)
+	 * too. */
 	virtual void MoveBeamVfx(float SpentTime);
 
 	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
@@ -92,27 +91,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam")
 	bool FollowBossLocation = false;
 
-	/** Beam visual, authored local-space pointing +X like the systems UGeoBeamVFXComponent drives. Optional. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
-	TObjectPtr<UNiagaraSystem> BeamVfxSystem;
-
 	/** Colour of the beam and of its windup telegraph, and of their outlines. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	FGeoColorParam BeamColor;
 
-	/** Further colours the beam and its telegraph draw beside BeamColor, one per extra meaning the beam carries, split
-	 * by their materials' colour pattern. */
+	/** Further colours the beam and its telegraph draw beside BeamColor, one per extra meaning the beam carries, mixed
+	 * by the zone layer. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam|GameFeel")
 	TArray<FGeoColorParam> SecondaryBeamColors;
 
+	/** The beam on the zone layer, placed in world space by MoveBeamVfx; null on a dedicated server. */
 	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraComponent> BeamVfxComponent;
-
-private:
-	/** Windup preview asset (Ray Zone Indicator), loaded once from UGameDataSettings::RayIndicatorSystem in OnCreate —
-	 * no per-pattern configuration needed. Same project-wide asset UGeoIndicatorComponent's Ray uses; one
-	 * NiagaraComponent serves both looks, swapped via GeoNiagaraParams::ApplySwappableAsset. Leaving the settings value
-	 * unset shows BeamVfxSystem for the whole windup, as before. */
-	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraSystem> IndicatorSystem;
+	TObjectPtr<UGeoZoneVisualComponent> BeamVisual;
 };

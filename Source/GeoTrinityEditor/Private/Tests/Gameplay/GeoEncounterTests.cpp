@@ -1406,6 +1406,7 @@ bool FGeoEncounterSpawnZoneHeldTest::RunTest(FString const& /*Parameters*/)
 	Spawner->PurposeTag = PurposeTag;
 	Spawner->ArenaTag = ArenaTag;
 	Spawner->Params.Size = 300.f;
+	Spawner->Params.Color.Color = EGeoColor::Heal;
 	UGeoTestAction* const After = Encounter->NewAction("After");
 	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner, After}, true);
 	Encounter->Start();
@@ -1621,6 +1622,7 @@ bool FGeoEncounterSpawnZoneTest::RunTest(FString const& /*Parameters*/)
 	Spawner->PurposeTag = PurposeTag;
 	Spawner->ArenaTag = ArenaTag;
 	Spawner->Params.Size = 300.f;
+	Spawner->Params.Color.Color = EGeoColor::Damage;
 	Spawner->Team = ETeam::Enemy;
 	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner});
 	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
@@ -1674,6 +1676,7 @@ bool FGeoEncounterSpawnZoneEnteredTest::RunTest(FString const& /*Parameters*/)
 	Spawner->PurposeTag = PurposeTag;
 	Spawner->ArenaTag = ArenaTag;
 	Spawner->Params.Size = 300.f;
+	Spawner->Params.Color.Color = EGeoColor::Shield;
 	Spawner->EnteredEvent = FGameplayTag::RequestGameplayTag("Encounter.Event.ZoneShield");
 	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner});
 	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
@@ -2592,6 +2595,7 @@ bool FGeoGrowingZoneTest::RunTest(FString const& /*Parameters*/)
 	World->SetGameState(World->SpawnActor<AGeoGameState>());
 	FDeployableData Data;
 	Data.Params.Size = 100.f;
+	Data.Params.Color.Color = EGeoColor::Heal;
 	AGeoTestReadableZone* const FixedZone = Cast<AGeoTestReadableZone>(GeoASLib::FullySpawnDeployable(
 		AGeoTestReadableZone::StaticClass(), Data, FTransform(FVector(2000.f, 0.f, 0.f)), World));
 	Data.Owner = nullptr;

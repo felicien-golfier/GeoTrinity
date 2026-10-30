@@ -93,7 +93,7 @@ SHIELD_EFFECT = ('/Script/GeoTrinity.GameplayEffectData(GameplayEffect="/Script/
 DAMAGE_EFFECT = ("/Script/GeoTrinity.DamageEffectData(Amount=(Value=1.000000,Curve=(CurveTable=\"/Script/Engine.CurveTable'%s.CT_Tutorial'\","
                  "RowName=\"ColorZoneDamage\")),bIsPerSecond=True,bLimitGameplayCue=True)" % CURVE_TABLE)
 ZONE_EFFECTS = {"Heal": HEAL_EFFECT, "Shield": SHIELD_EFFECT, "Damage": DAMAGE_EFFECT}
-ZONE_COLORS = {"Heal": "Heal", "Shield": "Override", "Damage": "Damage"}  # EGeoColor of each zone (Override = white)
+ZONE_COLORS = {"Heal": "Heal", "Shield": "DamageReduction", "Damage": "Damage"}  # EGeoColor of each zone
 ZONE_TEAMS = {"Heal": unreal.Team.PLAYER, "Shield": unreal.Team.ENEMY, "Damage": unreal.Team.ENEMY}
 
 REPORT = []

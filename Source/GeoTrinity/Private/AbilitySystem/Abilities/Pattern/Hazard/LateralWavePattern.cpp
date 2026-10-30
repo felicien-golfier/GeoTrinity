@@ -3,9 +3,8 @@
 #include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
-#include "NiagaraComponent.h"
 #include "Tool/UGeoGameplayLibrary.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 void ULateralWavePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
@@ -62,14 +61,14 @@ bool ULateralWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D const L
 
 void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
 {
-	if (IsValid(BeamVfxComponent))
+	if (IsValid(BeamVisual))
 	{
 		FVector2D const Forward = GetForward();
 		FVector2D const Right(-Forward.Y, Forward.X);
 		FVector2D BeamStart = StoredPayload.Origin;
 		FVector2D BeamDirection = Forward;
 		float BeamLength = TravelDistance;
-		float BeamWidth = HalfWidth * 2.f;
+		float ShapeHalfWidth = HalfWidth;
 		if (SpentTime >= 0.f)
 		{
 			float const BandEnd = FMath::Clamp(Speed * SpentTime, 0.f, TravelDistance);
@@ -77,14 +76,14 @@ void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
 			BeamStart = StoredPayload.Origin - Right * HalfWidth + Forward * ((BandStart + BandEnd) * 0.5f);
 			BeamDirection = Right;
 			BeamLength = HalfWidth * 2.f;
-			BeamWidth = BandEnd - BandStart;
+			ShapeHalfWidth = (BandEnd - BandStart) * 0.5f;
 		}
 
-		BeamVfxComponent->SetWorldLocationAndRotation(FVector(BeamStart, ArbitraryCharacterZ),
-													  FVector(BeamDirection, 0.f).Rotation());
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamLength);
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamWidth);
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::SafeSpotCut, 1.f);
+		BeamVisual->SetWorldLocationAndRotation(FVector(BeamStart, ArbitraryCharacterZ),
+												FVector(BeamDirection, 0.f).Rotation());
+		BeamVisual->Shape.Length = BeamLength;
+		BeamVisual->Shape.HalfWidth = ShapeHalfWidth;
+		BeamVisual->bSafeSpotCut = true;
 		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, GetSafeSpots(), Forward);
 	}
 }

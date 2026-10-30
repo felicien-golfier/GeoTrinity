@@ -9,15 +9,16 @@
 #include "GeoIndicatorComponent.generated.h"
 
 class UGeoIndicatorComponent;
-class UNiagaraComponent;
+class UGeoZoneVisualComponent;
 class USceneComponent;
 
 UENUM()
 enum class EGeoIndicatorShape : uint8
 {
-	/** A circle Size.X in radius — UGameDataSettings::RoundIndicatorSystem. */
+	/** A circle Size.X in radius: EGeoZoneShape::Circle. */
 	Round,
-	/** A ray Size.X long and Size.Y wide, along its parent's forward — UGameDataSettings::RayIndicatorSystem. */
+	/** A ray Size.X long and Size.Y wide each side of its middle line, along its parent's forward:
+	 * EGeoZoneShape::Beam. */
 	Ray
 };
 
@@ -42,9 +43,9 @@ struct FGeoIndicatorState
 	UPROPERTY()
 	FVector2D Size = FVector2D::ZeroVector;
 
-	/** One per meaning, as GeoColor::GetMeaningColors resolves them. */
+	/** One bit per meaning's EGeoColor: GeoZoneLayer::MakeColorMask. */
 	UPROPERTY()
-	TArray<FLinearColor> Colors;
+	uint32 ColorMask = 0;
 
 	/** Server time the telegraph started at; a machine showing it later starts it that far in. */
 	UPROPERTY()
@@ -70,7 +71,7 @@ struct FGeoIndicatorItem : public FFastArraySerializerItem
 
 	/** This machine's own drawing of State; null on a dedicated server or once it was over. */
 	UPROPERTY(NotReplicated, Transient)
-	TObjectPtr<UNiagaraComponent> NiagaraComponent;
+	TObjectPtr<UGeoZoneVisualComponent> ZoneVisual;
 };
 
 USTRUCT()
@@ -141,15 +142,16 @@ public:
 	void RemoveIndicator(int32 Handle);
 
 	/**
-	 * Draws State on this machine only, AttachParent-relative when set, already as far in as the server time says.
-	 * Returns null on a dedicated server or when State is already over. The caller destroys it if it must end early.
+	 * Draws State on this machine only, as a Telegraph shape on the zone layer, AttachParent-relative when set, filled
+	 * as far in as the server time says; it removes itself once its Duration is over. Returns null on a dedicated
+	 * server or when State is already over. The caller destroys it if it must end early.
 	 */
-	static UNiagaraComponent* SpawnIndicator(UObject const* WorldContextObject, FGeoIndicatorState const& State,
-											 USceneComponent* AttachParent = nullptr);
+	static UGeoZoneVisualComponent* SpawnIndicator(UObject const* WorldContextObject, FGeoIndicatorState const& State,
+												   USceneComponent* AttachParent = nullptr);
 
 private:
 	/** SpawnIndicator attached to the owner's root when State asks for it. */
-	UNiagaraComponent* SpawnOwnIndicator(FGeoIndicatorState const& State) const;
+	UGeoZoneVisualComponent* SpawnOwnIndicator(FGeoIndicatorState const& State) const;
 
 	UPROPERTY(Replicated)
 	FGeoIndicatorArray Indicators;

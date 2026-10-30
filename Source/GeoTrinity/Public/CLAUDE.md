@@ -17,6 +17,6 @@ Gameplay module. Headers in `Public/`, `.cpp` mirrored in `Private/` at the same
 | `Settings/` | Developer + user settings | `Settings/CLAUDE.md` |
 | `System/` | Pooling, stats, session, bullets | `System/CLAUDE.md` |
 | `Tool/` | `GeoLib`, colour, icons, Niagara names, lag compensation | `Tool/CLAUDE.md` |
-| `World/` | Camera, volumes, backdrop, world settings | `World/CLAUDE.md` |
+| `World/` | Camera, volumes, backdrop, zone layer, world settings | `World/CLAUDE.md` |
 
 Tests of this module live in `GeoTrinityEditor/Private/Tests/Gameplay/` (`GeoTrinityEditor/Private/Tests/CLAUDE.md`); no test code here.

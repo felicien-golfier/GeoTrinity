@@ -80,6 +80,8 @@ right-click entry runs:
 - Run `UnrealEditor-Win64-DebugGame-Cmd.exe GeoTrinity.uproject -run=pythonscript -script=<file> -unattended -nullrhi -NoP4`, matching the `DebugGame` editor build. The plain `UnrealEditor-Cmd.exe` loads the Development `UnrealEditor-GeoTrinity*.dll`, which a DebugGame build never refreshes.
 - Pass `"-script=$path"` quoted from PowerShell; an unquoted variable reaches Python as source text.
 - `UE_LOG(LogTemp, Log)` output (e.g. `InspectWidgetBlueprint`) is not printed: a probe writes its findings to a file.
+- `-AllowCommandletRendering` in place of `-nullrhi` compiles shaders: a material build is then proven by the editing library's statistics (non-zero instruction counts) and the log's error summary.
+- The editor asset library's delete returned true on a Niagara system yet left its file: check the disk after a scripted delete.
 
 ## Launch editor
 ```bash

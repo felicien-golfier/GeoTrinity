@@ -19,5 +19,6 @@ Automation tests of the `GeoTrinity` module. Fakes they spawn: `Fake/CLAUDE.md`.
 | `GeoDeployableInitTests.cpp` | Deployable init phase: inert while arriving, live once it ends |
 | `GeoCameraTests.cpp` | Width → perspective distance, cursor ray onto a Z plane, projection switch round trip |
 | `GeoTurretTests.cpp` | Player turret waits for the owner's basic-hit target, idles when it is gone |
+| `GeoZoneLayerTests.cpp` | Zone layer: slot packing (circle, turned + offset beam, timed fill), colour mask, registry order / hide / overflow, telegraph (`SpawnIndicator`) removing itself after its `Duration` |
 
 - Each test builds its own world with `CreateTestWorld` / `DestroyTestWorld` (`Fake/GeoTestWorld.h`); none touches a map asset.

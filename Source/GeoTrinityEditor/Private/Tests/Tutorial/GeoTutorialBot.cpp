@@ -2,6 +2,7 @@
 
 #include "GeoTutorialBot.h"
 
+#include "Abilities/GameplayAbility.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
@@ -16,6 +17,8 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/WorldSettings.h"
+#include "GameplayEffect.h"
+#include "GameplayEffectExtension.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "HUD/Interface/GeoHUDInterface.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
@@ -102,6 +105,11 @@ FGeoTutorialBot::~FGeoTutorialBot()
 		Unbind(Watch);
 	}
 
+	for (FHealthWatch& Watch : HealthWatches)
+	{
+		UnbindHealth(Watch);
+	}
+
 	if (UWorld* const World = LineWorld.Get())
 	{
 		World->GetSubsystem<UGeoEncounterSubsystem>()->OnCatLine.Remove(LineHandle);
@@ -145,7 +153,10 @@ bool FGeoTutorialBot::Update()
 	}
 	else if (Now - StageStartSeconds > Stages[StageIndex].TimeoutSeconds)
 	{
-		Test.AddError(FString::Printf(TEXT("Stage '%s' timed out"), *Stages[StageIndex].Name));
+		FString const HealthLogTail = GetHealthLog(GeoTutorial::HealthLogTailCount);
+		Test.AddError(FString::Printf(TEXT("Stage '%s' timed out%s%s"), *Stages[StageIndex].Name,
+									  HealthLogTail.IsEmpty() ? TEXT("") : TEXT(". Last health log:\n"),
+									  *HealthLogTail));
 		bFinished = true;
 	}
 	else
@@ -156,6 +167,7 @@ bool FGeoTutorialBot::Update()
 		if (GetWorld())
 		{
 			UpdateWatches();
+			UpdateHealthWatches();
 			KeepPlayerHealthy();
 			for (TFunction<void()> const& Observer : Observers)
 			{
@@ -501,6 +513,144 @@ void FGeoTutorialBot::Unbind(FWatch& Watch)
 void FGeoTutorialBot::SetInvincible(bool const bInvincible) const
 {
 	GEngine->Exec(GetWorld(), bInvincible ? TEXT("Geo.PlayerInvincible 1") : TEXT("Geo.PlayerInvincible 0"));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void FGeoTutorialBot::WatchHealth(FName const Tag)
+{
+	HealthTags.AddUnique(Tag);
+}
+
+FString FGeoTutorialBot::GetHealthLog(int32 const Count) const
+{
+	int32 const First = FMath::Max(0, HealthLog.Num() - Count);
+	return FString::Join(TArrayView<FString const>(HealthLog).RightChop(First), TEXT("\n"));
+}
+
+void FGeoTutorialBot::UpdateHealthWatches()
+{
+	for (FHealthWatch& Watch : HealthWatches)
+	{
+		AGeoCharacter const* const Character = Watch.Character.Get();
+		if (!Watch.bGone && !IsValid(Character))
+		{
+			Watch.bGone = true;
+			UnbindHealth(Watch);
+			if (!Watch.bDead)
+			{
+				AddHealthLog(FString::Printf(TEXT("%s removed while alive, health %.1f, last at %s"), *Watch.Name,
+											 Watch.Health, *Watch.Location.ToCompactString()));
+			}
+		}
+		else if (!Watch.bGone)
+		{
+			if (Character->IsDead() != Watch.bDead)
+			{
+				Watch.bDead = Character->IsDead();
+				AddHealthLog(FString::Printf(TEXT("%s %s, health %.1f at %s"), *Watch.Name,
+											 Watch.bDead ? TEXT("dies") : TEXT("lives again"), Watch.Health,
+											 *Character->GetActorLocation().ToCompactString()));
+			}
+
+			if (!Watch.bDead)
+			{
+				Watch.Location = Character->GetActorLocation();
+			}
+		}
+	}
+
+	if (!HealthTags.IsEmpty())
+	{
+		TArray<TPair<AGeoCharacter*, bool>> Candidates;
+		Candidates.Emplace(GetPawn(), false);
+		for (FName const Tag : HealthTags)
+		{
+			for (AEnemyCharacter* const Enemy : FindLiving(Tag))
+			{
+				Candidates.Emplace(Enemy, true);
+			}
+		}
+
+		for (TPair<AGeoCharacter*, bool> const& Candidate : Candidates)
+		{
+			bool const bWatched = HealthWatches.ContainsByPredicate(
+				[&Candidate](FHealthWatch const& Watch)
+				{
+					return Watch.Character == Candidate.Key;
+				});
+			if (Candidate.Key && !bWatched)
+			{
+				BindHealth(Candidate.Key, Candidate.Value);
+			}
+		}
+	}
+}
+
+void FGeoTutorialBot::BindHealth(AGeoCharacter* const Character, bool const bEveryChange)
+{
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Character);
+	if (ASC)
+	{
+		int32 const Index = HealthWatches.Num();
+		FHealthWatch& Watch = HealthWatches.AddDefaulted_GetRef();
+		Watch.Character = Character;
+		Watch.BoundASC = ASC;
+		Watch.Name = Character->GetName();
+		Watch.bEveryChange = bEveryChange;
+		Watch.bDead = Character->IsDead();
+		Watch.Health = ASC->GetNumericAttribute(UGeoAttributeSetBase::GetHealthAttribute());
+		Watch.Location = Character->GetActorLocation();
+		AddHealthLog(FString::Printf(TEXT("%s watched, health %.1f at %s"), *Watch.Name, Watch.Health,
+									 *Watch.Location.ToCompactString()));
+		Watch.Handle = ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute())
+						   .AddLambda(
+							   [this, Index](FOnAttributeChangeData const& Data)
+							   {
+								   FHealthWatch& Changed = HealthWatches[Index];
+								   Changed.Health = Data.NewValue;
+								   if (Changed.bEveryChange || Data.NewValue <= 0.f)
+								   {
+									   AddHealthLog(FString::Printf(TEXT("%s health %.1f -> %.1f at %s: %s"),
+																	*Changed.Name, Data.OldValue, Data.NewValue,
+																	*Changed.Location.ToCompactString(),
+																	*DescribeHealthChange(Data)));
+								   }
+							   });
+	}
+}
+
+void FGeoTutorialBot::UnbindHealth(FHealthWatch& Watch)
+{
+	if (UGeoAbilitySystemComponent* const ASC = Watch.BoundASC.Get())
+	{
+		ASC->GetGameplayAttributeValueChangeDelegate(UGeoAttributeSetBase::GetHealthAttribute()).Remove(Watch.Handle);
+	}
+
+	Watch.BoundASC.Reset();
+	Watch.Handle.Reset();
+}
+
+void FGeoTutorialBot::AddHealthLog(FString const& Line)
+{
+	UWorld const* const World = GetWorld();
+	FString const Entry = FString::Printf(TEXT("t=%.2f %s"), World ? World->GetTimeSeconds() : 0., *Line);
+	UE_LOG(LogTemp, Display, TEXT("TutorialBot health: %s"), *Entry);
+	HealthLog.Add(Entry);
+}
+
+FString FGeoTutorialBot::DescribeHealthChange(FOnAttributeChangeData const& Data)
+{
+	if (!Data.GEModData)
+	{
+		return TEXT("set directly (the bot, or code outside an effect)");
+	}
+
+	FGameplayEffectSpec const& Spec = Data.GEModData->EffectSpec;
+	FGameplayEffectContextHandle const& Context = Spec.GetContext();
+	UGameplayAbility const* const Ability = Context.GetAbility();
+	return FString::Printf(TEXT("effect %s, instigator %s, causer %s, ability %s"), *GetNameSafe(Spec.Def),
+						   *GetNameSafe(Context.GetInstigator()), *GetNameSafe(Context.GetEffectCauser()),
+						   *GetNameSafe(Ability ? Ability->GetClass() : nullptr));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

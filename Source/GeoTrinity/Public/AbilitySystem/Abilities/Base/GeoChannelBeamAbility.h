@@ -5,13 +5,12 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "CoreMinimal.h"
 #include "Tickable.h"
-#include "Tool/Visual/GeoColor.h"
 #include "Tool/Team.h"
+#include "Tool/Visual/GeoColor.h"
 
 #include "GeoChannelBeamAbility.generated.h"
 
 class ACharacter;
-class UNiagaraSystem;
 
 /**
  * Base for channelled beam abilities (Circle's Moira beam, Square's sacrifice beam).
@@ -46,8 +45,8 @@ protected:
 	 * server's replication. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
-	/** Stops the channel, drops the windup telegraph if still up, switches the beam VFX off and stops the ability's montage, whose channel section loops, before
-	 * calling Super. */
+	/** Stops the channel, drops the windup telegraph if still up, switches the beam VFX off and stops the ability's
+	 * montage, whose channel section loops, before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
 							FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility,
 							bool bWasCancelled) override;
@@ -69,9 +68,6 @@ protected:
 	/** Beam half-width in cm. Default: half the avatar's capsule radius. */
 	virtual float GetCurrentBeamHalfWidth(ACharacter const* Character) const;
 
-	/** Maximum duration in seconds the beam may actively run; 0 means unlimited (channel runs until EndAbility). Forwarded to the beam Niagara system's Lifetime user parameter each tick. */
-	virtual float GetBeamDuration() const;
-
 	/** Attitude bitmask used by the per-tick line scan. */
 	virtual uint8 GetScanAttitudeMask() const { return TeamAttitudeMask::All; }
 
@@ -80,22 +76,19 @@ protected:
 	void DrawBeamDebugLines(float DeltaTime) const;
 #endif
 
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
-	TObjectPtr<UNiagaraSystem> BeamNiagaraSystem;
-
 	/** Colour of the beam, and of its outline. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	FGeoColorParam BeamColor;
 
 	/** Further colours the beam draws beside BeamColor, one per extra meaning it carries (damage beside heal, say),
-	 * split by its material's colour pattern. */
+	 * mixed by the zone layer. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|GameFeel", meta = (AllowPrivateAccess = true))
 	TArray<FGeoColorParam> SecondaryBeamColors;
 
 	bool bIsBeamActive = false;
 
 private:
-	/** Switches the avatar's beam VFX on at the beam's current dimensions. */
+	/** Switches the avatar's beam on at the beam's current dimensions. */
 	void PushBeamState(ACharacter const* Character) const;
 
 	/** Ends the telegraph ActivateAbility added. */

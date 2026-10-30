@@ -4,6 +4,7 @@
 |---|---|
 | `Camera/` | `GeoGameCamera`, `GeoCameraVolume`, `GeoCurveCameraShake` |
 | `Backdrop/` | `GeoBackdropComponent`, `GeoBackgroundPulseComponent` |
+| `ZoneLayer/` | One world layer drawing every zone, beam and telegraph; overlaps mix colours |
 | `GeoWorldSettings.h` | `AWorldSettings` subclass; `StartingClassOverride`, `LockedAbilityTags`, `KillZ` default |
 
 ## GeoWorldSettings

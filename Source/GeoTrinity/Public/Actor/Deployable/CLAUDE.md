@@ -13,7 +13,7 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 | `Pillar/` | Boss pillar blocking the devastating wave |
 | `Mine/` | Hex-boss mine, fuse + burst |
 | `BombZone/` | Hex-boss tile bomb |
-| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit; grows when its params say so (Data and fields) |
+| `Zones/` | `GeoEffectZone`: editor-placed capsule applying `EffectDataArray`; owns its ASC; heal/damage re-applied per tick (per-second magnitude), other types once on entry/exit; grows when its params say so (Data and fields); drawn by its `UGeoZoneVisualComponent` (`Circle`, `Ground`, radius = `GetRadius()`, `ColorMask` from `Params.Color` + `SecondaryColors`), no mesh of its own |
 
 ## Lifecycle
 - Spawned server-side, always through `GeoASLib::FullySpawnDeployable` (`AbilitySystem/Lib/CLAUDE.md`; no deployable, pickups included, calls `SpawnActorDeferred` itself): by `ADeployableSpawnerProjectile::EndProjectileLife()` for a throw, by `GeoASLib::SpawnDeployableFromAbility` for a passive's placement, by `GeoSpawnZoneAction` for an encounter's self-owned zone (`Encounter/Action/CLAUDE.md`) → `InitDrain()` → `ApplyHealthMultiplier()` → server `Tick()` drains → zero health/duration starts blink → `Expire()` (hide, event, delayed destroy).
@@ -21,10 +21,10 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 - On hex arenas the fall-check recalls/expires anything over a dead tile; subclasses with recall side effects must account for it.
 
 ## Init phase
-- `Params.InitDuration` > 0 (set by the spawner, 0 = none): the deployable *arrives* before it lives. From BeginPlay: no collision, not damageable (health bar hidden), no drain, no push, until `FinishInit()` hands over to the normal life (push, collision, damageable again, spawn cue + `Spawn` moment, so the impact plays on landing). Who ends it: `Params.bAutoFinishInit` true (default) = every machine, when `InitDuration` is over; false = the spawner, server-side, when it chooses (the arrival animation rests at the end pose meanwhile). `bInitialising` replicates, so clients follow a spawner's release.
+- `Params.InitDuration` > 0 (set by the spawner, 0 = none): the deployable *arrives* before it lives. From BeginPlay: no collision, not damageable (health bar hidden), no drain, no push, until `FinishInit()` hands over to the normal life (push, collision, damageable again, spawn cue + `Spawn` moment, so the impact plays on landing). Who ends it: `Params.bAutoFinishInit` true (default) = every machine, when `InitDuration` is over; false = the spawner, server-side, when it chooses (the arrival animation rests at the end pose meanwhile). `bInitialising` replicates, so clients follow a spawner's release. `FinishInit()` acts only while initialising (else no-op): a spawner may release every deployable it spawned, init or not.
 - Same on every machine, off the server clock: `InitStartServerTime` (server BeginPlay, initial-only like `Data`) → `Alpha`; a late client draws the same frame.
-- Arrival = visual only: every visual mesh goes from `InitStartOffset` (location added, rotation composed, scale multiplied; X / Y / Z, tilt and size in one transform) to its rest transform, driven by `InitCurve` (Alpha 0..1 → share of the offset left, 1 → 0; null = linear). `InitMontage` (per BP, on the first skeletal mesh) is stretched over `InitDuration`. The top-down orthographic view shows no height, so a scale above 1 is what reads as a fall.
-- `InitCue` + `Init` moment fire at its start like the other moments (cue `Normal.X` = `InitDuration`, so a notify times itself); spawn cue + `Spawn` moment wait for the landing.
+- Arrival = visual only: every visual mesh goes from `InitStartOffset` (location added, rotation composed, scale multiplied; X / Y / Z, tilt and size in one transform) to its rest transform, driven by `InitCurve` (Alpha 0..1 → share of the offset left; null = linear). The landing restores the rest transforms exactly, whatever the curve returns at 1. `InitMontage` (per BP, on the first skeletal mesh) is stretched over `InitDuration`. The top-down orthographic view shows no height, so a scale above 1 is what reads as a fall.
+- `InitCue` + `Init` moment fire at its start like the other moments (cue `Normal.X` = `InitDuration`, `Normal.Y` = time already spent since `InitStartServerTime`, so a telegraph or notify ends on the landing on every machine, late client included); spawn cue + `Spawn` moment wait for the landing.
 - `IsInitialising()`; `Expire(true)` is the way to cancel one.
 
 ## Override points
@@ -33,7 +33,7 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 - `Explode(Value)`: server sphere overlap, `ExplodeAttitude` (default Hostile), `ExplodeOverlapMode` (Automatic = centre-only for Enemy casters).
 
 ## Data and fields
-- `FDeployableData : FInteractableActorData`: `EffectDataArray`, `Params` (`BlinkDuration`, `LifeDrainMaxDuration`, `InitDuration`, `Size`, `Value`), `PredictionKey`, `AbilityTag`.
+- `FDeployableData : FInteractableActorData`: `EffectDataArray`, `Params` (`BlinkDuration`, `LifeDrainMaxDuration`, `InitDuration`, `bAutoFinishInit`, `Size`, `Value`), `PredictionKey`, `AbilityTag`.
 - Growth params (zones only): `GrowToSize`, `GrowSeconds` (`FScalableFloat`, read at `Data.Level`, so a spawner points them at a curve table row). `GrowToSize` 0 = fixed `Size`; else the radius goes `Size` → `GrowToSize` over `GrowSeconds` from the server's BeginPlay, then stays. Every machine grows it on the server clock (`GeoLib::GetServerTime`) from `GrowthStartServerTime` (initial-only, like `Data`), so a late client draws the radius the server judges. `Size` is never written after spawn (what a late client receives); the grown radius = `AGeoEffectZone::GetRadius()`, read by the judge and `ApplyRadius`.
 - Health params (`FDeployableDataParams`, set by the deployer, never by hand): `HealthMultiplier` scales `MaxHealth` and `Health`; `StartHealthRatio` (0..1, default 1) then sets `Health = MaxHealth * StartHealthRatio`, `MaxHealth` untouched.
 - `DeployDistance` (same struct, set by the deployer, -1 = not thrown): the throw distance the deployable's Leverage was computed from; a copy of it reads it to carry Leverage (`SpawnDeployableFromAbility`).

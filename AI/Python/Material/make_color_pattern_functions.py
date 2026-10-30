@@ -2,12 +2,13 @@
 
 Materials call MF_MeaningColors, never a pattern directly: PATTERN is the one place choosing what every effect draws,
 and MPC_MeaningColors the one size and speed it is drawn at, in world space, so every effect shows the same bands
-whatever its shape or scale. Telegraphs draw their own pattern, stripes, through MF_TelegraphColors
-(make_beam_and_telegraph_materials.py), at the collection's stripe width and angle. Every MF_ColorPattern_* shares one
-pin contract (Position, Scroll, ColorCount in; ColorIndex out)."""
+whatever its shape or scale. Telegraphs draw their own pattern, stripes, through MF_TelegraphColors, at the
+collection's stripe width and angle. The collection also holds the zone layer's knobs (make_zone_layer_materials.py).
+Every MF_ColorPattern_* shares one pin contract (Position, Scroll, ColorCount in; ColorIndex out)."""
 import unreal
 
 FOLDER = "/Game/Art/VFX/Generic/Materials/Functions"
+TELEGRAPH_FOLDER = "/Game/Art/VFX/AOE/Functions"
 COLLECTION_FOLDER = "/Game/Art/VFX/Generic/Materials"
 # Each created with this value only: a rebuild keeps whatever the collection has been tuned to since.
 COLLECTION_KNOBS = {
@@ -15,6 +16,10 @@ COLLECTION_KNOBS = {
     "PatternSpeed": 0.5,  # bands per second, toward world +Y
     "TelegraphStripeWidth": 50.0,  # world cm per stripe
     "TelegraphStripeAngle": -45.0,  # degrees from world X of the direction the stripes are stacked along
+    "StackBrightness": 0.5,  # zone layer: brightness a colour gains per extra shape carrying it at a pixel
+    "StackBrightnessMax": 2.0,  # zone layer: the most a stacked colour brightens to
+    "FillShade": 0.5,  # zone layer: how much darker the spent part of a shape is
+    "OutlineWidth": 6.0,  # zone layer: every shape's outline, world cm
 }
 CATEGORY = "GeoTrinity|Pattern"
 PATTERN = "MF_ColorPattern_Zigzag"  # drawn by every MF_MeaningColors caller
@@ -159,6 +164,7 @@ band = graph.op(unreal.MaterialExpressionFloor, travelled)
 wrapped = graph.call(wrap_index, Value=band, Count=color_count)
 graph.output("ColorIndex", 0, "Which colour the point takes, 0 to ColorCount - 1.", (wrapped, "Index"))
 graph.finish()
+stripes = graph.asset
 
 # --- MPC_MeaningColors: the sizes, speed and angle every meaning-colour pattern draws at ---
 collection = toolkit["load_or_create"](COLLECTION_FOLDER, "MPC_MeaningColors", unreal.MaterialParameterCollection,
@@ -202,24 +208,39 @@ picked = graph.call(pick_color, Index=(pattern, "ColorIndex"), **colors)
 graph.output("Color", 0, "The colour of the point's region.", (picked, "Color"))
 graph.finish()
 
-# --- MF_ColorScale: brightest channel of Scaled over brightest channel of Original ---
-graph = open_function(FOLDER, "MF_ColorScale", "How many times brighter a colour is than the one it was scaled from, "
-                      "such as a particle colour faded over its life against the colour it started as.", CATEGORY)
-scaled = graph.input("Scaled", "Vector3", 0, "The scaled colour.")
-original = graph.input("Original", "Vector3", 1, "The colour before scaling.")
-
-
-def brightest_channel(color):
-    red_or_green = graph.op(unreal.MaterialExpressionMax, A=graph.mask(color, "r"),
-                            B=graph.mask(color, "g"))
-    return graph.op(unreal.MaterialExpressionMax, A=red_or_green, B=graph.mask(color, "b"))
-
-
-# The floor keeps a black original from dividing by zero.
-original_brightness = graph.node(unreal.MaterialExpressionMax, const_b=0.0001)
-graph.connect(brightest_channel(original), original_brightness, "A")
-scale = graph.op(unreal.MaterialExpressionDivide, A=brightest_channel(scaled), B=original_brightness)
-graph.output("Scale", 0, "Scaled's brightest channel over Original's: 1 while unscaled.", scale)
+# --- MF_TelegraphColors: world stripes cycling through the colours, a lone colour paired with its shade ---
+graph = open_function(TELEGRAPH_FOLDER, "MF_TelegraphColors", "The meaning colours of a telegraph: straight stripes "
+                      "laid over the world at MPC_MeaningColors' stripe width and angle, each taking the next colour. A "
+                      "telegraph never draws one flat colour: alone, its colour is paired with a shade of itself.",
+                      "GeoTrinity|Telegraph")
+count = graph.input("ColorCount", "Scalar", 0, "How many colours the telegraph carries, 1 to 4.")
+colors = {f"Color{slot}": graph.input(f"Color{slot}", "Vector3", 1 + slot, f"Colour of meaning {slot + 1}.")
+          for slot in range(MAX_COLORS)}
+shade = graph.input("SingleColorShade", "Scalar", 5, "Brightness of the second shade while ColorCount is 1.")
+second_shade = graph.op(unreal.MaterialExpressionMultiply, A=colors["Color0"], B=shade)
+# Step(Y, X) is 1 where X >= Y.
+has_second_color = graph.node(unreal.MaterialExpressionStep, const_y=1.5)
+graph.connect(count, has_second_color, "X")
+second_color = graph.op(unreal.MaterialExpressionLinearInterpolate, A=second_shade, B=colors["Color1"],
+                        Alpha=has_second_color)
+pattern_count = graph.node(unreal.MaterialExpressionMax, const_b=2.0)
+graph.connect(count, pattern_count, "A")
+world = graph.mask(graph.node(unreal.MaterialExpressionWorldPosition), "rg")
+angle = graph.collection_parameter(collection, "TelegraphStripeAngle")
+across_x = graph.node(unreal.MaterialExpressionCosine, period=360.0)
+graph.connect(angle, across_x)
+across_y = graph.node(unreal.MaterialExpressionSine, period=360.0)
+graph.connect(angle, across_y)
+direction = graph.op(unreal.MaterialExpressionAppendVector, A=across_x, B=across_y)
+across = graph.op(unreal.MaterialExpressionDotProduct, A=world, B=direction)
+width = graph.collection_parameter(collection, "TelegraphStripeWidth")
+in_stripes = graph.op(unreal.MaterialExpressionDivide, A=across, B=width)
+still = graph.node(unreal.MaterialExpressionConstant, r=0.0)
+position = graph.op(unreal.MaterialExpressionAppendVector, A=in_stripes, B=still)
+pattern = graph.call(stripes, Position=position, Scroll=still, ColorCount=pattern_count)
+picked = graph.call(pick_color, Index=(pattern, "ColorIndex"), Color0=colors["Color0"], Color1=second_color,
+                    Color2=colors["Color2"], Color3=colors["Color3"])
+graph.output("Color", 0, "The colour of the point's region.", (picked, "Color"))
 graph.finish()
 
-unreal.log(f"COLORPATTERNS::built {FOLDER} drawing {PATTERN}")
+unreal.log(f"COLORPATTERNS::built {FOLDER} drawing {PATTERN}, and {TELEGRAPH_FOLDER}/MF_TelegraphColors")

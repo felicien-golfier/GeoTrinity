@@ -8,7 +8,7 @@
 
 #include "ZonePattern.generated.h"
 
-class UNiagaraComponent;
+class UGeoZoneVisualComponent;
 
 /**
  * Telegraphs a circle at the payload origin for the whole wind-up, in the zone's own colours, then delivers the
@@ -53,5 +53,5 @@ private:
 	FDeployableDataParams ZoneParams;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraComponent> IndicatorComponent;
+	TObjectPtr<UGeoZoneVisualComponent> IndicatorComponent;
 };

@@ -9,7 +9,6 @@
 #include "GeoNiagaraParams.generated.h"
 
 class UNiagaraComponent;
-class UNiagaraSystem;
 
 /**
  * Every Niagara User parameter name written from C++, declared once. A name here must match the User Parameter authored
@@ -38,16 +37,8 @@ namespace GeoNiagaraParams
 	inline FName const BulletTrailColor(TEXT("User.Bullet_TrailColor"));
 	inline FName const TrailLifetimeScale(TEXT("User.Trail_LifetimeScale"));
 
-	/** Beam systems and the ray telegraph — UGeoBeamVFXComponent, UBeamPattern, UGeoIndicatorComponent. */
-	inline FName const BeamWidth(TEXT("User.Beam_Width"));
-	inline FName const BeamLength(TEXT("User.Beam_Length"));
-	/** 1 when the beam is cut by the safe spots of MPC_MaskedArea, 0 (default) to ignore them: only the hazard that
-	 * uploads the spots opts in (ULateralWavePattern), so every other beam stays whole while a mask is live. Bound to
-	 * the beam materials' SafeSpotCut by AI/Python/Niagara/material_user_bindings.py. */
-	inline FName const SafeSpotCut(TEXT("User.SafeSpotCut"));
-
-	/** Systems drawing a colour pattern through MF_MeaningColors — the beam and the zone telegraphs: one colour per
-	 * meaning, Color first, bound to the renderer's material by AI/Python/Niagara/material_user_bindings.py. */
+	/** Cue systems drawing a colour pattern through MF_MeaningColors (GeoASLib::SetCueMeaningColors): one colour per
+	 * meaning, Color first, each bound by the system's renderer to its material's same-named parameter. */
 	inline FName const MeaningColors[] = {Color, FName(TEXT("User.Color2")), FName(TEXT("User.Color3")),
 										  FName(TEXT("User.Color4"))};
 	static_assert(UE_ARRAY_COUNT(MeaningColors) == GeoColor::MaxMeaningColorCount);
@@ -63,26 +54,6 @@ namespace GeoNiagaraParams
 	inline FName const AOEColor(TEXT("User.AOE_Color"));
 	inline FName const AnnulusRadius(TEXT("User.AnnulusRadius"));
 	inline FName const FadeOutDuration(TEXT("User.FadeOut_Duration"));
-
-	/** A beam's live asset plus its optional windup-preview asset (the shared Ray Zone Indicator niagara), bundled so
-	 * ApplySwappableAsset callers pass one thing instead of two. Plain aggregate, not a UPROPERTY struct — UBeamPattern
-	 * keeps its own authored fields and just assembles one of these at the call site. */
-	struct FBeamVfxAssetSet
-	{
-		UNiagaraSystem* BeamSystem = nullptr;
-		UNiagaraSystem* PreviewSystem = nullptr;
-
-		/** Returns PreviewSystem when bWantPreview is true and a preview asset is set; otherwise returns BeamSystem. */
-		UNiagaraSystem* GetDesiredAsset(bool const bWantPreview) const
-		{
-			return (bWantPreview && PreviewSystem) ? PreviewSystem : BeamSystem;
-		}
-	};
-
-	/** Reassigns Component's asset to Assets.GetDesiredAsset(bWantIndicator) only when it differs — SetAsset resets the
-	 * system, so skipping the no-op case avoids restarting an already-correct beam. No-op if Component or the desired
-	 * asset is null. UBeamPattern's preview<->beam asset handoff. */
-	void ApplySwappableAsset(UNiagaraComponent* Component, FBeamVfxAssetSet const& Assets, bool bWantIndicator);
 } // namespace GeoNiagaraParams
 
 /**
@@ -93,21 +64,19 @@ namespace GeoNiagaraParams
  */
 namespace GeoMaterialParams
 {
-	/** Custom primitive data: the fraction of a deployable's life spent, 0..1 — AGeoDeployableBase, read by
-	 * M_PulseCircle's DurationSpent. Spent rather than remaining, so a primitive nobody writes reads as untouched. */
+	/** Custom primitive data: the fraction of a deployable's life spent, 0..1 — AGeoDeployableBase. Spent rather than
+	 * remaining, so a primitive nobody writes reads as untouched. */
 	int32 constexpr DurationSpentPrimitiveDataIndex = 0;
 	/** Custom primitive data, two slots (1 and 2): an arena's XY on its floors — AGeoArena, read by the floor looks
 	 * centred on it through their ArenaCenter parameter. */
 	int32 constexpr ArenaCenterPrimitiveDataIndex = 1;
 
-	/** M_PulseCircle — AGeoEffectZone. Built by AI/Python/Material/make_pulse_circle_material.py. */
-	inline FName const ZoneOutlineColor(TEXT("OutlineColor"));
-	/** The fill colours, one per meaning, in order. */
-	inline FName const ZoneInsideColors[] = {TEXT("InsideColor"), TEXT("InsideColor2"), TEXT("InsideColor3"),
-											 TEXT("InsideColor4")};
-	static_assert(UE_ARRAY_COUNT(ZoneInsideColors) == GeoColor::MaxMeaningColorCount);
-	/** How many fill colours the zone's colour pattern cycles through. */
-	inline FName const ZoneColorCount(TEXT("ColorCount"));
+	/** M_ZoneLayer — AGeoZoneLayerActor: the slot texture UGeoZoneLayerSubsystem writes, how many of its slots are
+	 * live, and the palette texture (GeoColor::CreatePaletteTexture) a slot's ColorMask bits index. Built by
+	 * AI/Python/Material/make_zone_layer_materials.py. */
+	inline FName const ZoneSlots(TEXT("ZoneSlots"));
+	inline FName const ZoneCount(TEXT("ZoneCount"));
+	inline FName const ZonePalette(TEXT("Palette"));
 
 	/** Buff pickup mesh — AGeoBuffPickup's buff colour. */
 	inline FName const BuffPickupColor(TEXT("Color"));
@@ -189,14 +158,6 @@ public:
 	/** Returns the Niagara user parameter name for the projectile trail lifetime scale. */
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
 	static FName GetTrailLifetimeScaleParameterName() { return GeoNiagaraParams::TrailLifetimeScale; }
-
-	/** Returns the Niagara user parameter name for beam visual width (UGeoBeamVFXComponent, UBeamPattern). */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetBeamWidthParameterName() { return GeoNiagaraParams::BeamWidth; }
-
-	/** Returns the Niagara user parameter name for beam visual length (UGeoBeamVFXComponent, UBeamPattern). */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetBeamLengthParameterName() { return GeoNiagaraParams::BeamLength; }
 
 	/** Returns the Niagara user parameter name for the devastating-wave AOE outer radius. */
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")

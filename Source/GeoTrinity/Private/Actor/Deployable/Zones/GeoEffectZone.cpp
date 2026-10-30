@@ -5,16 +5,17 @@
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/MeshComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 AGeoEffectZone::AGeoEffectZone(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bShowDamageNumbers = false;
 	SetCanBeDamaged(false);
+	Color.Color = EGeoColor::Neutral;
+	ZoneVisual = CreateDefaultSubobject<UGeoZoneVisualComponent>(TEXT("ZoneVisual"));
+	ZoneVisual->SetupAttachment(GetRootComponent());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -110,6 +111,8 @@ void AGeoEffectZone::Tick(float const DeltaSeconds)
 			ApplyRadius();
 		}
 	}
+
+	ZoneVisual->Fill = 1.f - GetDrainDurationRatio();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -162,38 +165,11 @@ void AGeoEffectZone::ApplyRadius() const
 	CapsuleComponent->SetCapsuleHalfHeight(ZoneRadius);
 	CapsuleComponent->SetCapsuleRadius(ZoneRadius);
 
-	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
-	{
-		FVector Scale = MeshComponent->GetRelativeScale3D();
-		Scale.X = ZoneRadius * .02f;
-		Scale.Y = ZoneRadius * .02f;
-		MeshComponent->SetRelativeScale3D(Scale);
-	}
+	ZoneVisual->Shape.Radius = ZoneRadius;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void AGeoEffectZone::ApplyColor() const
 {
-	TArray<FLinearColor> const Colors = GeoColor::GetMeaningColors(Data.Params.Color, Data.Params.SecondaryColors);
-	for (UMeshComponent* const MeshComponent : GetVisualMeshComponents())
-	{
-		for (int32 MaterialIndex = 0; MaterialIndex < MeshComponent->GetNumMaterials(); ++MaterialIndex)
-		{
-			// Returns the existing instance when the slot already holds one, so repeated calls make no new material.
-			// Null only for an empty material slot, which the engine already warns about.
-			UMaterialInstanceDynamic* const Material =
-				MeshComponent->CreateAndSetMaterialInstanceDynamic(MaterialIndex);
-			if (!Material)
-			{
-				continue;
-			}
-			Material->SetVectorParameterValue(GeoMaterialParams::ZoneOutlineColor, Colors[0]);
-			for (int32 Index = 0; Index < Colors.Num(); ++Index)
-			{
-				Material->SetVectorParameterValue(GeoMaterialParams::ZoneInsideColors[Index], Colors[Index]);
-			}
-
-			Material->SetScalarParameterValue(GeoMaterialParams::ZoneColorCount, Colors.Num());
-		}
-	}
+	ZoneVisual->ColorMask = GeoZoneLayer::MakeColorMask(Data.Params.Color, Data.Params.SecondaryColors);
 }

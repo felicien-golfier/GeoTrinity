@@ -13,8 +13,7 @@
 - Resolved through `GameDataSettings::ColorPalette`; a missing slot `ensureMsgf`s and falls back to white.
 - Side split is authored at the spawn site: ally abilities set head/trail `AllyDamage` with the override toggles on `OverrideValue`; only valid on non-replicated pooled projectiles — replicated ones carry colour on the Blueprint.
 - Materials read the palette as a 1 × `SlotCount` texture (`GeoColor::CreatePaletteTexture`, set on `AGeoGameCamera::OutlineMaterial` with `PaletteSize`), so a new slot needs no asset work. `Override` stays last (ordinal = stencil index).
-- Runtime resolved colours (`UGeoBeamVFXComponent::BeamColor`, HUD) stay `FLinearColor`.
+- Zone shapes carry slots, not colours: `GeoZoneLayer::MakeColorMask` (`World/ZoneLayer/CLAUDE.md`), so the layer can merge overlaps. HUD colours stay `FLinearColor`.
 
 ## GeoNiagaraParams
-- One `inline FName const` per `User.*` param (bullet, beam, wave AOE). Never type a name at a call site; Material / MPC names stay named constants local to their owner.
-- `FBeamVfxAssetSet` + `ApplySwappableAsset(Component, Assets, bWantPreview)`: reassigns only when the asset differs (used by `UGeoBeamVFXComponent`, `UBeamPattern`).
+- One `inline FName const` per `User.*` param (bullet, cue meaning colours, wave AOE). Never type a name at a call site; Material / MPC names stay named constants local to their owner.

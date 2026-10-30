@@ -75,10 +75,10 @@ coordinates, so one shape drawn there repeats in every tile.
 | `MF_ColorPattern_Overlap` | Two sets of sliding quads, coloured by how many cover a point: even shares only at two colours |
 | `MF_ColorPattern_Stripes` | Straight bands, one colour each in turn: the telegraphs' pattern |
 | `MF_MeaningColors` | Up to four colours, one per meaning, split by the project's colour pattern laid over the world: what effects call |
-| `MF_ColorScale` | How many times brighter a colour is than the one it was scaled from, such as a faded particle colour |
 
-All are built by `AI/Python/Material/make_generic_material_functions.py`, except the last seven (and the
-`MF_SlidingQuads` the overlap pattern calls), built by `make_color_pattern_functions.py`.
+All are built by `AI/Python/Material/make_generic_material_functions.py`, except the last six (and the
+`MF_SlidingQuads` the overlap pattern calls, and the telegraphs' `MF_TelegraphColors`), built by
+`make_color_pattern_functions.py`.
 
 ## Several meanings at once
 
@@ -92,23 +92,46 @@ world position and a collection. Inside it a `MF_ColorPattern_*` turns the posit
 `make_color_pattern_functions.py`, then rebuild. Every pattern has the same pins (`Position`, `Scroll`, `ColorCount`
 in, `ColorIndex` out). At `ColorCount` 1 every pattern returns 0 and the effect looks as it did with one colour.
 
-`AGeoEffectZone` writes `Color` plus its `SecondaryColors` into `M_PulseCircle`'s `InsideColor`, `InsideColor2`–`4`
-and `ColorCount`. The beam and the two telegraphs (`M_PulseBeam`, `M_ZoneIndicatorRay`, `M_ZoneIndicator`) take theirs
-from their Niagara system (`AI/VFX.md`).
+Zones, beams and telegraphs reach it through the zone layer (below), which turns the slots covering a pixel into
+the colour list.
 
-## Safe spots on a beam
+## Zone layer
 
-The beam and its ray telegraph (`M_PulseBeam`, `M_ZoneIndicatorRay`) cut the hazard's safe spots out of their light:
-`MF_SafeSpotCut` reads the 8 slots of `MPC_MaskedArea` (`SafeSpot/CLAUDE.md` "Mask") and returns `CutMask`, 1 where a
-spot shadows the pixel; the emissive (and the ray's opacity) is multiplied by `1 - CutMask`, outline frame included.
-A spot is a location with a radius, in one of two modes: `Disc` (default), a round hole around the location; `Lane`,
-the beam cut across its width wherever the location projects perpendicularly, so only the parts between the lanes
-stay lit (lateral wave). Unused slots (alpha 0) cut nothing, so a beam with no safe spots looks as before. The function reads world
-position, like `MF_TelegraphColors`: the beam's own orientation plays no part.
+Every zone, beam and telegraph is drawn by one master, `M_ZoneLayer` (`/Game/Art/VFX/ZoneLayer`), on a plane over the
+floor (`World/ZoneLayer/CLAUDE.md`); where shapes overlap, the overlap shows every meaning they carry. Two instances,
+one static switch `Telegraph` apart: `MI_ZoneLayer_Ground` (the meaning pattern, `MF_MeaningColors`) and
+`MI_ZoneLayer_Telegraph` (the stripes, `MF_TelegraphColors`, drawn above). Everything else is shared:
 
-The mask is global, so the cut is opt-in: `CutMask` is multiplied by the material scalar `SafeSpotCut` (default 0, bound
-to `User.SafeSpotCut`). Only the hazard that uploads the spots sets it to 1 on its own component (`ULateralWavePattern`);
-every other beam on the same systems (Moira, sacrifice, hex sweep, channel windups) stays whole while a mask is live.
+| Function | Does |
+|---|---|
+| `MF_ZoneShapeDistance` | Signed distance to one shape's outline (negative inside) + distance from its core + the core's distance to the outline, by shape ordinal |
+| `MF_ZoneLayerCoverage` | Loops the `ZoneCount` slots of the slot texture for one layer: `ColorMask` (union of covering slots' bits), `Counts` (how many slots cover the pixel, per colour of the first four set bits), `Covered`, `Shade`, `Outline` + `OutlineColorIndex` |
+| `MF_ZoneMaskColors` | `ColorMask` + `Counts` → `ColorCount` + `Color0`–`3`: the first four set bits in ordinal order, read from the palette texture, each scaled by its own stack brightness; `OutlineColorIndex` → `OutlineColor` |
+| `MF_SafeSpotCut` | `CutMask` of the mask MPC (below), fed to the coverage loop for slots flagged `SafeSpotCut` |
+
+- Shape maths is HLSL in one place, `AI/Python/Material/zone_layer_hlsl.py`, pasted by the builder into the Custom
+  nodes of `MF_ZoneShapeDistance`, `MF_ZoneLayerCoverage` and `MF_ZoneMaskColors`: a loop cannot call a graph
+  function. A new shape is one branch there.
+- Look knobs on the master, set per instance: `FillOpacity` (the outline is opaque), `FillBrightness`, and
+  `SingleColorShade` for the telegraph stripes.
+- Brightness per colour: `1 + StackBrightness × (Count − 1)`, clamped to `StackBrightnessMax` (`MPC_MeaningColors`), applied
+  to that colour before the pattern picks: two heal zones under a shield beam brighten the heal bands only.
+- More than four meanings at one pixel: the first four by ordinal show.
+- Same loop, after the colours: fill shade, darkened by `FillShade` wherever a covering slot's `Fill` has grown from its
+  core (darkest wins), then each slot's outline stroke (`OutlineWidth`, the slot's first colour) over everything in
+  its layer. No pulse.
+
+## Safe spots
+
+The zone layer cuts a hazard's safe spots out of its shape: `MF_SafeSpotCut` reads the 8 slots of `MPC_MaskedArea`
+(`SafeSpot/CLAUDE.md` "Mask") and returns `CutMask`, 1 where a spot shadows the pixel. A spot is a location with a
+radius, in one of two modes: `Disc` (default), a round hole around the location; `Lane`, the beam cut across its width
+wherever the location projects perpendicularly, so only the parts between the lanes stay lit (lateral wave). Unused
+slots (alpha 0) cut nothing. The function reads world position: the shape's own orientation plays no part.
+
+The mask is global, so the cut is opt-in per slot: only a slot flagged `SafeSpotCut` (set by the hazard that uploads
+the spots, `ULateralWavePattern`) covers nothing where `CutMask` is 1, outline and shade included.
+Every other shape stays whole while a mask is live.
 
 `MF_SafeSpotCut` holds only what the 8 slots share: the mode flags, the lane's right-hand direction, the radius, and
 the `Max` of its slots. The slot's maths is `MF_SafeSpotSlotCut`, called once per slot with that slot's `Spot`.
@@ -157,13 +180,16 @@ keeps its callers' wires.
 
 ## Keeping a graph readable
 
-Model: `M_MAskedArea` (`/Game/Art/VFX/Abilities/Enemies/PillarsAOE`): one function call per slot in its own row, rows
-evenly spaced, one column per step, wide gaps, the shared radius read through a named reroute (a material variable).
+Model: `M_MAskedArea` (`/Game/Art/VFX/Abilities/Enemies/PillarsAOE`): one function call per slot in its own row, one
+column per step, the shared radius read through a named reroute (a material variable).
 
-- Flow left to right, one column per step, outputs at the far right. No wire goes back.
+- Flow left to right, one column per step, the root node at the far right. No wire goes back.
 - No node box over another and no wire over a box, as few wires over each other as the graph allows. Nodes sit close
   where little connects them and apart where much does: the gap after a column is small for one wire and grows with
   every wire leaving it, so a fan of wires has room to spread. Rows are a small gap apart.
+- Wires as straight as possible: a source sits level with the pin it feeds, so the wire is a horizontal line; a wire
+  that ends higher comes from a node placed higher (no crossing for nothing). A long value runs flat across the
+  columns and bends only at its end, never in stairs or S curves.
 - No useless box: a mask of a mask is one mask of the source, a node nothing reads is deleted.
 - A function wherever a block is needed (see "Writing a function"); a call is one node, so the graph reads as the
   steps it takes.

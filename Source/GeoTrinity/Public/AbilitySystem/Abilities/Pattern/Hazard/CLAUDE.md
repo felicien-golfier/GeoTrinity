@@ -16,8 +16,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 - Fired from `Payload.Origin` along `Yaw` for `BeamDuration`; hex boss ships two BP children (sweep laser, tile-carving ray).
 - Hits on entering (swept angle per target, `AnglesFromBeam`); per-second effects tick on everyone inside.
 - `GetBeamOrigin()` + `MoveBeamVfx(SpentTime)` = the single aim path (wind-up and live); `MoveBeamVfx` is virtual, the VFX component protected, for children that draw something else with the same beam (lateral wave).
-- `PreviewSystem` (`GameDataSettings::BeamPreviewSystem`) → `BeamVfxSystem` via `GeoNiagaraParams::ApplySwappableAsset`.
-- VFX component spawned deactivated in `OnCreate`, reused; graceful `Deactivate` on natural end, `DeactivateImmediate` on force-stop.
+- One `UGeoZoneVisualComponent` (`Beam`) created in `OnCreate`, reused: layer `Telegraph` during the wind-up (fill = wind-up spent), `Ground` live; hidden at the end, natural or forced (no fade).
 - `OverlapMode` (`ETargetOverlapMode`, default Automatic = centre-only for Enemy source).
 - Debug: `Geo.DrawBeamBorder`.
 
@@ -40,13 +39,13 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 - Spots: `FSafeSpot` (`ESafeSpotShadow::Lane`, direction = the travel) gathered every tick from `SafeSpotSources` (default `Fixed` + `Adds`; `SafeSpot/CLAUDE.md`), radius `SpotRadius`.
   - `Fixed` = `FLateralWavePatternData::SafeSpotOffsets` (X along / Y across the travel, from the origin), given by whoever fires the wave (`GeoActivateAbilityAction::PatternData`, `Base/CLAUDE.md` "PatternAbility"); replicated with the pattern start, so every machine draws them. Fired with no data (state tree) = no fixed spot.
   - `Adds` = living adds of the caster's arena; server only (the tutorial is solo). None in a room without adds.
-- Visual = the base beam, one component, the `Lane` spots cut by the beam materials: wind-up = the whole rectangle (Ray Zone Indicator, `M_ZoneIndicatorRay`), live = the band (`BeamVfxSystem`, `M_PulseBeam`). `MoveBeamVfx` lays the rectangle, uploads `GetSafeSpots()` (+ `TravelYaw` direction) to the mask MPC and sets `User.SafeSpotCut = 1` on its component every tick, so a dead add's lane closes at once. The materials read the mask (`SafeSpot/CLAUDE.md` "Mask"; `AI/Materials.md` "Safe spots on a beam").
+- Visual = the base beam, one component, the `Lane` spots cut by the zone layer: wind-up = the whole rectangle, live = the band. `MoveBeamVfx` lays the rectangle, uploads `GetSafeSpots()` (+ `TravelYaw` direction) to the mask MPC and sets `bSafeSpotCut` on its component every tick, so a dead add's lane closes at once (`SafeSpot/CLAUDE.md` "Mask"; `AI/Materials.md` "Safe spots").
 - Mask MPC: own `MaskMaterialParameterCollection` (`MPC_MaskedArea`); cleared at `InitPattern` and `EndPattern`.
 - Base hooks: `MoveBeamVfx` virtual; the child overrides `MoveBeamVfx` (rectangle + mask), `IsInHazard` (band + spots), `GetHazardDuration`, `InitPattern` / `EndPattern` (mask clear).
 - Hit test server only, lag-compensated by the base (spots read at judge time). Hit test and mask read the same `GetSafeSpots()`.
 
 ## SpawnPillar
 - Zone locations come from `FSpawnPillarPatternData` (ability's `CreatePatternData`).
-- Server: pillars spawn in `InitPattern` with `PillarParams.InitDuration` = wind-up left (`StartDelay - TravelTime`), so they drop in during the telegraph, `bAutoFinishInit` false: inert (not a hazard target) until `EndPattern` (hazard judged) calls `FinishInit()`. A force-stop expires them (`Expire(true)`).
+- Server: pillars spawn in `InitPattern` with `PillarParams.InitDuration` = wind-up left (`StartDelay - TravelTime`), so they drop in during the telegraph, `bAutoFinishInit` false: inert (not a hazard target) until the natural `EndPattern` (server: after `HazardJudge.IsOver`, the lag-compensated judge done) calls `FinishInit()`. A force-stop expires them (`Expire(true)`).
 - Effects per hostile when the base hazard judge reaches it; the pattern ends once it `IsOver`.
-- `DelayGameplayCueTag` countdown cue per spawn point; clients end in `StartPattern`.
+- Base `InitCue` = countdown telegraph, `DirectionCue` too: one per spawn point (`ExecuteGameplayCue` override), radius `SpawningZoneSize`; clients end in `StartPattern`.

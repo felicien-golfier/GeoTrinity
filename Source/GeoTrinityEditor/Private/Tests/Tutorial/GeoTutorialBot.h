@@ -11,7 +11,9 @@
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
 struct FGameplayAbilitySpec;
+struct FOnAttributeChangeData;
 class AEnemyCharacter;
+class AGeoCharacter;
 class AGeoEffectZone;
 class AGeoEncounter;
 class AGeoPlayerController;
@@ -44,6 +46,8 @@ namespace GeoTutorial
 	constexpr float TimeDilation = 8.f;
 	constexpr double DefaultStageTimeoutSeconds = 90.;
 	constexpr float PawnZ = 60.f;
+	/** Health log lines a failure carries (FGeoTutorialBot::GetHealthLog). */
+	constexpr int32 HealthLogTailCount = 12;
 
 	inline float RoomCentreX(int32 const Room)
 	{
@@ -178,6 +182,18 @@ public:
 	/** Turns the player pawn's invincibility on (true) or off (false). */
 	void SetInvincible(bool bInvincible) const;
 
+	// --- Health log -----------------------------------------------------------------------------------------------
+
+	/**
+	 * From the next frame on, logs every health change of each enemy tagged Tag and the change that kills the player's
+	 * pawn (its health is refilled every frame), with its cause: effect, instigator, causer, ability, or set directly
+	 * (the bot, or code outside an effect). Also each death, revive, and removal while alive (an arena wipe). Written
+	 * to run.log as it happens and kept for GetHealthLog; a stage timeout carries its tail.
+	 */
+	void WatchHealth(FName Tag);
+	/** The last Count lines of the health log, oldest first, one per line; empty when nothing was logged. */
+	FString GetHealthLog(int32 Count) const;
+
 	// --- The Cat lines and the pages ------------------------------------------------------------------------------
 
 	/** How many lines hold Fragment. */
@@ -220,11 +236,35 @@ private:
 		int32 Count = 0;
 	};
 
+	struct FHealthWatch
+	{
+		TWeakObjectPtr<AGeoCharacter> Character;
+		TWeakObjectPtr<UGeoAbilitySystemComponent> BoundASC;
+		FDelegateHandle Handle;
+		FString Name;
+		/** False: only the change that empties its health is logged. */
+		bool bEveryChange = true;
+		bool bDead = false;
+		/** Destroyed: unbound, nothing more to log. */
+		bool bGone = false;
+		float Health = 0.f;
+		/** Where it last stood alive. */
+		FVector Location = FVector::ZeroVector;
+	};
+
 	void ServeUI();
 	void CheckEntryPadsClosed();
 	void KeepPlayerHealthy() const;
 	void UpdateWatches();
 	void Unbind(FWatch& Watch);
+	/** Logs the deaths, revives and removals of the watched characters, then binds the newly spawned ones. */
+	void UpdateHealthWatches();
+	void BindHealth(AGeoCharacter* Character, bool bEveryChange);
+	void UnbindHealth(FHealthWatch& Watch);
+	/** Writes Line to run.log and the health log, stamped with the play world's time. */
+	void AddHealthLog(FString const& Line);
+	/** The effect, instigator, causer and ability behind Data, or that it was set directly. */
+	static FString DescribeHealthChange(FOnAttributeChangeData const& Data);
 	/** Logs the Cat lines of World, the play world, and stops logging those of the one before. */
 	void SubscribeToLines(UWorld* World);
 	/** The world-URL jump without the travel: the pawn onto Room's player start, then its encounter's arrival reset. */
@@ -238,6 +278,9 @@ private:
 	bool bEntryPadWasOpen = false;
 	int32 LineCursor = 0;
 	TArray<FWatch> Watches;
+	TArray<FName> HealthTags;
+	TArray<FHealthWatch> HealthWatches;
+	TArray<FString> HealthLog;
 	TWeakObjectPtr<UWorld> LineWorld;
 	FDelegateHandle LineHandle;
 	/** Subscribes a play world as soon as it exists: a travel's first line shows before the next frame. */

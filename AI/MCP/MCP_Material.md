@@ -119,15 +119,24 @@ anything; engine node pin names are not checked. See `AI/Python/Material/dry_run
 
 ## Hard-edge fill
 
-`Step(Y, X)` returns 1 where `X >= Y` — no smoothstep, no divide, so a fill edge stays pixel-perfect. Both zone
-indicators are built on it and both are Unlit, Additive, Two-Sided.
+`Step(Y, X)` returns 1 where `X >= Y` — no smoothstep, no divide, so a fill edge stays pixel-perfect.
 
-- **Circle** (`M_ZoneIndicator`): centre the UV to `[-1,1]` and take its length as the distance, 0 at the centre
-  and 1 at the edge. The ring is a `Step` band just inside 1, the fill a `Step` of the distance against the fill
-  parameter; opacity is their max, emissive each colour times its own mask. As shipped it exposes one
-  `FillOpacity` scalar with the colours baked into the graph.
-- **Ray** (`M_ZoneIndicatorRay`): the same over `abs((u - 0.5) * 2)`, so the fill grows from the centre to both
-  side edges and the thin lines mark the two outer edges as the always-visible extent. Parameters are
-  `FillOpacity` (drive 0→1 to telegraph), `LineThickness`, `FillColor` and `LineColor`.
+- **Circle**: centre the UV to `[-1,1]` and take its length as the distance, 0 at the centre and 1 at the edge. The
+  ring is a `Step` band just inside 1, the fill a `Step` of the distance against the fill parameter; opacity is
+  their max, emissive each colour times its own mask.
+- **Ray**: the same over `abs((u - 0.5) * 2)`, so the fill grows from the centre to both side edges.
 
-`M_HealingZone` uses the same pattern Masked rather than Additive, with a duration scalar.
+## Custom (HLSL) nodes
+
+- A Custom node builds its pins in the post-change notification of its `inputs` and `additional_outputs`: set
+  both with the notify forced to always. With additional outputs, the main output's pin is `return`.
+- `CustomInput` / `CustomOutput` take no constructor keywords (their members are not Blueprint-visible): build
+  one, then set each member.
+- The code is a function body: a function is declared as a method of a struct defined in it.
+- A texture object wired to an input arrives as a `Texture2D`: `Name.Load(int3(x, y, 0))` reads a raw texel, no
+  filter, no UV maths (the zone layer's slot and palette textures).
+- The editor asset library loads project content only: an `/Engine` texture is loaded with the plain load call.
+- A material instance's static switch is set through the editing library's instance call, then the instance is
+  updated.
+
+Toolkit: `custom()` in `AI/Python/Material/material_graph_authoring.py`; model: `make_zone_layer_materials.py`.

@@ -8,6 +8,7 @@
 #include "GeoEffectZone.generated.h"
 
 class UGeoAbilitySystemComponent;
+class UGeoZoneVisualComponent;
 
 /**
  * Base class of every zone: an area that applies a configurable set of effects to actors standing inside its capsule.
@@ -15,7 +16,8 @@ class UGeoAbilitySystemComponent;
  * ability through FDeployableData, which supplies all of that plus a life-drain duration to expire on. The effects and
  * Params.Attitude are what build a healing zone (heal effect, Friendly attitude) or a damage zone (damage effect,
  * Hostile attitude), so a spawned zone needs no Blueprint of its own beyond the project-wide one in
- * UGameDataSettings::DefaultZoneClass — Params.Color is what tells the two apart on screen. Params.GrowToSize above 0
+ * UGameDataSettings::DefaultZoneClass — Params.Color is what tells the two apart on screen, drawn by ZoneVisual on the
+ * zone layer (World/ZoneLayer/CLAUDE.md). Params.GrowToSize above 0
  * grows it from Size over Params.GrowSeconds, then it stays: every machine grows it on the server clock from the
  * server's BeginPlay (GrowthStartServerTime), so a client that receives the zone late draws the radius the server
  * judges.
@@ -30,20 +32,22 @@ class GEOTRINITY_API AGeoEffectZone : public AGeoDeployableBase
 	GENERATED_BODY()
 
 public:
-	/** Disables damage on this actor so only its own life drain can end it. */
+	/** Disables damage on this actor so only its own life drain can end it; creates ZoneVisual; Color starts Neutral.
+	 */
 	AGeoEffectZone(FObjectInitializer const& ObjectInitializer);
 
 	/** Stores the spawner's data: its EffectDataArray and Params replace every Details-panel field. */
 	virtual void InitInteractable(FInteractableActorData* InputData) override;
 	/** Registers Data and GrowthStartServerTime (COND_InitialOnly) so clients can size, grow and tint the zone. */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	/** Advances the growth (Data.Params.GrowToSize above 0) and resizes the zone. */
+	/** Advances the growth (Data.Params.GrowToSize above 0) and resizes the zone; fills ZoneVisual with the life spent.
+	 */
 	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	virtual FDeployableData const* GetData() const override { return &Data; }
 
-	/** Sizes and tints the zone so a hand-placed one shows its real extent and colour in the viewport. */
+	/** Sizes and colours the zone so a hand-placed one shows its real extent and colours in the viewport. */
 	virtual void OnConstruction(FTransform const& Transform) override;
 	/**
 	 * Fills Data from the Details panel and self-initializes GAS when no spawner did it (hand-placed zone).
@@ -60,7 +64,7 @@ protected:
 	 * in, never written after spawn) grown toward Data.Params.GrowToSize by GrowthAlpha. */
 	float GetRadius() const;
 
-	/** Matches the capsule and the meshes to GetRadius(). */
+	/** Matches the capsule and ZoneVisual to GetRadius(). */
 	void ApplyRadius() const;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Data)
@@ -69,6 +73,10 @@ protected:
 	/** Server time of the server's BeginPlay, the growth's start. */
 	UPROPERTY(Replicated)
 	float GrowthStartServerTime = 0.f;
+
+	/** The zone's circle on the zone layer, Ground. */
+	UPROPERTY(VisibleAnywhere, Category = "GeoEffectZone")
+	TObjectPtr<UGeoZoneVisualComponent> ZoneVisual;
 
 private:
 	// Hand-placed zones only — a spawned zone reads all of these off the FDeployableData its ability filled in.
@@ -84,7 +92,7 @@ private:
 	/** Effect level used when applying the effects. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone", meta = (ClampMin = "1"))
 	int32 Level = 1;
-	/** Colour this zone draws in. */
+	/** Colour this zone draws in: a palette slot (EGeoColor::Override has none to draw), Neutral until set. */
 	UPROPERTY(EditAnywhere, Category = "GeoEffectZone")
 	FGeoColorParam Color;
 	/** Further colours this zone draws beside Color, one per extra meaning it carries. */
@@ -108,7 +116,6 @@ private:
 	UFUNCTION()
 	void OnRep_Data();
 
-	/** Writes Data.Params.Color into the outline, and Color then its secondary colours into the fill colours, on every
-	 * mesh of the zone, with how many fill colours that makes (GeoMaterialParams::Zone*). */
+	/** Gives ZoneVisual Data.Params.Color and its secondary colours. */
 	void ApplyColor() const;
 };

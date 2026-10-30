@@ -11,17 +11,11 @@ registry before quoting it — a wrong path fails silently in Python, which load
 | Asset | Path |
 |---|---|
 | Turret recall beam (note the `Rurret` typo) | `/Game/Art/VFX/Assets/NS_Square_RurretRecall_Beam` |
-| Every beam: Moira, sacrifice, hex boss sweep and ray | `/Game/Art/VFX/Generic/Niagara/NS_Beam` |
-| Every beam's windup telegraph (`UGameDataSettings::RayIndicatorSystem`) | `/Game/Art/VFX/Generic/Niagara/NS_Ray_ZoneIndicator` |
 | Glow material instance (additive, unlit) | `/Game/Art/VFX/Generic/Materials/MatInstances/MI_Glow01` |
 | Unlit particle material | `/Game/Art/VFX/Generic/Materials/M_Particle_Unlit_Advanced` |
 | Clock-wipe mask function | `/Game/Art/VFX/Generic/Materials/Functions/MF_DurationWipe` |
-| Zone indicator (ring, fill disc growing from the centre, meaning colours) | `/Game/Art/VFX/AOE/M_ZoneIndicator` |
-| Every round zone telegraph (`UGameDataSettings::RoundIndicatorSystem`, also spawned by `GC_ZoneIndicator`) | `/Game/Art/VFX/Generic/Niagara/NS_Round_ZoneIndicator` |
 | Marked circle (`GC_Marked`): the zone indicator as it was, one colour and stripes | `/Game/Art/VFX/AOE/M_MarkedCircle` |
-| Zone indicator ray (frame, fill growing from the middle line, meaning colours) | `/Game/Art/VFX/AOE/M_ZoneIndicatorRay` |
-| Pulse circle (outline ring + inward pulsing fill) | `/Game/Art/VFX/AOE/M_PulseCircle` |
-| Pulse beam (outline frame, pulse running to target, meaning colours) | `/Game/Art/VFX/AOE/M_PulseBeam` |
+| Zone layer: every zone, beam, telegraph; overlaps mix (`AI/Materials.md` "Zone layer") | `/Game/Art/VFX/ZoneLayer/M_ZoneLayer`, `MI_ZoneLayer_Ground`, `MI_ZoneLayer_Telegraph` |
 
 Duplicate a system by loading the object and handing it to the asset tools' duplicate call — the editor asset
 library's own duplicate silently returns nothing for a Niagara system, and a raw file copy leaves the package
@@ -35,24 +29,19 @@ outside the editor.
 ## Custom Primitive Data
 
 Slot 0 is the deployable duration wipe: `AGeoDeployableBase::Tick` writes `1 - GetDurationPercent()` onto every
-visual mesh and `M_PulseCircle`'s `DurationSpent` reads it back with `bUseCustomPrimitiveData`, so one shared
-material serves every zone instead of a per-actor MID.
+visual mesh. Zones have no mesh: their fill reaches the zone layer through `UGeoZoneVisualComponent::Fill`
+(`World/ZoneLayer/CLAUDE.md`).
 
 Slots 1–2 are the arena centre: `AGeoArena` writes its XY onto each of its `Floors`, and the floor looks centred on
 an arena read it through their `ArenaCenter` vector parameter (see the background lattice in `AI/Materials.md`).
 
 The value is the fraction **spent**, never remaining: custom primitive data nobody writes reads 0, so
-"remaining" would render every unwritten primitive as fully drained. `PulseCircleInst` on `BP_DamageZone` is
-exactly that case — a `GeoEffectZone`, not a deployable, so nothing writes its slot.
+"remaining" would render every unwritten primitive as fully drained (a hand-placed zone: nobody writes its slot).
 
 Claiming a new slot means picking an unused index and declaring it in `GeoMaterialParams`
 (`Source/GeoTrinity/Public/Tool/Visual/GeoNiagaraParams.h`), beside every other slot and every material and collection
 parameter name C++ writes; the material addresses the slot by index, so nothing warns when two features collide on
 one.
-
-`M_PulseBeam` carries the same readout under the same name but as a plain scalar, because it is driven from a
-Niagara emitter: a renderer binds material parameters, and custom primitive data belongs to a primitive
-component, which a sprite is not.
 
 ## Buff VFX
 
@@ -318,19 +307,12 @@ cannot be called.
 
 ## Meaning Colours
 
-`NS_Beam`, `NS_Ray_ZoneIndicator` and `NS_Round_ZoneIndicator` carry `User.Color`, `User.Color2`–`4` and
-`User.ColorCount`, which the sprite renderer binds to the same-named material parameters
-(`AI/Python/Niagara/material_user_bindings.py`), so each effect draws through its own dynamic material instance.
-`GeoNiagaraParams::SetMeaningColors` writes them, from an owner's colour plus its secondary colours:
-`UGeoBeamVFXComponent` on the live beam, `UBeamPattern` on whichever of its two systems its one component is showing,
-`UGeoIndicatorComponent::SpawnIndicator` on every ray and round telegraph it draws (a channel beam's windup, a zone
-pattern's circle), so a telegraph announces every meaning of what it announces, and `GeoASLib::SetCueMeaningColors`
-from a cue Blueprint, out of the cue's `FGeoCueParam` colour and `SecondaryColors`. A cue's secondary colours travel in its effect context
+Zones, beams and telegraphs are not Niagara: the zone layer draws them (`AI/Materials.md` "Zone layer"). A Niagara
+system that shows an ability (start / stop) is decoration on top and carries its own colours. A cue Blueprint's
+system takes the cue's `FGeoCueParam` colour and `SecondaryColors` through `GeoASLib::SetCueMeaningColors`
+(`User.Color`, `User.Color2`–`4`, `User.ColorCount`); a cue's secondary colours travel in its effect context
 (`FGeoGameplayEffectContext`), since the cue's own level field replicates in five bits. The devastating wave keeps its
 own system and one colour.
-
-The beam's particle colour still carries the emitter's intro and outro fade, so `M_PulseBeam` scales every colour by
-how far the particle colour has faded from `Color` (`MF_ColorScale`) rather than reading the particle colour itself.
 
 ## Beam Wiring by User Parameter
 

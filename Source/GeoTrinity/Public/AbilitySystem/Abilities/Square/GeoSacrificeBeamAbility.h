@@ -31,8 +31,8 @@ public:
 	UGeoSacrificeBeamAbility();
 
 protected:
-	/** Arms the detonation (DetonateReadyEffect) and binds the redirect to AGeoGameState::OnIncomingDamage (server), then
-	 * starts the channel. */
+	/** Arms the detonation (DetonateReadyEffect) and binds the redirect to AGeoGameState::OnIncomingDamage (server),
+	 * then starts the channel. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 	/** Unbinds the redirect and removes all sacrifice marks (server) before calling Super. */
 	virtual void EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -49,9 +49,6 @@ protected:
 	/** Returns FriendlyOrNeutral so the scan marks only allies and neutral actors, never enemies. */
 	virtual uint8 GetScanAttitudeMask() const override { return TeamAttitudeMask::FriendlyOrNeutral; }
 
-	/** Returns MaxChannelDuration — the channel ends at this cap even when no detonation fires. */
-	virtual float GetBeamDuration() const override;
-
 private:
 	/**
 	 * Server, AGeoGameState::OnIncomingDamage listener. Takes over what is left of the hit (Damage - SparedDamage) when
@@ -63,9 +60,9 @@ private:
 								float Damage, float& SparedDamage);
 
 	/**
-	 * Server: adds Damage to the Square's SacrificeValue and splits it across its alive walls + the Square. SourceAsc is
-	 * the original damage dealer, kept as the source of the redirect shares so the Square's own damage stats never scale
-	 * them.
+	 * Server: adds Damage to the Square's SacrificeValue and splits it across its alive walls + the Square. SourceAsc
+	 * is the original damage dealer, kept as the source of the redirect shares so the Square's own damage stats never
+	 * scale them.
 	 */
 	void RedirectCapturedDamage(float Damage, UAbilitySystemComponent* SourceAsc);
 	/** Server: removes the sacrifice mark GE from every tracked victim. */

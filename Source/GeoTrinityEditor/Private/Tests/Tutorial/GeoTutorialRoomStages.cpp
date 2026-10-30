@@ -180,13 +180,19 @@ namespace GeoTutorialStages
 		return FindFirstLiving(Bot, MinibossTag);
 	}
 
-	/** The Miniboss ally's health ratio; an ally that died fails the test instead of crashing it. */
+	/** The Miniboss ally's health ratio; an ally that died fails the test, with the health log saying why, instead of
+	 * crashing it. */
 	void SetAllyRatio(FGeoTutorialBot& Bot, float const Ratio)
 	{
 		AEnemyCharacter* const Ally = FindFirstLiving(Bot, MinibossAllyTag);
-		if (Bot.Test.TestNotNull(TEXT("The Miniboss ally is alive"), Ally))
+		if (Ally)
 		{
 			FGeoTutorialBot::SetHealthRatio(Ally, Ratio);
+		}
+		else
+		{
+			Bot.Test.AddError(FString::Printf(TEXT("The Miniboss ally is not alive. Last health log:\n%s"),
+											  *Bot.GetHealthLog(GeoTutorial::HealthLogTailCount)));
 		}
 	}
 
@@ -1153,6 +1159,7 @@ namespace GeoTutorialStages
 	/** The boss and the fight running: what every Miniboss branch starts from. */
 	void AddMinibossFightStages(FGeoTutorialBot& Bot)
 	{
+		Bot.WatchHealth(MinibossAllyTag);
 		Bot.AddLineStage(TEXT("Miniboss: the intro line"), MinibossIntroLine);
 		Bot.AddStage(TEXT("Miniboss: the boss stands and fires the salve"),
 					 [&Bot](bool)

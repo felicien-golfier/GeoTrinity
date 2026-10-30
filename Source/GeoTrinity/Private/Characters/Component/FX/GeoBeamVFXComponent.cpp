@@ -3,10 +3,8 @@
 #include "Characters/Component/FX/GeoBeamVFXComponent.h"
 
 #include "Net/UnrealNetwork.h"
-#include "NiagaraComponent.h"
-#include "NiagaraSystem.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoBeamVFXComponent::UGeoBeamVFXComponent()
@@ -15,44 +13,34 @@ UGeoBeamVFXComponent::UGeoBeamVFXComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UGeoBeamVFXComponent::CreateNiagaraComponent()
-{
-	if (!IsValid(NiagaraComponent) && BeamSystem)
-	{
-		NiagaraComponent = NewObject<UNiagaraComponent>(GetOwner());
-		NiagaraComponent->SetAutoActivate(false);
-		NiagaraComponent->SetAsset(BeamSystem);
-		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
-		NiagaraComponent->RegisterComponent();
-		NiagaraComponent->AttachToComponent(GetOwner()->GetRootComponent(),
-											FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		// BeamState may already hold live values: on clients its RepNotify can fire before this one (declaration
-		// order), and the component can arrive via replication after the ability fired.
-		ApplyBeamState();
-	}
-}
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// VFX is cosmetic: spawn on every rendering machine including the listen-server host; only the dedicated
-	// server (no viewport) skips it.
+	// Cosmetic: drawn on every rendering machine including the listen-server host; only the dedicated server skips it.
 	if (GeoLib::IsDedicatedServer(GetWorld()))
 	{
 		return;
 	}
 
-	CreateNiagaraComponent();
+	ZoneVisual = NewObject<UGeoZoneVisualComponent>(GetOwner());
+	ZoneVisual->Shape.Shape = EGeoZoneShape::Beam;
+	// BeamState and ColorMask may already hold live values: the component can arrive via replication after the
+	// ability fired.
+	ApplyBeamState();
+	ZoneVisual->RegisterComponent();
+	ZoneVisual->AttachToComponent(GetOwner()->GetRootComponent(),
+								  FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
-	if (NiagaraComponent)
+	if (ZoneVisual)
 	{
-		NiagaraComponent->DestroyComponent();
-		NiagaraComponent = nullptr;
+		ZoneVisual->DestroyComponent();
+		ZoneVisual = nullptr;
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -65,26 +53,21 @@ void UGeoBeamVFXComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(UGeoBeamVFXComponent, BeamState);
 	// Not COND_InitialOnly: the component is added dynamically (OnGiveAbility), after the owning actor's channel
 	// already sent its initial bunch — InitialOnly properties would then never reach existing clients.
-	DOREPLIFETIME(UGeoBeamVFXComponent, BeamSystem);
-	DOREPLIFETIME(UGeoBeamVFXComponent, BeamColors);
+	DOREPLIFETIME(UGeoBeamVFXComponent, ColorMask);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const Width, float const Length,
-										float const LifeTime)
+void UGeoBeamVFXComponent::SetBeamState(bool const bActive, float const HalfWidth, float const Length)
 {
-	BeamState = {bActive, Width, Length, LifeTime};
+	BeamState = {bActive, HalfWidth, Length};
 	// Apply locally too: the listen-server host renders but never receives OnRep for its own writes.
 	ApplyBeamState();
 }
 
-void UGeoBeamVFXComponent::SetBeamColors(TArray<FLinearColor> Colors)
+void UGeoBeamVFXComponent::SetBeamColors(FGeoColorParam const& Color, TArray<FGeoColorParam> const& SecondaryColors)
 {
-	BeamColors = MoveTemp(Colors);
-	if (!GeoLib::IsDedicatedServer(this))
-	{
-		OnRep_BeamColors();
-	}
+	ColorMask = GeoZoneLayer::MakeColorMask(Color, SecondaryColors);
+	ApplyBeamState();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -93,39 +76,20 @@ void UGeoBeamVFXComponent::OnRep_BeamState() const
 	ApplyBeamState();
 }
 
-void UGeoBeamVFXComponent::OnRep_BeamColors() const
+void UGeoBeamVFXComponent::OnRep_ColorMask() const
 {
-	if (NiagaraComponent)
-	{
-		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
-	}
+	ApplyBeamState();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoBeamVFXComponent::ApplyBeamState() const
 {
-	// Null on the dedicated server (never spawned) — nothing to drive there.
-	if (!NiagaraComponent)
+	// Null on the dedicated server (never created) — nothing to draw there.
+	if (ZoneVisual)
 	{
-		return;
-	}
-
-	// Not IsActive(): a deactivated system stays "active" until its last particles die, which would skip the restart.
-	bool const bIsRunning = NiagaraComponent->GetRequestedExecutionState() == ENiagaraExecutionState::Active;
-	if (BeamState.bActive)
-	{
-		if (!bIsRunning)
-		{
-			NiagaraComponent->Activate(true);
-		}
-
-		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, BeamState.Lifetime);
-		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamState.Width);
-		NiagaraComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamState.Length);
-		GeoNiagaraParams::SetMeaningColors(NiagaraComponent, BeamColors);
-	}
-	else if (bIsRunning)
-	{
-		NiagaraComponent->Deactivate();
+		ZoneVisual->Shape.Length = BeamState.Length;
+		ZoneVisual->Shape.HalfWidth = BeamState.HalfWidth;
+		ZoneVisual->ColorMask = ColorMask;
+		ZoneVisual->SetZoneVisible(BeamState.bActive);
 	}
 }

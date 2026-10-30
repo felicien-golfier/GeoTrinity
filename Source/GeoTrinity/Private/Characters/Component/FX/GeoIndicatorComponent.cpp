@@ -2,25 +2,24 @@
 
 #include "Characters/Component/FX/GeoIndicatorComponent.h"
 
+#include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
-#include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraSystem.h"
 #include "Settings/GameDataSettings.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
+#include "TimerManager.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void FGeoIndicatorItem::PostReplicatedAdd(FGeoIndicatorArray const& InArraySerializer)
 {
-	NiagaraComponent = InArraySerializer.Owner->SpawnOwnIndicator(State);
+	ZoneVisual = InArraySerializer.Owner->SpawnOwnIndicator(State);
 }
 
 void FGeoIndicatorItem::PreReplicatedRemove(FGeoIndicatorArray const& /*InArraySerializer*/)
 {
-	if (IsValid(NiagaraComponent))
+	if (IsValid(ZoneVisual))
 	{
-		NiagaraComponent->DestroyComponent();
+		ZoneVisual->DestroyComponent();
 	}
 }
 
@@ -47,9 +46,9 @@ void UGeoIndicatorComponent::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
 	for (FGeoIndicatorItem const& Item : Indicators.Items)
 	{
-		if (IsValid(Item.NiagaraComponent))
+		if (IsValid(Item.ZoneVisual))
 		{
-			Item.NiagaraComponent->DestroyComponent();
+			Item.ZoneVisual->DestroyComponent();
 		}
 	}
 
@@ -62,9 +61,8 @@ int32 UGeoIndicatorComponent::AddIndicator(FGeoIndicatorState State)
 	float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
 	if (GeoLib::IsServer(GetWorld()))
 	{
-		State.StartServerTime =
-			FMath::Clamp(State.StartServerTime,
-						 ServerTime - GetDefault<UGameDataSettings>()->MaxLatencyCompensation, ServerTime);
+		State.StartServerTime = FMath::Clamp(
+			State.StartServerTime, ServerTime - GetDefault<UGameDataSettings>()->MaxLatencyCompensation, ServerTime);
 	}
 
 	float const RemainingTime = State.StartServerTime + State.Duration - ServerTime;
@@ -75,7 +73,7 @@ int32 UGeoIndicatorComponent::AddIndicator(FGeoIndicatorState State)
 
 	FGeoIndicatorItem& Item = Indicators.Items.AddDefaulted_GetRef();
 	Item.State = MoveTemp(State);
-	Item.NiagaraComponent = SpawnOwnIndicator(Item.State);
+	Item.ZoneVisual = SpawnOwnIndicator(Item.State);
 	Indicators.MarkItemDirty(Item);
 
 	int32 const Handle = Item.ReplicationID;
@@ -92,14 +90,16 @@ int32 UGeoIndicatorComponent::AddIndicator(FGeoIndicatorState State)
 
 void UGeoIndicatorComponent::RemoveIndicator(int32 const Handle)
 {
-	int32 const Index =
-		Indicators.Items.IndexOfByPredicate([Handle](FGeoIndicatorItem const& Item)
-											{ return Item.ReplicationID == Handle; });
+	int32 const Index = Indicators.Items.IndexOfByPredicate(
+		[Handle](FGeoIndicatorItem const& Item)
+		{
+			return Item.ReplicationID == Handle;
+		});
 	if (Index != INDEX_NONE)
 	{
-		if (IsValid(Indicators.Items[Index].NiagaraComponent))
+		if (IsValid(Indicators.Items[Index].ZoneVisual))
 		{
-			Indicators.Items[Index].NiagaraComponent->DestroyComponent();
+			Indicators.Items[Index].ZoneVisual->DestroyComponent();
 		}
 
 		Indicators.Items.RemoveAt(Index);
@@ -108,56 +108,61 @@ void UGeoIndicatorComponent::RemoveIndicator(int32 const Handle)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-UNiagaraComponent* UGeoIndicatorComponent::SpawnOwnIndicator(FGeoIndicatorState const& State) const
+UGeoZoneVisualComponent* UGeoIndicatorComponent::SpawnOwnIndicator(FGeoIndicatorState const& State) const
 {
 	return SpawnIndicator(this, State, State.bAttachToOwner ? GetOwner()->GetRootComponent() : nullptr);
 }
 
-UNiagaraComponent* UGeoIndicatorComponent::SpawnIndicator(UObject const* WorldContextObject,
-														  FGeoIndicatorState const& State,
-														  USceneComponent* AttachParent)
+UGeoZoneVisualComponent* UGeoIndicatorComponent::SpawnIndicator(UObject const* WorldContextObject,
+																FGeoIndicatorState const& State,
+																USceneComponent* AttachParent)
 {
-	UWorld const* const World = WorldContextObject->GetWorld();
+	UWorld* const World = WorldContextObject->GetWorld();
 	float const ElapsedTime = FMath::Max(0.f, GeoLib::GetServerTime(World, true) - State.StartServerTime);
 	if (GeoLib::IsDedicatedServer(World) || (State.Duration > 0.f && ElapsedTime >= State.Duration))
 	{
 		return nullptr;
 	}
 
-	UGameDataSettings const* const GDSettings = GetDefault<UGameDataSettings>();
-	bool const bIsRound = State.Shape == EGeoIndicatorShape::Round;
-	UNiagaraSystem* const System =
-		GDSettings->GetLoadedDataAsset(bIsRound ? GDSettings->RoundIndicatorSystem : GDSettings->RayIndicatorSystem);
-	if (!ensureMsgf(System, TEXT("%hs: no %s indicator system in Game Data Settings"), __FUNCTION__,
-					*UEnum::GetValueAsString(State.Shape)))
+	// Owned by the actor it follows, else by the world, like any free-standing effect.
+	UObject* const Outer = AttachParent ? static_cast<UObject*>(AttachParent->GetOwner()) : World;
+	UGeoZoneVisualComponent* const Component = NewObject<UGeoZoneVisualComponent>(Outer);
+	Component->Layer = EGeoZoneLayer::Telegraph;
+	Component->ColorMask = State.ColorMask;
+	if (State.Shape == EGeoIndicatorShape::Round)
 	{
-		return nullptr;
+		Component->Shape.Shape = EGeoZoneShape::Circle;
+		Component->Shape.Radius = State.Size.X;
+	}
+	else
+	{
+		Component->Shape.Shape = EGeoZoneShape::Beam;
+		Component->Shape.Length = State.Size.X;
+		Component->Shape.HalfWidth = State.Size.Y;
 	}
 
-	UNiagaraComponent* const Component =
-		AttachParent
-		? UNiagaraFunctionLibrary::SpawnSystemAttached(System, AttachParent, NAME_None, State.Location,
-													   FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset,
-													   /*bAutoDestroy*/ true, /*bAutoActivate*/ false)
-		: UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContextObject, System, State.Location,
-														 FRotator::ZeroRotator, FVector(1.f), /*bAutoDestroy*/ true,
-														 /*bAutoActivate*/ false);
-	if (Component)
+	Component->SetTimedFill(State.StartServerTime, State.Duration);
+	if (AttachParent)
 	{
-		Component->SetVariableFloat(GeoNiagaraParams::Lifetime, State.Duration);
-		if (bIsRound)
-		{
-			Component->SetVariableFloat(GeoNiagaraParams::Radius, State.Size.X);
-		}
-		else
-		{
-			Component->SetVariableFloat(GeoNiagaraParams::BeamLength, State.Size.X);
-			Component->SetVariableFloat(GeoNiagaraParams::BeamWidth, State.Size.Y);
-		}
+		Component->SetupAttachment(AttachParent);
+		Component->SetRelativeLocation(State.Location);
+	}
+	else
+	{
+		Component->SetWorldLocation(State.Location);
+	}
 
-		GeoNiagaraParams::SetMeaningColors(Component, State.Colors);
-		Component->Activate();
-		Component->AdvanceSimulationByTime(ElapsedTime, World->GetDeltaSeconds());
+	Component->RegisterComponentWithWorld(World);
+	if (State.Duration > 0.f)
+	{
+		FTimerHandle EndTimerHandle;
+		World->GetTimerManager().SetTimer(EndTimerHandle,
+										  FTimerDelegate::CreateWeakLambda(Component,
+																		   [Component]
+																		   {
+																			   Component->DestroyComponent();
+																		   }),
+										  State.Duration - ElapsedTime, false);
 	}
 
 	return Component;

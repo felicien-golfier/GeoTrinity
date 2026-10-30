@@ -11,6 +11,7 @@ INPUT_TYPES = {
     "Vector2": unreal.FunctionInputType.FUNCTION_INPUT_VECTOR2,
     "Vector3": unreal.FunctionInputType.FUNCTION_INPUT_VECTOR3,
     "Vector4": unreal.FunctionInputType.FUNCTION_INPUT_VECTOR4,
+    "Texture2D": unreal.FunctionInputType.FUNCTION_INPUT_TEXTURE2D,
     "MaterialAttributes": unreal.FunctionInputType.FUNCTION_INPUT_MATERIAL_ATTRIBUTES,
 }
 
@@ -28,6 +29,15 @@ PIN_HEIGHT = 26
 PREVIEW_HEIGHT = 100
 NODE_PADDING = 16
 REROUTE_SIZE = 24
+
+
+def struct(cls, **members):
+    """An engine struct with members set one by one: a struct whose members Blueprint cannot see takes no keywords."""
+    value = cls()
+    for name, member in members.items():
+        value.set_editor_property(name, member)
+
+    return value
 
 
 def save(asset):
@@ -255,6 +265,21 @@ class Graph:
         node.set_editor_property("material_function", function, ALWAYS)
         for pin, source in pins.items():
             self.connect(source, node, pin)
+
+        return node
+
+    def custom(self, description, code, output_type, inputs, outputs=None):
+        """A Custom (HLSL) node: inputs maps each input name to its source, outputs each additional output name to its
+        CustomMaterialOutputType. With additional outputs, the main one is addressed as (node, "return")."""
+        node = self.node(unreal.MaterialExpressionCustom, code=code, output_type=output_type, description=description)
+        self.boxes[id(node)].label = description
+        # The node builds its pins in the post-change notification only.
+        node.set_editor_property("inputs", [struct(unreal.CustomInput, input_name=name) for name in inputs], ALWAYS)
+        node.set_editor_property("additional_outputs",
+                                 [struct(unreal.CustomOutput, output_name=name, output_type=kind)
+                                  for name, kind in (outputs or {}).items()], ALWAYS)
+        for name, source in inputs.items():
+            self.connect(source, node, name)
 
         return node
 

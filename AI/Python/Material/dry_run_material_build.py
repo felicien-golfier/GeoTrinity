@@ -88,7 +88,7 @@ def asset_for(path):
         prefixes = (("MLB_", "MaterialFunctionMaterialLayerBlend"), ("ML_", "MaterialFunctionMaterialLayer"),
                     ("MF_", "MaterialFunction"), ("MPC_", "MaterialParameterCollection"),
                     ("MI_", "MaterialInstanceConstant"), ("M_", "Material"))
-        kind = next(kind for prefix, kind in prefixes if name.startswith(prefix))
+        kind = next((kind for prefix, kind in prefixes if name.startswith(prefix)), "Texture")
         assets[path] = getattr(stand_in, kind)(path=path)
     return assets[path]
 
@@ -191,6 +191,18 @@ class MaterialEditingLibrary:
     def set_material_instance_parent(instance, parent):
         pass
 
+    @staticmethod
+    def set_material_instance_static_switch_parameter_value(instance, name, value):
+        pass
+
+    @staticmethod
+    def set_material_instance_scalar_parameter_value(instance, name, value):
+        pass
+
+    @staticmethod
+    def update_material_instance(instance):
+        pass
+
 
 stand_in = types.ModuleType("unreal")
 stand_in.__getattr__ = module_attribute
@@ -199,9 +211,10 @@ for name in ("Obj", "Paths", "EditorAssetLibrary", "AssetToolsHelpers", "SystemL
     setattr(stand_in, name, globals()[name])
 for name in ("FunctionInputType", "PropertyAccessChangeNotifyMode", "MaterialProperty", "BlendMode",
              "MaterialShadingModel", "MaterialLayerLinkState", "MaterialVectorCoordTransformSource",
-             "MaterialVectorCoordTransform"):
+             "MaterialVectorCoordTransform", "CustomMaterialOutputType", "MaterialSamplerType"):
     setattr(stand_in, name, Enum())
 stand_in.Text = str
+stand_in.load_asset = asset_for
 stand_in.ObjectIterator = lambda cls: []
 stand_in.log = print
 stand_in.MaterialExpression = engine_class("MaterialExpression")

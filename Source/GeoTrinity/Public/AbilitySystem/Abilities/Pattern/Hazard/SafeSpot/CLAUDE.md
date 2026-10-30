@@ -1,6 +1,6 @@
 # Abilities/Pattern/Hazard/SafeSpot
 
-Safe spots of a hazard: places that shield from it. One system for every boss hazard; the pattern owns the *spots* (code, deterministic), the VFX only reads them through the mask MPC below (devastating: its AOE material; lateral wave: the beam materials, `../CLAUDE.md` "LateralWave").
+Safe spots of a hazard: places that shield from it. One system for every boss hazard; the pattern owns the *spots* (code, deterministic), the VFX only reads them through the mask MPC below (devastating: its AOE material; lateral wave: the zone layer, `../CLAUDE.md` "LateralWave").
 
 | File | Role |
 |---|---|
@@ -25,7 +25,7 @@ Safe spots of a hazard: places that shield from it. One system for every boss ha
 - `FSafeSpotMask::Set(World, Mpc, Spots, LaneDirection)` writes `PillarPosWS_XX` (alpha 1 = slot used, 0 = free) / `Pillar_Radius` / `SafeSpot_ShadowMode` / `SafeSpot_LaneDirection` (`GeoMaterialParams`) for the first 8 spots (radius and shadow mode of the first, direction = the travel's unit XY, read by `Lane` only), rest logged and skipped; `Clear` = `Set` with no spots, the unused sentinel in all 8.
 - The MPC is global: `Clear` at init and end of every pattern that uses it (devastating also at start); two patterns using it at once is unsupported (one live hazard per boss).
 - Material side: the shadow mode is the material scalar `SafeSpot_ShadowMode` (the `ESafeSpotShadow` ordinal: 0 Behind, 1 Lane, 2 Disc), written with the MPC upload. For a used slot, a pixel P is cut when `Disc`: `distance(P, Spot) <= Pillar_Radius`; `Lane`: `|dot(P - Spot, Right(LaneDirection))| <= Pillar_Radius`. `MF_SafeSpotCut` (`/Game/Art/VFX/AOE/Functions`) outputs that `CutMask`; it ignores `Behind` (devastating's own material handles it).
-- Opt-in: the MPC is global, so a beam material applies `CutMask` only where its `SafeSpotCut` is 1 (`User.SafeSpotCut`, `GeoNiagaraParams::SafeSpotCut`, default 0). The pattern that uploads the spots sets it on its own VFX; every other beam ignores the mask.
-- Readers: devastating's AOE material (`Behind`), the beam materials `M_PulseBeam` / `M_ZoneIndicatorRay` (`Disc` or `Lane`, cut out of fill and outline). No used slot = nothing cut, so every other beam is untouched; a material that ignores the MPC shows no cut, damage stays right.
+- Opt-in: the MPC is global, so the zone layer applies `CutMask` only to slots flagged `SafeSpotCut` (`UGeoZoneVisualComponent::bSafeSpotCut`, default false). The pattern that uploads the spots sets it on its own shape; every other shape ignores the mask.
+- Readers: devastating's AOE material (`Behind`), the zone layer `M_ZoneLayer` (`Disc` or `Lane`, a flagged slot covers nothing where cut, outline and shade included). No used slot = nothing cut, so every other beam is untouched; a material that ignores the MPC shows no cut, damage stays right.
 - A beam pattern picks the mode by the shadow it gives its spots: the lateral wave `Lane` (+ direction), any other beam `Disc`.
 - Dedicated server never touches the MPC.

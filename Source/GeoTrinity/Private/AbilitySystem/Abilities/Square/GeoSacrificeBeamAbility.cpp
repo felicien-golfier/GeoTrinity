@@ -130,10 +130,6 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 	}
 }
 
-float UGeoSacrificeBeamAbility::GetBeamDuration() const
-{
-	return MaxChannelDuration;
-}
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoSacrificeBeamAbility::RedirectIncomingDamage(UAbilitySystemComponent& VictimASC,
 													  FGameplayEffectContextHandle const& DamageContext,

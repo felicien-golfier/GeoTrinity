@@ -6,10 +6,8 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
-#include "NiagaraComponent.h"
-#include "NiagaraSystem.h"
-#include "Settings/GameDataSettings.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 static TAutoConsoleVariable CVarDrawBeamBorder(TEXT("Geo.DrawBeamBorder"), false,
 											   TEXT("When true, draws the beam pattern's hit-scan rectangle borders"));
@@ -28,13 +26,16 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 		SweepAngle = SweepBeamAbility->GetSweepAngle();
 	}
 
-	UGameDataSettings const* const GDSettings = GetDefault<UGameDataSettings>();
-	IndicatorSystem = GDSettings->GetLoadedDataAsset(GDSettings->RayIndicatorSystem);
-
-	UNiagaraSystem* const InitialAsset = IndicatorSystem ? IndicatorSystem : BeamVfxSystem;
-	if (InitialAsset && !GeoLib::IsDedicatedServer(GetWorld()))
+	if (!GeoLib::IsDedicatedServer(GetWorld()))
 	{
-		BeamVfxComponent = SpawnPersistentVfx(InitialAsset, Owner);
+		BeamVisual = NewObject<UGeoZoneVisualComponent>(&Owner);
+		BeamVisual->SetupAttachment(Owner.GetRootComponent());
+		// Placed in world space by MoveBeamVfx, whatever the owner does.
+		BeamVisual->SetAbsolute(true, true, true);
+		BeamVisual->Shape.Shape = EGeoZoneShape::Beam;
+		BeamVisual->ColorMask = GeoZoneLayer::MakeColorMask(BeamColor, SecondaryBeamColors);
+		BeamVisual->SetZoneVisible(false);
+		BeamVisual->RegisterComponent();
 	}
 }
 
@@ -43,19 +44,13 @@ void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 {
 	Super::InitPattern(Payload, PatternData);
 
-	if (IsValid(BeamVfxComponent))
+	if (IsValid(BeamVisual))
 	{
-		// Telegraphs where the beam will land during the windup (montage Start section), TickDuringInit keeping it
-		// aimed; StartPattern swaps this to the real BeamVfxSystem once the beam actually goes live.
-		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
-											  /*bWantIndicator*/ true);
-		BeamVfxComponent->Activate(true);
-		BeamVfxComponent->AdvanceSimulationByTime(FMath::Max(TravelTime, 0.f), GetWorld()->GetDeltaSeconds());
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::Lifetime, StartDelay);
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
-		GeoNiagaraParams::SetMeaningColors(BeamVfxComponent,
-										   GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors));
+		BeamVisual->Shape.Length = BeamRange;
+		BeamVisual->Shape.HalfWidth = BeamHalfWidth;
+		BeamVisual->Layer = EGeoZoneLayer::Telegraph;
+		BeamVisual->SetTimedFill(StoredPayload.ServerSpawnTime, StartDelay);
+		BeamVisual->SetZoneVisible(true);
 	}
 }
 
@@ -83,11 +78,11 @@ FVector UBeamPattern::GetBeamOrigin(float const BossServerTime) const
 
 void UBeamPattern::MoveBeamVfx(float const SpentTime)
 {
-	if (IsValid(BeamVfxComponent))
+	if (IsValid(BeamVisual))
 	{
 		float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
-		BeamVfxComponent->SetWorldLocationAndRotation(GetBeamOrigin(ServerTime),
-													  FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f));
+		BeamVisual->SetWorldLocationAndRotation(GetBeamOrigin(ServerTime),
+												FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f));
 	}
 }
 
@@ -98,15 +93,10 @@ void UBeamPattern::TickDuringInit(float const SpentTime)
 
 void UBeamPattern::StartPattern()
 {
-	if (IsValid(BeamVfxComponent))
+	if (IsValid(BeamVisual))
 	{
-		GeoNiagaraParams::ApplySwappableAsset(BeamVfxComponent, {BeamVfxSystem, IndicatorSystem},
-											  /*bWantIndicator*/ false);
-		BeamVfxComponent->Activate(true);
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamLength, BeamRange);
-		BeamVfxComponent->SetVariableFloat(GeoNiagaraParams::BeamWidth, BeamHalfWidth * 2.f);
-		GeoNiagaraParams::SetMeaningColors(BeamVfxComponent,
-										   GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors));
+		BeamVisual->Layer = EGeoZoneLayer::Ground;
+		BeamVisual->SetTimedFill(StoredPayload.ServerSpawnTime + StartDelay, GetHazardDuration());
 	}
 
 	Super::StartPattern();
@@ -149,9 +139,9 @@ bool UBeamPattern::IsInHazard(AActor const* Target, FVector2D const Location, fl
 void UBeamPattern::OnHazardEnd()
 {
 	Super::OnHazardEnd();
-	if (IsValid(BeamVfxComponent))
+	if (IsValid(BeamVisual))
 	{
-		BeamVfxComponent->Deactivate();
+		BeamVisual->SetZoneVisible(false);
 	}
 }
 
@@ -164,9 +154,9 @@ FGameplayCueParameters UBeamPattern::FillCueParam(FGeoCueParam const& Cue, FAbil
 
 void UBeamPattern::EndPattern(bool const bForceStop)
 {
-	if (bForceStop && IsPatternActive() && IsValid(BeamVfxComponent))
+	if (IsValid(BeamVisual))
 	{
-		BeamVfxComponent->DeactivateImmediate();
+		BeamVisual->SetZoneVisible(false);
 	}
 
 	Super::EndPattern(bForceStop);

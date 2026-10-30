@@ -492,25 +492,25 @@ void UGeoAbilitySystemLibrary::SetCueMeaningColors(UNiagaraComponent* Component,
 {
 	if (ensureMsgf(Component, TEXT("%hs: no component to colour"), __FUNCTION__))
 	{
-		GeoNiagaraParams::SetMeaningColors(Component, GetCueMeaningColors(Parameters));
+		FGeoColorParam Color;
+		TArray<FGeoColorParam> SecondaryColors;
+		GetCueColors(Parameters, Color, SecondaryColors);
+		GeoNiagaraParams::SetMeaningColors(Component, GeoColor::GetMeaningColors(Color, SecondaryColors));
 	}
 }
 
-TArray<FLinearColor> UGeoAbilitySystemLibrary::GetCueMeaningColors(FGameplayCueParameters const& Parameters)
+void UGeoAbilitySystemLibrary::GetCueColors(FGameplayCueParameters const& Parameters, FGeoColorParam& OutColor,
+											TArray<FGeoColorParam>& OutSecondaryColors)
 {
-	FGeoColorParam Color;
-	Color.Color = static_cast<EGeoColor>(Parameters.GameplayEffectLevel);
-	TArray<FGeoColorParam> SecondaryColors;
+	OutColor.Color = static_cast<EGeoColor>(Parameters.GameplayEffectLevel);
 	if (FGeoGameplayEffectContext const* const Context =
 			static_cast<FGeoGameplayEffectContext const*>(Parameters.EffectContext.Get()))
 	{
 		for (EGeoColor const SecondaryColor : Context->GetSecondaryColors())
 		{
-			SecondaryColors.AddDefaulted_GetRef().Color = SecondaryColor;
+			OutSecondaryColors.AddDefaulted_GetRef().Color = SecondaryColor;
 		}
 	}
-
-	return GeoColor::GetMeaningColors(Color, SecondaryColors);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "Tool/UGeoGameplayLibrary.h"
+#include "World/ZoneLayer/GeoZoneShape.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 UGeoChannelBeamAbility::UGeoChannelBeamAbility()
@@ -39,8 +40,8 @@ void UGeoChannelBeamAbility::ActivateAbility(FGameplayAbilitySpecHandle const Ha
 		State.Shape = EGeoIndicatorShape::Ray;
 		State.bAttachToOwner = true;
 		State.Size = {GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()),
-					  GetCurrentBeamHalfWidth(Character) * 2.f};
-		State.Colors = GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors);
+					  GetCurrentBeamHalfWidth(Character)};
+		State.ColorMask = GeoZoneLayer::MakeColorMask(BeamColor, SecondaryBeamColors);
 		State.StartServerTime = StoredPayload.ServerSpawnTime;
 		State.Duration = GetFireDelay();
 		WindupIndicatorHandle = IndicatorComponent->AddIndicator(MoveTemp(State));
@@ -75,14 +76,10 @@ void UGeoChannelBeamAbility::OnGiveAbility(FGameplayAbilityActorInfo const* Acto
 		return;
 	}
 
-	if (ensureMsgf(BeamNiagaraSystem, TEXT("UGeoChannelBeamAbility: BeamNiagaraSystem is not set — assign ")))
-	{
-		UGeoBeamVFXComponent* BeamVFXComponent =
-			NewObject<UGeoBeamVFXComponent>(Avatar, UGeoBeamVFXComponent::StaticClass());
-		BeamVFXComponent->SetNiagaraSystem(BeamNiagaraSystem);
-		BeamVFXComponent->SetBeamColors(GeoColor::GetMeaningColors(BeamColor, SecondaryBeamColors));
-		BeamVFXComponent->RegisterComponent();
-	}
+	UGeoBeamVFXComponent* BeamVFXComponent =
+		NewObject<UGeoBeamVFXComponent>(Avatar, UGeoBeamVFXComponent::StaticClass());
+	BeamVFXComponent->SetBeamColors(BeamColor, SecondaryBeamColors);
+	BeamVFXComponent->RegisterComponent();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -119,9 +116,8 @@ void UGeoChannelBeamAbility::PushBeamState(ACharacter const* const Character) co
 		IsValid(Character) ? Character->FindComponentByClass<UGeoBeamVFXComponent>() : nullptr;
 	if (ensureMsgf(BeamVFXComponent, TEXT("UGeoChannelBeamAbility: BeamVFXComponent is missing on the avatar")))
 	{
-		BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character) * 2.f,
-									   GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()),
-									   GetBeamDuration());
+		BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character),
+									   GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()));
 	}
 }
 
@@ -157,12 +153,6 @@ float UGeoChannelBeamAbility::GetCurrentBeamHalfWidth(ACharacter const* Characte
 	return Character->GetCapsuleComponent()->GetScaledCapsuleRadius() / 2.f;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-float UGeoChannelBeamAbility::GetBeamDuration() const
-{
-	// By default, the ChannelBeam ability doesn't have duration. Needs to be overriden
-	return 0.f;
-}
 void UGeoChannelBeamAbility::Tick(float const DeltaTime)
 {
 	ACharacter const* const Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());

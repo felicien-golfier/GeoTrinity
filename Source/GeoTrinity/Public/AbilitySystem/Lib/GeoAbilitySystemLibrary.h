@@ -34,6 +34,7 @@ class UStatusInfo;
 struct FDeployableData;
 struct FDeployableDataParams;
 struct FExternalProjectileParams;
+struct FGeoColorParam;
 struct FGeoCueParam;
 struct FGeoGameplayEffectContext;
 /**
@@ -437,8 +438,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GeoAbilitySystemLibrary|GameplayCues")
 	static void SetCueMeaningColors(UNiagaraComponent* Component, FGameplayCueParameters const& Parameters);
 
-	/** A cue's colours, one per meaning — its palette slot, then the secondary ones its FGeoCueParam carried. */
-	static TArray<FLinearColor> GetCueMeaningColors(FGameplayCueParameters const& Parameters);
+	/** A cue's colours, one per meaning: its palette slot in OutColor, then the secondary ones its FGeoCueParam
+	 * carried.
+	 */
+	static void GetCueColors(FGameplayCueParameters const& Parameters, FGeoColorParam& OutColor,
+							 TArray<FGeoColorParam>& OutSecondaryColors);
 
 	/** Returns the status gameplay tag stored in the effect context (invalid tag when none). */
 	UFUNCTION(BlueprintPure, Category = "GeoAbilitySystemLibrary|GameplayEffects")

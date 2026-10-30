@@ -13,8 +13,8 @@ which draws the sacrifice in during the channel.
   Scatter      eight solid squares thrown off the hole's rim
 
 Local space pointing +X from the socket, lifted above the block's top face like the channel effect. The ray is
-`User.Beam_Length` long and `User.Beam_Width` is its half-width, the same pair UGeoBeamVFXComponent writes;
-the defaults are GeneralSpellDistance and the detonation's LineHalfWidth. Colour is `User.Color`, multiplied by
+`User.Beam_Length` long and `User.Beam_Width` is its half-width, the pair its base system carries; the defaults
+are GeneralSpellDistance and the detonation's LineHalfWidth. Colour is `User.Color`, multiplied by
 each layer's own brightness and re-tinted every frame.
 
 A run is `prepare()`, then the `niagara_ops` route to drop the base system's own emitter (`Explosion`) — the
