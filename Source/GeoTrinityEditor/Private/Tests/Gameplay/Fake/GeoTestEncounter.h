@@ -35,8 +35,10 @@ public:
 
 	virtual void OnDisarm_Implementation() override { ++DisarmCount; }
 
+	/** Fires the trigger directly with an optional Count, without waiting for an event. */
 	void FireNow(int32 const Count = 0) { Fire(MakePayload(Count)); }
 
+	/** Returns a payload with Count set; used by FireNow and tests that need a payload to pass to a condition. */
 	static FGeoEncounterPayload MakePayload(int32 const Count)
 	{
 		FGeoEncounterPayload Payload;
@@ -121,7 +123,9 @@ class AGeoTestCasterArena : public AGeoDummyArena
 public:
 	AGeoTestCasterArena() { BossClass = AHiddenCasterCharacter::StaticClass(); }
 
+	/** Mutable boss setup for test configuration before FinishSpawning. */
 	FGeoEnemySetup& EditBossSetup() { return BossSetup; }
+	/** Mutable start-add list for test configuration before FinishSpawning. */
 	TArray<FGeoArenaAdd>& EditStartAdds() { return StartAdds; }
 };
 
@@ -132,6 +136,7 @@ class UGeoTestCompletionListener : public UObject
 	GENERATED_BODY()
 
 public:
+	/** Counts each OnCompleted broadcast so a test can assert how many times the encounter finished. */
 	UFUNCTION()
 	void OnCompleted() { ++Completions; }
 
@@ -145,9 +150,12 @@ class AGeoTestEncounter : public AGeoEncounter
 	GENERATED_BODY()
 
 public:
+	/** Mutable step list so a test can push steps and rules before calling Start. */
 	TArray<FGeoEncounterStep>& EditSteps() { return Steps; }
 
+	/** Controls whether the encounter auto-starts on BeginPlay, for tests that call Start manually. */
 	void SetStartOnBeginPlay(bool const bStart) { bStartOnBeginPlay = bStart; }
+	/** Sets the player start this encounter lands the pawn on during a jump. */
 	void SetJumpStart(APlayerStart* Start) { JumpStart = Start; }
 
 	/** A GeoStartEncounterAction of this encounter starting Next: the link of a chain. */
@@ -196,6 +204,7 @@ public:
 		Rule.bRepeat = bRepeat;
 	}
 
+	/** Creates a GeoCompareCondition owned by this encounter; CounterName required for the Counter source. */
 	UGeoCompareCondition* NewCompare(EGeoCompareSource const Source, EGeoCompareOperator const Comparison,
 									 float const Operand, FName const CounterName = NAME_None)
 	{
@@ -226,21 +235,28 @@ class AGeoTestHUD
 	GENERATED_BODY()
 
 public:
+	/** No-op stub; tests do not need a real overlay. */
 	virtual void InitOverlay(APlayerController* /*PC*/, APlayerState* /*PS*/, UAbilitySystemComponent* /*ASC*/,
 							 UAttributeSet* /*AS*/) override
 	{
 	}
+	/** No-op stub. */
 	virtual void BindToPawn(APlayableCharacter* /*PlayableCharacter*/) override {}
+	/** No-op stub. */
 	virtual void BuildAbilityBar(APlayableCharacter* /*PlayableCharacter*/) override {}
+	/** No-op stub. */
 	virtual void ShowBossHealthBar(AEnemyCharacter* /*Boss*/) override {}
+	/** No-op stub. */
 	virtual void HideBossHealthBar() override {}
 
+	/** Records the line text and holds OnEnded so a test can trigger the end manually via HideCatLine. */
 	virtual void ShowCatLine(FText const& Line, FSimpleDelegate OnEnded) override
 	{
 		Lines.Add(Line.ToString());
 		LineEnded = MoveTemp(OnEnded);
 	}
 
+	/** Fires the held OnEnded callback, advancing the encounter past the Cat line action. */
 	virtual void HideCatLine() override
 	{
 		++HiddenLines;
@@ -248,16 +264,21 @@ public:
 		Waiter.ExecuteIfBound();
 	}
 
+	/** Holds OnClosed so a test can dismiss the page by calling PageClosed.ExecuteIfBound(). */
 	virtual void ShowAbilityPage(FGameplayTag /*AbilityTag*/, FSimpleDelegate OnClosed) override
 	{
 		PageClosed = MoveTemp(OnClosed);
 	}
+	/** Tracks that the quest card is visible. */
 	virtual void ShowQuestCard(FText const& /*Title*/, int32 /*Max*/, float /*TimeLimitSeconds*/) override
 	{
 		bQuestCardShown = true;
 	}
+	/** No-op stub. */
 	virtual void SetQuestCount(int32 /*Count*/) override {}
+	/** Clears the quest-card visibility flag. */
 	virtual void HideQuestCard() override { bQuestCardShown = false; }
+	/** No-op stub. */
 	virtual void OpenGemsPage(bool /*bForge*/) override {}
 
 	int32 HiddenLines = 0;
@@ -274,8 +295,11 @@ class AGeoTestReadableZone : public AGeoEffectZone
 	GENERATED_BODY()
 
 public:
+	/** The zone's current collision radius, for asserting growth in tests. */
 	float GetTestRadius() const { return GetRadius(); }
+	/** The spawn size from the zone's data params, for asserting the initial size. */
 	float GetSpawnSize() const { return Data.Params.Size; }
+	/** The server time at which this zone began growing, for testing late-join replication. */
 	float GetGrowthStartServerTime() const { return GrowthStartServerTime; }
 	/** What a client that receives the zone late gets: the server's growth start, not its own BeginPlay. */
 	void ReceiveGrowthStartServerTime(float const ServerTime) { GrowthStartServerTime = ServerTime; }
