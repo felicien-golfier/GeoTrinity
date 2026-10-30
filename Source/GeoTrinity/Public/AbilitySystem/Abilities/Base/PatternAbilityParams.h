@@ -28,5 +28,6 @@ struct GEOTRINITY_API FPatternAbilityParams : public FGameplayAbilityTargetData
 	UPROPERTY()
 	TInstancedStruct<FPatternData> PatternData;
 
+	/** Required by FGameplayAbilityTargetData; returns this struct's UScriptStruct for RPC serialization. */
 	virtual UScriptStruct* GetScriptStruct() const override { return FPatternAbilityParams::StaticStruct(); }
 };

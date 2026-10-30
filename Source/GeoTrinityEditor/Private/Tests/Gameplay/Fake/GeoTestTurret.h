@@ -21,5 +21,6 @@ public:
 			UGeoTestDeployableAttributes::StaticClass();
 	}
 
+	/** Exposes the protected FindBestTarget for test assertions. */
 	AActor* GetBestTarget() const { return FindBestTarget(); }
 };

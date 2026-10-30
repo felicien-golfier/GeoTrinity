@@ -55,6 +55,7 @@ public:
 			UGeoTestDeployableAttributes::StaticClass();
 	}
 
+	/** Copies Data into TestData so the deployable owns its lifetime, then initialises through Super. */
 	virtual void InitInteractable(FInteractableActorData* Data) override
 	{
 		TestData = *static_cast<FDeployableData*>(Data);
@@ -138,6 +139,7 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
 
+	/** Adds gem attributes and initialises ASC actor info with this pawn as both owner and avatar. */
 	virtual void PostInitializeComponents() override
 	{
 		Super::PostInitializeComponents();
