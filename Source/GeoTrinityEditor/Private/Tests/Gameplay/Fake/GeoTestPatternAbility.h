@@ -61,6 +61,7 @@ class UGeoTestCastAbility : public UGeoGameplayAbility
 	GENERATED_BODY()
 
 public:
+	/** The spell tag used by test abilities so an encounter action can find them by tag. */
 	static FGameplayTag GetCastTag() { return FGeoGameplayTags::Get().Ability_Spell_ShieldBurst; }
 
 	virtual void ActivateAbility(FGameplayAbilitySpecHandle /*Handle*/, FGameplayAbilityActorInfo const* /*ActorInfo*/,
@@ -147,6 +148,7 @@ class UGeoTestPointPatternAbility : public UGeoTestDataPatternAbility
 public:
 	UGeoTestPointPatternAbility() { InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor; }
 
+	/** Sets the target point tag so this ability looks up its fire origin from the matching arena point. */
 	void SetPointTag(FGameplayTag const Tag) { TargetPointTag = Tag; }
 };
 
@@ -157,6 +159,7 @@ class UGeoTestSalveAbility : public UGeoPeriodicPatternAbility
 	GENERATED_BODY()
 
 public:
+	/** Returns the yaws the salve computes for AimTarget, launching from the world origin. */
 	TArray<float> GetAimYaws(EProjectileTarget const AimTarget)
 	{
 		Target = AimTarget;
@@ -181,6 +184,7 @@ public:
 		AddSetup.MaxHealth = FScalableFloat(300.f);
 	}
 
+	/** Triggers the summon directly, as if the pattern ended at Origin, without going through the ability fire flow. */
 	void Summon(FVector2D const Origin)
 	{
 		StoredPayload.SourceAvatar = GetAvatarActorFromActorInfo();

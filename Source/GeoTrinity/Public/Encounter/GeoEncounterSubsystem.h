@@ -23,7 +23,9 @@ class GEOTRINITY_API UGeoEncounterSubsystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
+	/** Binds world-teardown and PIE-end delegates to abort every encounter when the session ends. */
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	/** Unbinds the world-teardown and PIE-end delegates. */
 	virtual void Deinitialize() override;
 
 	/** Broadcasts Payload to every listener, with its Tag set to Tag. Callable from any emitter, Blueprint included. */
