@@ -2,16 +2,13 @@
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/DevastatingWavePattern.h"
 
-#include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotSource.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "GeoTrinity/GeoTrinity.h"
-#include "NiagaraComponent.h"
 #include "Tool/Team.h"
 #include "Tool/UGeoGameplayLibrary.h"
-#include "Tool/Visual/GeoNiagaraParams.h"
 #include "World/ZoneLayer/GeoZoneVisualComponent.h"
 
 static TAutoConsoleVariable
@@ -20,32 +17,20 @@ static TAutoConsoleVariable
 
 UDevastatingWavePattern::UDevastatingWavePattern()
 {
-	bHasHazard = true;
+	HazardColor.Color = EGeoColor::LethalDamage;
 }
 
 void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 										  TInstancedStruct<FPatternData> const& PatternData)
 {
+	ClearData();
 	Super::InitPattern(Payload, PatternData);
 	if (!ensureMsgf(IsValid(StoredPayload.SourceOwner), TEXT("%hs: StoredPayload.SourceOwner is null"), __FUNCTION__))
 	{
 		return;
 	}
 
-	ClearData();
-
 	StoredPayload.SourceAvatar->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
-
-	// Skipped on the "too late" path (Super::InitPattern ran StartPattern synchronously, no wind-up scheduled).
-	if (IsValid(TelegraphVisual) && StartSectionTimerHandle.IsValid())
-	{
-		AddPillarSpots(0.f);
-		TelegraphVisual->SetWorldLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
-		TelegraphVisual->Shape.Radius = MaxRadius;
-		TelegraphVisual->FillMode = TelegraphFillMode;
-		TelegraphVisual->SetTimedFill(StoredPayload.ServerSpawnTime, StartDelay);
-		TelegraphVisual->SetZoneVisible(true);
-	}
 }
 
 void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
@@ -67,67 +52,20 @@ void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
 
 	if (bAdded)
 	{
-		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, PillarSpots, FVector2D::ZeroVector,
-						   StoredPayload.Origin);
-	}
-}
-
-void UDevastatingWavePattern::OnCreate(FGameplayTag AbilityTag, AActor& Owner)
-{
-	Super::OnCreate(AbilityTag, Owner);
-
-	if (!GeoLib::IsDedicatedServer(GetWorld())
-		&& ensureMsgf(AOEVfxSystem && MaskMaterialParameterCollection,
-					  TEXT("UDevastatingWavePattern: AOEVfxSystem or MaskMaterialParameterCollection is not set")))
-	{
-		AOEVfxComponent = SpawnPersistentVfx(AOEVfxSystem, Owner);
-		TelegraphVisual = NewObject<UGeoZoneVisualComponent>(&Owner);
-		TelegraphVisual->SetupAttachment(Owner.GetRootComponent());
-		// Placed in world space by InitPattern, whatever the owner does.
-		TelegraphVisual->SetAbsolute(true, true, true);
-		TelegraphVisual->Shape.Shape = EGeoZoneShape::Circle;
-		TelegraphVisual->Layer = EGeoZoneLayer::Telegraph;
-		TelegraphVisual->bSafeSpotCut = true;
-		TelegraphVisual->ColorMask = GeoZoneLayer::MakeColorMask(AOEColor, {});
-		TelegraphVisual->SetZoneVisible(false);
-		TelegraphVisual->RegisterComponent();
+		SetSafeSpots(PillarSpots, FVector2D::ZeroVector, StoredPayload.Origin);
 	}
 }
 
 void UDevastatingWavePattern::ClearData()
 {
 	PillarSpots.Empty();
-	// The MPC is global state — clear slots left over from a previous wave before the AOE starts rendering.
-	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
+	ClearSafeSpots();
 }
 
 void UDevastatingWavePattern::StartPattern()
 {
 	ClearData();
-
-	if (IsValid(TelegraphVisual))
-	{
-		TelegraphVisual->SetZoneVisible(false);
-	}
-
-	if (IsValid(AOEVfxComponent))
-	{
-		ActivateAOEVfx();
-	}
-
 	Super::StartPattern();
-}
-
-void UDevastatingWavePattern::ActivateAOEVfx() const
-{
-	AOEVfxComponent->ReinitializeSystem();
-	AOEVfxComponent->SetWorldLocation(FVector(StoredPayload.Origin, 0.f));
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOERadius, MaxRadius);
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AOEGrowDuration, MaxRadius / ExpansionSpeed);
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::FadeOutDuration, FadeOutDuration);
-	AOEVfxComponent->SetVariableFloat(GeoNiagaraParams::AnnulusRadius, AnnulusWidth);
-	AOEVfxComponent->SetVariableLinearColor(GeoNiagaraParams::AOEColor, AOEColor.GetColor());
-	AOEVfxComponent->Activate(true);
 }
 
 FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
@@ -139,19 +77,39 @@ FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const&
 	return CueParams;
 }
 
-void UDevastatingWavePattern::TickPattern(float /*ServerTime*/, float const SpentTime)
+void UDevastatingWavePattern::TickPattern(float const ServerTime, float const SpentTime)
 {
+	Super::TickPattern(ServerTime, SpentTime);
+
 	float const CurrentRadius = FMath::Min(ExpansionSpeed * SpentTime, MaxRadius);
-	if (CurrentRadius <= 0.f)
+	if (CurrentRadius > 0.f)
 	{
-		return;
+		AddPillarSpots(CurrentRadius);
+		if (CVarDrawDevastatingWave.GetValueOnGameThread())
+		{
+			DrawDebugWave(CurrentRadius);
+		}
 	}
+}
 
-	AddPillarSpots(CurrentRadius);
-
-	if (CVarDrawDevastatingWave.GetValueOnGameThread())
+void UDevastatingWavePattern::MoveHazardVisual(float const SpentTime)
+{
+	if (IsValid(HazardVisual))
 	{
-		DrawDebugWave(CurrentRadius);
+		HazardVisual->SetWorldLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+		if (SpentTime < 0.f)
+		{
+			AddPillarSpots(0.f);
+			HazardVisual->Shape.Shape = EGeoZoneShape::Circle;
+			HazardVisual->Shape.Radius = MaxRadius;
+		}
+		else
+		{
+			float const FrontRadius = FMath::Min(ExpansionSpeed * SpentTime, MaxRadius);
+			HazardVisual->Shape.Shape = EGeoZoneShape::Ring;
+			HazardVisual->Shape.Radius = FrontRadius;
+			HazardVisual->Shape.InnerRadius = FMath::Max(0.f, FrontRadius - AnnulusWidth);
+		}
 	}
 }
 
@@ -167,15 +125,6 @@ bool UDevastatingWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D con
 	float const FrontOffset = WaveRadius - FVector2D::Distance(StoredPayload.Origin, Location);
 	return FrontOffset >= 0.f && FrontOffset <= AnnulusWidth
 		&& !FSafeSpot::AnyShields(PillarSpots, Location, StoredPayload.Origin, FVector2D::ZeroVector);
-}
-
-void UDevastatingWavePattern::OnHazardEnd()
-{
-	Super::OnHazardEnd();
-	if (IsValid(AOEVfxComponent))
-	{
-		AOEVfxComponent->Deactivate();
-	}
 }
 
 void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
@@ -213,16 +162,6 @@ void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 
 void UDevastatingWavePattern::EndPattern(bool bForceStop)
 {
-	if (IsValid(TelegraphVisual))
-	{
-		TelegraphVisual->SetZoneVisible(false);
-	}
-
-	if (bForceStop && IsValid(AOEVfxComponent))
-	{
-		AOEVfxComponent->DeactivateImmediate();
-	}
-
 	if (!UGeoGameplayLibrary::IsServer(GetWorld()))
 	{
 		Super::EndPattern(bForceStop);

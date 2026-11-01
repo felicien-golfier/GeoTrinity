@@ -5,7 +5,8 @@ summons and allies, the salve (boss, summons: at the players), its ally child (a
 arena's BossSetup (tutorial_encounters.py); the lateral wave it fires (WAVE_TAG) is built by tutorial_waves.py (run it
 first). Deletes the assets of the old layout once nothing references them (re-run after tutorial_encounters.py).
 Rows read from CT_Tutorial (tutorial_assets.py): DummyHealth, AllyDummyHealth, DummyLandingDamage, DummyZoneDamage,
-DummyZoneGrowthTime, DummyZoneMaxRadius, MinibossProjectileDamage, MinibossProjectileSpeed.
+DummyZoneGrowthTime, DummyZoneMaxRadius, DummyZoneStartRadius, MinibossProjectileDamage, MinibossProjectileSpeed,
+AllyProjectileDamage.
 Idempotent: assets keyed by path, properties rewritten; the behaviour tree is rebuilt from the star boss's whole.
 Report: AI/Output/tutorial_miniboss_report.txt.
 Usage: headless (AI/Commands.md), editor closed or via the bridge; Config/Tags/GeoGameplayTags.ini already holds the tags.
@@ -50,9 +51,9 @@ ALLY_ACTOR_TAG = "TutorialMinibossAlly"
 
 SUMMONS_PER_WAVE = 3  # CyclesRequired: Board page 13, tip 3 ("every third Dummy")
 SHOOT_START_SECONDS = 0.2  # the salve keeps firing on its own; the state only starts it
-SUMMON_WIND_UP = 1.5  # seconds the landing spot is telegraphed
+SUMMON_WIND_UP = 2.0  # seconds the landing spot is telegraphed and the boss stands still, at every level
 SUMMON_SPOT_RADIUS = 0.0
-ZONE_START_RADIUS = 150.0
+SUMMON_MONTAGE = "/Game/Characters/Anim/Star/SK_Star_PikeNova_Montage"  # the Pillar's drop clip, on BP_Dummy's SK_Star
 HOSTILE_ATTITUDE = 4  # ETeamAttitudeBitflag: acts on the other team
 COLUMN = 1.0  # CT_Tutorial is flat: every difficulty column holds the same value
 
@@ -122,14 +123,16 @@ def damage_effect(row, per_second=False):
 
 
 def enemy_setup(team, health_row, salve_tag, actor_tag=""):
-    """A summon or an ally: the salve shooter tree and its salve, dies at zero, health from a CT_Tutorial row."""
+    """A summon or an ally: the salve shooter tree and its salve (none for an empty salve_tag: the dummy then keeps
+    BP_Dummy's tree and does not shoot), dies at zero, health from a CT_Tutorial row."""
     setup = unreal.GeoEnemySetup()
     setup.set_editor_property("Team", team)
     setup.set_editor_property("bResetToFullLife", False)
     setup.set_editor_property("AggroRadius", 100.0)
     setup.set_editor_property("MaxHealth", scalable_row(health_row))
-    setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
-    setup.set_editor_property("AbilityTags", [waves.tag(salve_tag)])
+    if salve_tag:
+        setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
+        setup.set_editor_property("AbilityTags", [waves.tag(salve_tag)])
     setup.set_editor_property("Tag", actor_tag)
     return setup
 
@@ -163,12 +166,24 @@ def build_salve():
 
 
 def build_ally_salve(salve_bp):
-    """The salve's child for the summons' allies: only its tag (a child of the salve's) and Target Boss differ."""
+    """The salve's child for the summons' allies: its tag (a child of the salve's), Target Boss, the AllyDamage colour
+    on its own pattern child and its own damage row differ."""
+    salve_cdo = unreal.get_default_object(salve_bp.generated_class())
+    pattern_bp, _ = waves.make_bp("BP_TutorialPattern_AllySalve", ABILITY_DIR, salve_cdo.get_editor_property("PatternToLaunch"))
+    pattern_cdo = unreal.get_default_object(pattern_bp.generated_class())
+    params = pattern_cdo.get_editor_property("ProjectileParams").copy()
+    for part in ("Head", "Trail"):
+        params.import_text("(Override%sColor=OverrideValue,%sColor=(Color=AllyDamage))" % (part, part))
+    pattern_cdo.set_editor_property("ProjectileParams", params)
+    waves.commit_bp(pattern_bp)
+
     ability_bp, created = waves.make_bp("GA_TutorialAllySalve", ABILITY_DIR, salve_bp.generated_class())
     cdo = unreal.get_default_object(ability_bp.generated_class())
     tags = unreal.GameplayTagContainer()
     tags.import_text('(GameplayTags=((TagName="%s")))' % ALLY_SALVE_TAG)
     cdo.set_editor_property("AbilityTags", tags)
+    cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
+    cdo.set_editor_property("EffectDataInstances", [damage_effect("AllyProjectileDamage")])
     cdo.set_editor_property("Target", unreal.ProjectileTarget.BOSS)
     waves.commit_bp(ability_bp)
     waves.register(ability_bp, ALLY_SALVE_TAG, "Tutorial ally salve",
@@ -184,9 +199,15 @@ def build_summon(add_class):
     tags = unreal.GameplayTagContainer()
     tags.import_text('(GameplayTags=((TagName="%s")))' % SUMMON_TAG)
     cdo.set_editor_property("AbilityTags", tags)
-    cdo.set_editor_property("PatternToLaunch", unreal.load_asset(SUMMON_PATTERN).generated_class())
+    pattern_bp, _ = waves.make_bp("BP_TutorialPattern_Summon", ABILITY_DIR, unreal.load_asset(SUMMON_PATTERN).generated_class())
+    unreal.get_default_object(pattern_bp.generated_class()).set_editor_property(
+        "AnimMontage", unreal.load_asset(SUMMON_MONTAGE))
+    waves.commit_bp(pattern_bp)
+    cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
     cdo.set_editor_property("AddClass", add_class)
     cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", SALVE_TAG))
+    cdo.set_editor_property("bUseSafeAddSetup", True)
+    cdo.set_editor_property("SafeAddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", ""))
     cdo.set_editor_property("SpotRadius", SUMMON_SPOT_RADIUS)
     cdo.set_editor_property("FireDelay", SUMMON_WIND_UP)
     cdo.set_editor_property("EffectDataInstances", [damage_effect("DummyLandingDamage")])
@@ -211,11 +232,12 @@ def build_summoned_dummy():
                                          "/Script/GeoTrinity.GeoSummonedDummy")
     cdo = unreal.get_default_object(blueprint.generated_class())
     zone_params = unreal.DeployableDataParams()
-    zone_params.import_text("(Size=%f,Color=(Color=Damage),Attitude=%d)" % (ZONE_START_RADIUS, HOSTILE_ATTITUDE))
+    zone_params.import_text("(Color=(Color=Damage),Attitude=%d)" % HOSTILE_ATTITUDE)
     zone_params.set_editor_property("GrowToSize", scalable_row("DummyZoneMaxRadius"))
     zone_params.set_editor_property("GrowSeconds", scalable_row("DummyZoneGrowthTime"))
     cdo.set_editor_property("ZoneEffects", [damage_effect("DummyZoneDamage", per_second=True)])
     cdo.set_editor_property("ZoneParams", zone_params)
+    cdo.set_editor_property("ZoneStartSize", scalable_row("DummyZoneStartRadius"))
     cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY).generated_class())
     cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_SALVE_TAG, ALLY_ACTOR_TAG))
     dummy = unreal.get_default_object(unreal.load_asset(BP_DUMMY).generated_class())

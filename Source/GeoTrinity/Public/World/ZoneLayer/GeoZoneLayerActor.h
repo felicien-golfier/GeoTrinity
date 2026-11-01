@@ -32,6 +32,11 @@ public:
 	/** How many slots of the slot texture the materials loop over. */
 	void SetZoneCount(int32 ZoneCount) const;
 
+#if WITH_EDITOR
+	/** Never listed in an editor world's outliner. */
+	virtual bool IsListedInSceneOutliner() const override { return false; }
+#endif
+
 private:
 	/** One plane, hidden until InitPlanes gives it its material. */
 	UStaticMeshComponent* CreatePlane(FName Name, int32 SortPriority, UStaticMesh* Mesh);

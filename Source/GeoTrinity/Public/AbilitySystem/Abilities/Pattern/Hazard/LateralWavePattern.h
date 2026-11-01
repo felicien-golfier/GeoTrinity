@@ -9,8 +9,6 @@
 
 #include "LateralWavePattern.generated.h"
 
-class UMaterialParameterCollection;
-
 /** What one firing of a lateral wave changes: its safe spots. Given by whoever fires it (GeoActivateAbilityAction). */
 USTRUCT(BlueprintType)
 struct GEOTRINITY_API FLateralWavePatternData : public FPatternData
@@ -44,7 +42,7 @@ class GEOTRINITY_API ULateralWavePattern : public UBeamPattern
 	GENERATED_BODY()
 
 public:
-	/** Both fills run along the beam: the telegraph's along the travel, the band's across it. */
+	/** Lethal colour; both fills run along the beam: the telegraph's along the travel, the band's across it. */
 	ULateralWavePattern();
 
 	/** One of 0 / 90 / 180 / 270 degrees, the same for the same Seed on every machine. */
@@ -56,19 +54,17 @@ public:
 	float GetFiringHalfWidth() const { return FiringHalfWidth; }
 
 protected:
-	/** Sets this firing's travel (fixed, or rolled and fitted to the arena) and frees the safe spot mask a previous
-	 * firing left, both before the base reads the hazard duration and first places the beam. */
+	/** Sets this firing's travel (fixed, or rolled and fitted to the arena) before the base reads the hazard duration
+	 * and first places the beam. */
 	virtual void InitPattern(FAbilityPayload const& Payload,
 							 TInstancedStruct<FPatternData> const& PatternData) override;
 	/** The front crosses TravelDistance, then the band leaves it. */
 	virtual float GetHazardDuration() const override;
 	/** True when Location lies in the band, across the wave's width, outside every safe spot's lane. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
-	/** While SpentTime is negative, the whole travel rectangle; the band after. Uploads the safe spots to the mask and
-	 * opts the shape into it (UGeoZoneVisualComponent::bSafeSpotCut). */
-	virtual void MoveBeamVfx(float SpentTime) override;
-	/** Frees the safe spot mask. */
-	virtual void EndPattern(bool bForceStop = false) override;
+	/** While SpentTime is negative, the whole travel rectangle; the band after. Uploads the safe spots (SetSafeSpots).
+	 */
+	virtual void MoveHazardVisual(float SpentTime) override;
 
 private:
 	/** Unit vector of the travel: FiringYaw, never the caster's facing (a miniboss turns while it walks). */
@@ -105,14 +101,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots", meta = (AllowPrivateAccess = "true"))
 	TArray<ESafeSpotSource> SafeSpotSources = {ESafeSpotSource::Fixed, ESafeSpotSource::Adds};
 
-	/** Radius of a spot: its lane is twice as wide. */
+	/** Radius of a Fixed spot: its lane is twice as wide. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots",
 			  meta = (ClampMin = "1.0", AllowPrivateAccess = "true"))
 	float SpotRadius = 150.f;
 
-	/** MPC_MaskedArea — receives the safe spots, which the zone layer cuts out of the wave. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|VFX", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UMaterialParameterCollection> MaskMaterialParameterCollection;
+	/** Radius of an Adds spot, read at the payload's level so a difficulty column can narrow a dummy's lane. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots", meta = (AllowPrivateAccess = "true"))
+	FScalableFloat AddSpotRadius{150.f};
 
 	/** This firing's travel, set by InitPattern: Payload.Origin, TravelYaw, TravelDistance and HalfWidth, or the rolled
 	 * direction fitted to the arena. Everything after InitPattern reads these, never the defaults. */

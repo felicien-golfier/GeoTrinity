@@ -63,6 +63,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TSoftClassPtr<UWidgetComponent> CombattantWidgetComponentClass;
 
+	/** CombattantWidgetComponentClass when its native class is loaded, else null (the dedicated-server target ships no
+	 * UI module). */
+	UClass* FindCombattantWidgetComponentClass() const;
+
 	/** Default health-bar WBP (UGenericCombattantWidget subclass) for player/enemy characters. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoHUD")
 	TSoftClassPtr<UUserWidget> DefaultCharacterHealthBarWidgetClass;

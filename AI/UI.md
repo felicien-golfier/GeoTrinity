@@ -75,8 +75,10 @@ A menu (`UGeoMenuRootWidget`: the main menu, the pause menu) shows its top level
 ## Layout comes with the tools, never per widget
 A layout rule lives in the builder tooling, so no script and no widget can forget it.
 
-- **Buttons sit at one regular gap.** `UGeoWidgetBuilderUtil::CommitTree`, which every builder ends with, spaces the
-  menu buttons of each vertical and horizontal box by the theme's `MenuButtonGap`. Never pad a button to space it.
+- **Buttons sit at one regular gap.** `UGeoWidgetBuilderUtil::FinishBuild`, the end of every builder (`CommitTree`,
+  `wings_hud.finish`, C++ builders), spaces the menu buttons of each vertical and horizontal box by the theme's
+  `MenuButtonGap`. Never pad a button to space it, and never end a builder with anything but `FinishBuild`/`CommitTree`.
+  A stack of equal-gap controls is a box of menu buttons, never loose canvas children.
 - **Every element lives in a fixed area.** A page is sized by its parent (fill the slot it is given), never by its
   content, and nothing is drawn over anything else.
 - **What grows with data scrolls.** A list, ability rows, wrapped descriptions: put it in a scroll area

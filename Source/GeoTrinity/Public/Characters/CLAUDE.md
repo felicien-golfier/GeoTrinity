@@ -14,9 +14,9 @@ AGeoCharacter            ASC interface + team agent
 | `GeoCharacter.h` | Abstract base: ASC, input, movement, health bar, game feel, turn-rate clamp |
 | `PlayableCharacter.h` | Human player: input forwarding, `ChangeClass()`, gauges, downed/revive |
 | `EnemyCharacter.h` | AI enemy: own ASC, StateTree, boss death / reset |
-| `GeoEnemySetup.h` | `FGeoEnemySetup`: per-spawn variant of an enemy class (team, dies or resets, StateTree, extra abilities, health, actor tag) |
+| `GeoEnemySetup.h` | `FGeoEnemySetup`: per-spawn variant of an enemy class (team, dies or resets, StateTree, extra abilities, health, actor tag, walk speed) |
 | `HiddenCasterCharacter.h` | Enemy with nothing on screen and nothing to hit: the encounters' shared ability caster |
-| `GeoSummonedDummy.h` | Add summoned by `GeoSummonAddAbility` (tutorial miniboss): its zone grows until it dies, then an ally takes its place |
+| `GeoSummonedDummy.h` | Add summoned by `USpawnAddPattern` (tutorial miniboss): its zone grows until it dies, then an ally takes its place |
 | `GeoTrainingCat.h` | The Training Room's Cat: enemy-team character, hit detection, spoken line replication, home spot |
 | `PlayerClassTypes.h` | `EPlayerClass`: Triangle=1, Circle=2, Square=3, All=4 |
 | `PlayerClassDataAsset.h` | `UPlayerClassDataAsset`: `TMap<EPlayerClass, FPlayerClassData>`; read via `GameDataSettings::PlayerClassData` |
@@ -59,6 +59,7 @@ AGeoCharacter            ASC interface + team agent
 ## Enemy setup
 - Purpose: a scripted room's enemies (dummy, chaser, shooter, hurt ally) are one Blueprint (`BP_Dummy`: look only) plus an `FGeoEnemySetup` written where they are spawned, never a Blueprint per variant.
 - Fields: `Team`, `bResetToFullLife` (default false: dies at zero), `StateTree` (null = the class's), `BehaviourStateTree` (null = the class's; a boss's spell chain inside the base tree's fight-start gate), `AbilityTags` (added to the ASC's `StartupAbilityTags`), `MaxHealth` (`FScalableFloat`, 0 = the class's `DefaultAttributes`; reads `CT_Tutorial` rows), `StartHealthRatio` (0..1, default 1), `Tag` (actor tag, None = none; how triggers find a spawned one), `AggroRadius` (cm, negative = the controller's own `AggroRadius`; the tutorial sets 100: an enemy there wakes on a hit or at point-blank, never from afar).
+- `WalkSpeedMultiplier` scales `MaxWalkSpeed` in `ApplySetup`, before the components register, so `UGeoCharacterMovementComponent::OnRegister` caches the scaled value as its base (tutorial miniboss: 0.5).
 - `AggroRadius` is kept on the enemy by `ApplySetup`; its controller reads it when the aggro watch starts (`AI/CLAUDE.md`).
 - `AEnemyCharacter::SpawnEnemy(World, Class, Location, Owner, Arena*, Setup*)` (static, server): the one spawn of an enemy, arena bosses included: `ArbitraryCharacterZ`, unit scale, deferred spawn, `Arena` (null = none) and `ApplySetup` (when a setup is given) before `FinishSpawning`. Both run before `FinishSpawning`, so the controller's `OnPossess` and `InitGAS` (BeginPlay) already see the StateTree, team and abilities; never on a live enemy.
 - Health: `MaxHealth` and `StartHealthRatio` set after `DefaultAttributes` in `InitGAS`. The `MaxHealth` override is kept on the enemy and re-applied after every `InitializeDefaultAttributes` (reset at zero, `ResetForNewAttempt`), always at full; `StartHealthRatio` is the spawn only.
@@ -82,7 +83,7 @@ AGeoCharacter            ASC interface + team agent
 - Server BeginPlay: spawns `UGameDataSettings::DefaultZoneClass` at its feet with `ZoneEffects` (damage per second) and `ZoneParams` (start `Size`, growth `GrowToSize` / `GrowSeconds`, `Actor/Deployable/CLAUDE.md`), owned by the dummy (enemy team, so it hurts players).
 - The zone dies with the dummy: spawned with the dummy as instigator, it sits in the dummy's `UGeoDeployableManagerComponent`, which `StopAllSpawnedElements` empties on death and on `EndPlay` (a wipe or the boss's death destroys the dummy).
 - Death (server): `Arena->SpawnAdd(AllyClass, its transform, AllySetup)`: the ally is an add of the same arena, so the next wipe removes it too. Destroyed without dying: no ally. Tutorial: `AllyClass` = `BP_Dummy`, `AllySetup` = player team, shooting StateTree + projectile ability, `Tag` the encounter watches.
-- One Blueprint (`BP_TutorialSummonedDummy`, the dummy's look) holds its zone and ally params; values (`ZoneEffects` amounts, the zone's growth) read `CT_Tutorial` rows through `FScalableFloat`. Its health, tree and salve are the summon ability's `AddSetup` (`Abilities/Boss/CLAUDE.md`).
+- One Blueprint (`BP_TutorialSummonedDummy`, the dummy's look) holds its zone and ally params; values (`ZoneEffects` amounts, the zone's growth, `ZoneStartSize` = the zone's start `Size` read at the dummy's combat level) read `CT_Tutorial` rows through `FScalableFloat`, so a difficulty column changes them (Safe: zone starts at 10). Its health, tree and salve are the summon ability's `AddSetup` (`Abilities/Boss/CLAUDE.md`).
 
 ## Enemy Blueprint defaults
 - A default every enemy shares (base `StateTree`, …) is set once on the CDO of `BP_BaseEnemyBlueprintToInheritFrom`; boss Blueprints hold only their own values (`BehaviourStateTree`, …).

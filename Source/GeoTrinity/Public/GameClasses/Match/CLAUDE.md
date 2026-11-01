@@ -8,6 +8,7 @@
 
 ## GameMode
 - `bSoloOnly` (tutorial map's `BP_TutorialGameMode`): `InitNewPlayer` refuses a player when another player controller is already in the world (the new one is in the list by then; `AGameMode::GetNumPlayers` is no use here: it counts only players past `PostLogin`). Same gate for a remote joiner and a second local player: both pass through `Login`. The pause menu also pauses a solo world (`Player/CLAUDE.md`, "Solo pause").
+- `StartDifficulty` (default Original; `BP_TutorialGameMode`: Safe): `InitGameState` hands it to `AGeoGameState::SetDifficulty` before any actor begins play, so every enemy of the map takes it as its combat level; the tutorial has no difficulty pad.
 - Player starts: a portal in the travel URL picks the start with that `PlayerStartTag` (engine `FindPlayerStart`); no portal → `ChoosePlayerStart` picks among untagged starts only. A tagged start (`TrainingRoom`, a tutorial room's jump start) is reached only by its portal.
 
 ## GameState

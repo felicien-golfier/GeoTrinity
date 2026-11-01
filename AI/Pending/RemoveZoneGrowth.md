@@ -6,7 +6,7 @@ Docs written: none yet (workflow steps 2-3 when picked up). Owner docs: `Source/
 
 ## Discuss first (step 2)
 - [ ] What replaces the growth where it is used: Zones room Damage zone (`ColorZoneMaxRadius` 1350 over `ColorZoneGrowSeconds` 8; Shield / Heal wait for it) and the Miniboss dummy zone (`DummyZoneMaxRadius` 700 over `DummyZoneGrowthTime` 12). Fixed at the final size, or another mechanic.
-- [ ] Overlaps `ZonesRoomDamageZone.md` and `TutorialMinibossRework.md` (both P1): fold into them if picked up together.
+- [ ] Overlaps `TutorialMinibossRework.md` (P1): fold into them if picked up together.
 
 ## Code (to implement)
 - [ ] `Actor/Deployable/GeoDeployableBase.h` — drop `FDeployableDataParams::GrowToSize`, `GrowSeconds`.

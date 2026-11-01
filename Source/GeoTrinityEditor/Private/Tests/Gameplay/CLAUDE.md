@@ -12,7 +12,7 @@ Automation tests of the `GeoTrinity` module. Fakes they spawn: `Fake/CLAUDE.md`.
 | `GeoCombatStatsTests.cpp` | Combat stats subsystem |
 | `GeoMontageOwnershipTests.cpp` | Montage ownership |
 | `GeoSoundConcurrencyTests.cpp` | Sound concurrency assets |
-| `GeoTutorialTests.cpp` | Solo-only login, listen URL, locked / unlocked abilities |
+| `GeoTutorialTests.cpp` | Solo-only login, listen URL, locked / unlocked abilities, tutorial Safe difficulty (game mode → game state), the miniboss's Safe vs Original `CT_Tutorial` rows |
 | `GeoCatTests.cpp` | Cat walk, stop distance, hidden walk, replace, roam, montage order |
 | `GeoEncounterTests.cpp` | Fake trigger / actions / encounter / HUD, readable zone, set-up summoned dummy |
 | `GeoVoidDeathTests.cpp` | Void death with an enemy whose body stays |

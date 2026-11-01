@@ -3,8 +3,10 @@
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Engine/CurveTable.h"
 #include "Engine/GameInstance.h"
 #include "GameClasses/Match/GeoGameMode.h"
+#include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerStart.h"
@@ -12,6 +14,7 @@
 #include "System/GeoSessionSubsystem.h"
 #include "Tests/Gameplay/Fake/GeoTestDeployable.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
+#include "Tool/GeoDifficulty.h"
 #include "World/GeoWorldSettings.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -98,6 +101,74 @@ bool FGeoTutorialTaggedStartTest::RunTest(FString const& /*Parameters*/)
 	TestFalse(TEXT("No portal: a tagged start is never chosen"), bTaggedChosen);
 	TestTrue(TEXT("The portal still finds the tagged start"),
 			 Fixture.GameMode->FindPlayerStart(PlayerController, TEXT("Shoot")) == JumpStart);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoTutorialSafeDifficultyTest, "GeoTrinity.Tutorial.SafeDifficulty",
+								 GeoTutorialTestFlags)
+
+bool FGeoTutorialSafeDifficultyTest::RunTest(FString const& /*Parameters*/)
+{
+	UClass* const TutorialModeClass =
+		LoadClass<AGeoGameMode>(nullptr, TEXT("/Game/Game/BP_TutorialGameMode.BP_TutorialGameMode_C"));
+	if (TestNotNull(TEXT("BP_TutorialGameMode loads"), TutorialModeClass))
+	{
+		TestTrue(TEXT("The tutorial game mode starts at Safe"),
+				 GetDefault<AGeoGameMode>(TutorialModeClass)->StartDifficulty == EGeoDifficulty::Safe);
+	}
+
+	UWorld* const World = CreateTestWorld();
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.bDeferConstruction = true;
+	AGeoGameMode* const GameMode = World->SpawnActor<AGeoGameMode>(SpawnParameters);
+	GameMode->StartDifficulty = EGeoDifficulty::Safe;
+	GameMode->FinishSpawning(FTransform::Identity);
+	AGeoGameState const* const GameState = GameMode->GetGameState<AGeoGameState>();
+	if (TestNotNull(TEXT("The game mode makes an AGeoGameState"), GameState))
+	{
+		TestTrue(TEXT("The game state takes the game mode's StartDifficulty"),
+				 GameState->GetDifficulty() == EGeoDifficulty::Safe);
+	}
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoTutorialMinibossSafeRowsTest, "GeoTrinity.Tutorial.MinibossSafeRows",
+								 GeoTutorialTestFlags)
+
+bool FGeoTutorialMinibossSafeRowsTest::RunTest(FString const& /*Parameters*/)
+{
+	UCurveTable const* const Table =
+		LoadObject<UCurveTable>(nullptr, TEXT("/Game/AbilitySystem/Data/CurveTables/CT_Tutorial.CT_Tutorial"));
+	if (TestNotNull(TEXT("CT_Tutorial loads"), Table))
+	{
+		struct FRowValues
+		{
+			FName Row;
+			float Safe;
+			float Original;
+		};
+
+		for (FRowValues const& Values :
+			 {FRowValues{TEXT("MinibossProjectileDamage"), 5.f, 8.f},
+			  FRowValues{TEXT("AllyProjectileDamage"), 15.f, 8.f}, FRowValues{TEXT("AllyDummyHealth"), 50.f, 200.f},
+			  FRowValues{TEXT("DummyZoneStartRadius"), 10.f, 150.f},
+			  FRowValues{TEXT("WaveAddLaneRadius"), 127.f, 190.f}})
+		{
+			FRealCurve const* const Curve = Table->FindCurveUnchecked(Values.Row);
+			if (TestNotNull(*Values.Row.ToString(), Curve))
+			{
+				TestEqual(*FString::Printf(TEXT("%s at Safe"), *Values.Row.ToString()),
+						  Curve->Eval(static_cast<float>(GeoDifficultyMask::Safe)), Values.Safe);
+				TestEqual(*FString::Printf(TEXT("%s at Original"), *Values.Row.ToString()),
+						  Curve->Eval(static_cast<float>(GeoDifficultyMask::Original)), Values.Original);
+			}
+		}
+	}
+
 	return true;
 }
 

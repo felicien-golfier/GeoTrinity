@@ -125,12 +125,12 @@ one static switch `Telegraph` apart: `MI_ZoneLayer_Ground` (the meaning pattern,
 
 The zone layer cuts a hazard's safe spots out of its shape: `MF_SafeSpotCut` reads the 8 slots of `MPC_MaskedArea`
 (`SafeSpot/CLAUDE.md` "Mask") and returns `CutMask`, 1 where a spot shadows the pixel. A spot is a location with a
-radius, in one of two modes: `Disc` (default), a round hole around the location; `Lane`, the beam cut across its width
+radius, in one of three modes: `Disc` (default), a round hole around the location; `Behind`, the spot's shadow away from the hazard origin (devastating wave pillars); `Lane`, the beam cut across its width
 wherever the location projects perpendicularly, so only the parts between the lanes stay lit (lateral wave). Unused
 slots (alpha 0) cut nothing. The function reads world position: the shape's own orientation plays no part.
 
 The mask is global, so the cut is opt-in per slot: only a slot flagged `SafeSpotCut` (set by the hazard that uploads
-the spots, `ULateralWavePattern`) covers nothing where `CutMask` is 1, outline and shade included.
+the spots, `UZoneHazardPattern::SetSafeSpots`) covers nothing where `CutMask` is 1, outline and shade included.
 Every other shape stays whole while a mask is live.
 
 `MF_SafeSpotCut` holds only what the 8 slots share: the mode flags, the lane's right-hand direction, the radius, and

@@ -118,8 +118,7 @@ void UGeoChannelBeamAbility::PushBeamState(ACharacter const* const Character) co
 	{
 		BeamVFXComponent->SetBeamState(true, GetCurrentBeamHalfWidth(Character),
 									   GeoASLib::GetSpellDistance(GetAbilitySystemComponentFromActorInfo()),
-									   BeamFillMode, StoredPayload.ServerSpawnTime + GetFireDelay(),
-									   GetChannelDuration());
+									   BeamFillMode, StoredPayload.ServerSpawnTime, GetChannelDuration());
 	}
 }
 

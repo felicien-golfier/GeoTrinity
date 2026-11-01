@@ -62,6 +62,11 @@ UWidgetTree* UGeoWidgetBuilderUtil::BeginBuild(UWidgetBlueprint* WidgetBlueprint
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoWidgetBuilderUtil::FinishBuild(UWidgetBlueprint* WidgetBlueprint)
 {
+	// Every builder ends here (CommitTree included), so the button gap cannot be skipped by any of them.
+	if (UWidgetTree* Tree = WidgetBlueprint->WidgetTree)
+	{
+		SpaceMenuButtons(Tree);
+	}
 	FKismetEditorUtilities::CompileBlueprint(WidgetBlueprint);
 	UEditorLoadingAndSavingUtils::SavePackages({WidgetBlueprint->GetPackage()}, false);
 }
@@ -337,8 +342,6 @@ void UGeoWidgetBuilderUtil::CommitTree(UWidgetBlueprint* WidgetBlueprint)
 				It.RemoveCurrent();
 			}
 		}
-
-		SpaceMenuButtons(Tree);
 	}
 
 	FinishBuild(WidgetBlueprint);

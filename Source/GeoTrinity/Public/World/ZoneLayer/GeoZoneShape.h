@@ -17,7 +17,9 @@ enum class EGeoZoneShape : uint8
 	/** Radius round the component. */
 	Circle,
 	/** Length along the component's +X, HalfWidth each side. */
-	Beam
+	Beam,
+	/** Between InnerRadius and Radius round the component; InnerRadius 0 = a disc with no inner outline. */
+	Ring
 };
 
 /** Which plane of the zone layer draws a shape: the ground's meaning pattern, or the telegraph stripes above it. */
@@ -32,7 +34,7 @@ enum class EGeoZoneLayer : uint8
 UENUM(BlueprintType)
 enum class EGeoFillMode : uint8
 {
-	/** From the core outward: circle centre, beam middle line. */
+	/** From the core outward: circle centre, beam middle line, ring inner radius. */
 	FromCore,
 	/** Beam only: from its start end to its far end, across its whole width. */
 	AlongBeam,
@@ -49,9 +51,13 @@ struct FGeoZoneShape
 	UPROPERTY()
 	EGeoZoneShape Shape = EGeoZoneShape::Circle;
 
-	/** Circle. */
+	/** Circle; ring: outer radius. */
 	UPROPERTY()
 	float Radius = 0.f;
+
+	/** Ring. */
+	UPROPERTY()
+	float InnerRadius = 0.f;
 
 	/** Beam. */
 	UPROPERTY()
@@ -85,7 +91,8 @@ namespace GeoZoneLayer
 	/**
 	 * Component's slot as drawn now: row 0 = (Shape ordinal, ColorMask, Flags, GetFill() or 0 when FillMode is None),
 	 * rows 1–2 = the shape at
-	 * Component's world transform (circle: centre XY, radius; beam: start XY, end XY, half-width).
+	 * Component's world transform (circle: centre XY, radius; beam: start XY, end XY, half-width; ring: centre XY,
+	 * outer radius, inner radius).
 	 */
 	GEOTRINITY_API FSlotTexels PackSlot(UGeoZoneVisualComponent const& Component);
 

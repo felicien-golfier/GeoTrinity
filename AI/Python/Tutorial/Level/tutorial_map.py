@@ -94,7 +94,7 @@ def save_asset(asset):
 # ---------------------------------------------------------------- assets
 
 def build_game_mode():
-    """BP_TutorialGameMode: a child of BP_GeoGameMode that refuses a second player."""
+    """BP_TutorialGameMode: a child of BP_GeoGameMode that refuses a second player and runs at Safe difficulty."""
     if not unreal.EditorAssetLibrary.does_asset_exist(GAME_MODE):
         factory = unreal.BlueprintFactory()
         factory.set_editor_property("parent_class", unreal.load_asset(GAME_MODE_PARENT).generated_class())
@@ -102,7 +102,9 @@ def build_game_mode():
         unreal.AssetToolsHelpers.get_asset_tools().create_asset(name, folder, unreal.Blueprint, factory)
     blueprint = unreal.load_asset(GAME_MODE)
     unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
-    unreal.get_default_object(blueprint.generated_class()).set_editor_property("bSoloOnly", True)
+    default = unreal.get_default_object(blueprint.generated_class())
+    default.set_editor_property("bSoloOnly", True)
+    default.set_editor_property("StartDifficulty", unreal.GeoDifficulty.SAFE)
     save_asset(blueprint)
     log("game mode", GAME_MODE)
 

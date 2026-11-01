@@ -4,14 +4,25 @@
 
 #include "Characters/GeoCharacter.h"
 #include "Characters/PlayableCharacter.h"
+#include "Engine/PlayerStartPIE.h"
 #include "EngineUtils.h"
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/PlayerStart.h"
-#include "Engine/PlayerStartPIE.h"
 
 AGeoGameMode::AGeoGameMode(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DefaultPawnClass = AGeoCharacter::StaticClass();
+	GameStateClass = AGeoGameState::StaticClass();
+}
+
+void AGeoGameMode::InitGameState()
+{
+	Super::InitGameState();
+	AGeoGameState* const GeoGameState = GetGameState<AGeoGameState>();
+	if (ensureMsgf(GeoGameState, TEXT("%s: the game state is not an AGeoGameState"), *GetName()))
+	{
+		GeoGameState->SetDifficulty(StartDifficulty);
+	}
 }
 
 void AGeoGameMode::Tick(float DeltaSeconds)

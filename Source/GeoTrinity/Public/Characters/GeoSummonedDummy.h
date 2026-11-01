@@ -28,10 +28,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoSummonedDummy")
 	TArray<TInstancedStruct<FEffectData>> ZoneEffects;
 
-	/** Start size (radius), growth, colour and attitude of the zone; its life drain stays 0, so it lasts as long as the
-	 * dummy. */
+	/** Growth, colour and attitude of the zone; its life drain stays 0, so it lasts as long as the dummy. Its start
+	 * Size is ZoneStartSize. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoSummonedDummy")
 	FDeployableDataParams ZoneParams;
+
+	/** Start size (radius) of the zone, read at the dummy's combat level, so a difficulty column can shrink it. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoSummonedDummy")
+	FScalableFloat ZoneStartSize;
 
 	/** What a killed dummy turns into. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoSummonedDummy")

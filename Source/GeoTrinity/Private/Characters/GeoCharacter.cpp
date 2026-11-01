@@ -53,8 +53,7 @@ AGeoCharacter::AGeoCharacter(FObjectInitializer const& ObjectInitializer) :
 
 	// Concrete class comes from settings (a soft path) so gameplay never names the UI-module UGeoCombattantWidgetComp.
 	// Optional subobject: the dedicated-server target doesn't ship the UI class, so it resolves to null and is skipped.
-	if (UClass* const WidgetComponentClass =
-			GetDefault<UGameDataSettings>()->CombattantWidgetComponentClass.LoadSynchronous())
+	if (UClass* const WidgetComponentClass = GetDefault<UGameDataSettings>()->FindCombattantWidgetComponentClass())
 	{
 		CharacterWidgetComponent = Cast<UWidgetComponent>(ObjectInitializer.CreateDefaultSubobject(
 			this, TEXT("CharacterWidgetComponent"), UWidgetComponent::StaticClass(), WidgetComponentClass,

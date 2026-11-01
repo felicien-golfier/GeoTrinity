@@ -2,6 +2,7 @@
 
 #include "Characters/GeoSummonedDummy.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
@@ -24,6 +25,7 @@ void AGeoSummonedDummy::BeginPlay()
 			ZoneData.TeamID = GetGenericTeamId();
 			ZoneData.EffectDataArray = ZoneEffects;
 			ZoneData.Params = ZoneParams;
+			ZoneData.Params.Size = ZoneStartSize.GetValueAtLevel(AbilitySystemComponent->GetCombatLevel());
 			FVector Location = GetActorLocation();
 			Location.Z = 0.f;
 			GeoASLib::FullySpawnDeployable(ZoneClass, ZoneData, FTransform(Location));

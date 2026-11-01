@@ -47,13 +47,6 @@ namespace GeoNiagaraParams
 
 	/** Writes Colors, as GeoColor::GetMeaningColors resolves them, into MeaningColors and ColorCount. */
 	void SetMeaningColors(UNiagaraComponent* Component, TArray<FLinearColor> const& Colors);
-
-	/** Devastating wave AOE and its telegraph — UDevastatingWavePattern. */
-	inline FName const AOERadius(TEXT("User.AOE_Radius"));
-	inline FName const AOEGrowDuration(TEXT("User.AOE_GrowDuration"));
-	inline FName const AOEColor(TEXT("User.AOE_Color"));
-	inline FName const AnnulusRadius(TEXT("User.AnnulusRadius"));
-	inline FName const FadeOutDuration(TEXT("User.FadeOut_Duration"));
 } // namespace GeoNiagaraParams
 
 /**
@@ -160,24 +153,4 @@ public:
 	/** Returns the Niagara user parameter name for the projectile trail lifetime scale. */
 	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
 	static FName GetTrailLifetimeScaleParameterName() { return GeoNiagaraParams::TrailLifetimeScale; }
-
-	/** Returns the Niagara user parameter name for the devastating-wave AOE outer radius. */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetAOERadiusParameterName() { return GeoNiagaraParams::AOERadius; }
-
-	/** Returns the Niagara user parameter name for the devastating-wave AOE grow animation duration. */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetAOEGrowDurationParameterName() { return GeoNiagaraParams::AOEGrowDuration; }
-
-	/** Returns the Niagara user parameter name for the devastating-wave AOE color tint. */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetAOEColorParameterName() { return GeoNiagaraParams::AOEColor; }
-
-	/** Returns the Niagara user parameter name for the devastating-wave AOE inner annulus radius. */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetAnnulusRadiusParameterName() { return GeoNiagaraParams::AnnulusRadius; }
-
-	/** Returns the Niagara user parameter name for the devastating-wave AOE fade-out duration. */
-	UFUNCTION(BlueprintPure, Category = "GeoNiagaraParams")
-	static FName GetFadeOutDurationParameterName() { return GeoNiagaraParams::FadeOutDuration; }
 };

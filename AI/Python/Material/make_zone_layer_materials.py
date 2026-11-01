@@ -14,7 +14,6 @@ import unreal
 
 FOLDER = "/Game/Art/VFX/ZoneLayer"
 FUNCTIONS = FOLDER + "/Functions"
-SAFE_SPOT_FUNCTIONS = "/Game/Art/VFX/AOE/Functions"
 GENERIC = "/Game/Art/VFX/Generic/Materials/Functions"
 CATEGORY = "GeoTrinity|ZoneLayer"
 MASK_COLLECTION = "/Game/Art/VFX/Abilities/Enemies/PillarsAOE/MPC_MaskedArea"
@@ -38,7 +37,7 @@ open_function = toolkit["open_function"]
 mel = toolkit["mel"]
 is_whole_number = load(GENERIC + "/MF_IsWholeNumber")
 meaning_colors = load(GENERIC + "/MF_MeaningColors")
-telegraph_colors = load(SAFE_SPOT_FUNCTIONS + "/MF_TelegraphColors")
+telegraph_colors = load(FUNCTIONS + "/MF_TelegraphColors")
 pattern_collection = load("/Game/Art/VFX/Generic/Materials/MPC_MeaningColors")
 mask_collection = load(MASK_COLLECTION)
 # The editor asset library loads project content only.
@@ -72,7 +71,7 @@ for vector_name in ("SafeSpot_LaneDirection", "SafeSpot_OriginWS"):
 toolkit["save"](mask_collection)
 
 # --- MF_SafeSpotSlotCut: 1 where one safe spot shadows the pixel ---
-graph = open_function(SAFE_SPOT_FUNCTIONS, "MF_SafeSpotSlotCut", "1 where one safe spot shadows a world position: its "
+graph = open_function(FUNCTIONS, "MF_SafeSpotSlotCut", "1 where one safe spot shadows a world position: its "
                       "whole strip across the spot when IsLane, its round hole when IsDisc, the strip beyond it seen "
                       "from Origin when IsBehind, nothing for an unused slot.", CATEGORY)
 world_xy = graph.input("WorldXY", "Vector2", 0, "The pixel's world position, cm.")
@@ -112,7 +111,7 @@ graph.finish()
 safe_spot_slot_cut = graph.asset
 
 # --- MF_SafeSpotCut: 1 where a safe spot shadows the pixel (Behind, Lane or Disc) ---
-graph = open_function(SAFE_SPOT_FUNCTIONS, "MF_SafeSpotCut", "1 where one of the safe spots of MPC_MaskedArea shadows "
+graph = open_function(FUNCTIONS, "MF_SafeSpotCut", "1 where one of the safe spots of MPC_MaskedArea shadows "
                       "a world position: Behind (mode 0) cuts the strip beyond the spot seen from SafeSpot_OriginWS, "
                       "Lane (mode 1) the whole strip across the spot, Disc (mode 2) its round hole. Unused slots cut "
                       "nothing.", CATEGORY)
@@ -275,5 +274,4 @@ for name, (draws_telegraphs, opacity_value, brightness_value) in INSTANCES.items
     mel.update_material_instance(instance)
     toolkit["save"](instance)
 
-unreal.log(f"ZONELAYER::built {FOLDER}/M_ZoneLayer, {', '.join(INSTANCES)}, {FUNCTIONS} and "
-           f"{SAFE_SPOT_FUNCTIONS}/MF_SafeSpotCut")
+unreal.log(f"ZONELAYER::built {FOLDER}/M_ZoneLayer, {', '.join(INSTANCES)} and {FUNCTIONS}")

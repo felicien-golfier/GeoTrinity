@@ -6,12 +6,13 @@ Enemy pattern objects. Server-driven, deterministic across machines.
 |---|---|
 | `Pattern.h` | `UPattern` base and `UTickablePattern` |
 | `Projectile/` | Patterns that spawn projectiles (spiral, cone spray, salve) |
-| `Hazard/` | Patterns that hit through server-judged geometry (beam, wave, pillar zones, zone) |
+| `Hazard/` | Patterns that hit through server-judged geometry (beam, wave, zone and its pillar / add children) |
 
 Flow: `UPatternAbility::ActivateAbility` → `PatternStartMulticast` → every machine instantiates the pattern, runs on server time → completion fires `OnPatternEnd` → ability ends.
 
 ## Pattern.h
 - `UPattern`: `OnCreate(AbilityTag)`, `InitPattern(Payload, PatternData)`, pure `StartPattern()`, `EndPattern(bForceStop)`.
+- `GetSpots()`: every location this launch lands on, set by `PatternStartMulticast` before `InitPattern` (`Base/CLAUDE.md`, "Spots"). Never empty: no spots given = `{Payload.Origin}`. First = `Payload.Origin`.
 - `EndPattern(false)`: jumps montage to end section + broadcasts `OnPatternEnd`; `true`: immediate stop, no broadcast (ability's `EndAbility` path).
 - `UTickablePattern`: extend for new patterns; implement `TickPattern(ServerTime, SpentTime)`.
   - `SpentTime = ServerTime - Payload.ServerSpawnTime`; no delta time, deterministic.

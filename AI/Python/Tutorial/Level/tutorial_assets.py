@@ -23,11 +23,12 @@ MOVER_TAG = "TargetPoint.Tutorial.Mover"
 MOVER_ARENA_TAG = "Arena.Tutorial.Dummies"
 SHOOT_ABILITY_TAG = "Ability.Spell.ProjectileToAllPlayers"
 
-# Placeholder values until the user tunes them; the three columns are the difficulty levels (CT_BossHex shape).
+# Placeholder values until the user tunes them; the three columns are the difficulty levels Safe, Reduced, Original
+# (CT_BossHex shape); a plain number is the same on all three. The tutorial always runs Safe (column 1).
 ROWS = [
     ("MinibossHealth", 500.0),
     ("DummyHealth", 100.0),
-    ("AllyDummyHealth", 200.0),
+    ("AllyDummyHealth", (50.0, 200.0, 200.0)),
     ("DummyLandingDamage", 10.0),
     ("DummyZoneDamage", 3.0),
     ("DummyZoneGrowthTime", 12.0),
@@ -45,8 +46,11 @@ ROWS = [
     ("ColorLineRememberSeconds", 5.0),  # first line of the lethal-wave step
     ("ColorDeathLineSeconds", 5.0),
     ("HealCallPauseSeconds", 6.0),  # Deploy room: pause before each "I need healing" line
-    ("MinibossProjectileDamage", 8.0),
+    ("MinibossProjectileDamage", (5.0, 8.0, 8.0)),
     ("MinibossProjectileSpeed", 600.0),
+    ("AllyProjectileDamage", (15.0, 8.0, 8.0)),
+    ("DummyZoneStartRadius", (10.0, 150.0, 150.0)),
+    ("WaveAddLaneRadius", (127.0, 190.0, 190.0)),  # half-width of a dummy's safe lane
 ]
 
 REPORT = []
@@ -68,11 +72,12 @@ def tag(name):
 
 
 def build_curve_table():
-    """CT_Tutorial: one row per knob, the same value at every difficulty."""
+    """CT_Tutorial: one row per knob, a value or a (Safe, Reduced, Original) triple."""
     with open(CSV_PATH, "w") as handle:
         handle.write(",1,2,3\n")
         for name, value in ROWS:
-            handle.write("%s,%s,%s,%s\n" % (name, value, value, value))
+            safe, reduced, original = value if isinstance(value, tuple) else (value,) * 3
+            handle.write("%s,%s,%s,%s\n" % (name, safe, reduced, original))
     settings = unreal.CSVImportSettings()
     settings.set_editor_property("ImportType", unreal.CSVImportType.ECSV_CURVE_TABLE)
     settings.set_editor_property("ImportCurveInterpMode", unreal.RichCurveInterpMode.RCIM_CONSTANT)

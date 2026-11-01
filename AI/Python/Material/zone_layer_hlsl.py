@@ -16,7 +16,8 @@ MAX_MEANINGS = 4
 SHAPES = """struct FGeoZoneShapes
 {
     // Signed distance from Position to the shape's outline, negative inside. Core: distance from the shape's core
-    // (circle centre, beam middle line); Extent: the core's distance to the outline (radius, half-width). A beam with
+    // (circle centre, beam middle line, ring inner radius); Extent: the core's distance to the outline (radius,
+    // half-width, ring width). A beam with
     // bFillAlong: Core = distance along it from its start, Extent = its length (EGeoFillMode::AlongBeam).
     float Distance(int Shape, float2 Position, float4 Params0, float4 Params1, bool bFillAlong, out float Extent,
                    out float Core)
@@ -27,6 +28,16 @@ SHAPES = """struct FGeoZoneShapes
             Extent = Params0.z;
             Core = length(Position - Params0.xy);
             return Core - Extent;
+        }
+
+        if (Shape == 2)
+        {
+            // Ring: centre XY, outer radius, inner radius; inner 0 = a disc, no inner outline.
+            float Radial = length(Position - Params0.xy);
+            float Inner = max(Params0.w, 0.0);
+            Extent = Params0.z - Inner;
+            Core = Radial - Inner;
+            return Inner <= 0.0 ? Radial - Params0.z : max(Radial - Params0.z, Inner - Radial);
         }
 
         // Beam: start XY, end XY; half-width.
@@ -107,16 +118,24 @@ for (int Slot = 0; Slot < Count; ++Slot)
 }}
 
 // How many covering shapes carry each of the first {MAX_MEANINGS} colours, in ordinal order.
-Counts = float4(0.0, 0.0, 0.0, 0.0);
+// A local array takes the dynamic index: an out parameter (Counts) is not addressable once the loop unrolls.
+float Picked[{MAX_MEANINGS}];
+for (int Meaning = 0; Meaning < {MAX_MEANINGS}; ++Meaning)
+{{
+    Picked[Meaning] = 0.0;
+}}
+
 int Found = 0;
 for (int Bit = 0; Bit < {COLOR_BITS}; ++Bit)
 {{
     if (((Union >> Bit) & 1u) != 0u && Found < {MAX_MEANINGS})
     {{
-        Counts[Found] = BitCounts[Bit];
+        Picked[Found] = BitCounts[Bit];
         ++Found;
     }}
 }}
+
+Counts = float4(Picked[0], Picked[1], Picked[2], Picked[3]);
 
 return (float)Union;
 """

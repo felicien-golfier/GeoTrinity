@@ -106,7 +106,6 @@ void UGeoZoneLayerSubsystem::SpawnLayerActor()
 	FActorSpawnParameters SpawnParameters;
 	// Never saved with an editor world's level, never listed in its outliner.
 	SpawnParameters.ObjectFlags |= RF_Transient;
-	SpawnParameters.bHideFromSceneOutliner = true;
 	LayerActor = GetWorld()->SpawnActor<AGeoZoneLayerActor>(SpawnParameters);
 	if (ensureMsgf(LayerActor, TEXT("%hs: the zone layer actor would not spawn"), __FUNCTION__))
 	{

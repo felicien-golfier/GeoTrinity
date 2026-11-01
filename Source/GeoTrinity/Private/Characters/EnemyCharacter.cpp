@@ -96,6 +96,7 @@ void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)
 		Tags.Add(Setup.Tag);
 	}
 
+	GetCharacterMovement()->MaxWalkSpeed *= Setup.WalkSpeedMultiplier;
 	AggroRadiusOverride = Setup.AggroRadius;
 	MaxHealthOverride = Setup.MaxHealth;
 	StartHealthRatio = Setup.StartHealthRatio;

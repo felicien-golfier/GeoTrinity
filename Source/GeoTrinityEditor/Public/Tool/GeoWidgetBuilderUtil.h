@@ -96,7 +96,8 @@ public:
 
 	/**
 	 * Compiles and saves the widget blueprint. Call once after a batch of Construct/Attach/Remove + Python slot edits.
-	 * First lays out every stack of menu buttons (see SpaceMenuButtons), so no builder can leave one uneven.
+	 * FinishBuild, which ends it, first lays out every stack of menu buttons (see SpaceMenuButtons), so no builder can
+	 * leave one uneven.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void CommitTree(UWidgetBlueprint* WidgetBlueprint);

@@ -56,4 +56,8 @@ struct GEOTRINITY_API FGeoEnemySetup
 	 * anywhere. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup")
 	float AggroRadius = -1.f;
+
+	/** Scales the class's walk speed (0.5 = half as fast). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEnemySetup", meta = (ClampMin = "0.01"))
+	float WalkSpeedMultiplier = 1.f;
 };

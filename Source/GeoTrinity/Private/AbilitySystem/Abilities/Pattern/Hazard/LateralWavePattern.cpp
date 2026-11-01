@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 
-#include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Actor/Arena/GeoArenaVolume.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -10,6 +9,7 @@
 
 ULateralWavePattern::ULateralWavePattern()
 {
+	HazardColor.Color = EGeoColor::LethalDamage;
 	TelegraphFillMode = EGeoFillMode::AlongBeam;
 	HazardFillMode = EGeoFillMode::AlongBeam;
 }
@@ -32,7 +32,6 @@ void ULateralWavePattern::InitPattern(FAbilityPayload const& Payload, TInstanced
 		RollDirection(Payload);
 	}
 
-	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
 	Super::InitPattern(Payload, PatternData);
 }
 
@@ -80,12 +79,16 @@ TArray<FSafeSpot> ULateralWavePattern::GetSafeSpots() const
 	}
 
 	TArray<ESafeSpotSource> Sources = SafeSpotSources;
-	if (!GeoLib::IsServer(GetWorld()))
+	bool const bGatherAdds = Sources.Remove(ESafeSpotSource::Adds) > 0 && GeoLib::IsServer(GetWorld());
+	TArray<FSafeSpot> Spots =
+		GatherSafeSpots(this, StoredPayload, Sources, ESafeSpotShadow::Lane, 0.f, SpotRadius, FixedLocations);
+	if (bGatherAdds)
 	{
-		Sources.Remove(ESafeSpotSource::Adds);
+		Spots.Append(GatherSafeSpots(this, StoredPayload, {ESafeSpotSource::Adds}, ESafeSpotShadow::Lane, 0.f,
+									 AddSpotRadius.GetValueAtLevel(StoredPayload.AbilityLevel), {}));
 	}
 
-	return GatherSafeSpots(this, StoredPayload, Sources, ESafeSpotShadow::Lane, 0.f, SpotRadius, FixedLocations);
+	return Spots;
 }
 
 bool ULateralWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D const Location, float const SpentTime) const
@@ -102,9 +105,9 @@ bool ULateralWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D const L
 		&& !FSafeSpot::AnyShields(GetSafeSpots(), Location, FiringOrigin, Forward);
 }
 
-void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
+void ULateralWavePattern::MoveHazardVisual(float const SpentTime)
 {
-	if (IsValid(BeamVisual))
+	if (IsValid(HazardVisual))
 	{
 		FVector2D const Forward = GetForward();
 		FVector2D const Right(-Forward.Y, Forward.X);
@@ -122,18 +125,11 @@ void ULateralWavePattern::MoveBeamVfx(float const SpentTime)
 			ShapeHalfWidth = (BandEnd - BandStart) * 0.5f;
 		}
 
-		BeamVisual->SetWorldLocationAndRotation(FVector(BeamStart, ArbitraryCharacterZ),
-												FVector(BeamDirection, 0.f).Rotation());
-		BeamVisual->Shape.Length = BeamLength;
-		BeamVisual->Shape.HalfWidth = ShapeHalfWidth;
-		BeamVisual->bSafeSpotCut = true;
-		FSafeSpotMask::Set(this, MaskMaterialParameterCollection, GetSafeSpots(), Forward, FiringOrigin);
+		HazardVisual->SetWorldLocationAndRotation(FVector(BeamStart, ArbitraryCharacterZ),
+												  FVector(BeamDirection, 0.f).Rotation());
+		HazardVisual->Shape.Shape = EGeoZoneShape::Beam;
+		HazardVisual->Shape.Length = BeamLength;
+		HazardVisual->Shape.HalfWidth = ShapeHalfWidth;
+		SetSafeSpots(GetSafeSpots(), Forward, FiringOrigin);
 	}
-}
-
-void ULateralWavePattern::EndPattern(bool const bForceStop)
-{
-	FSafeSpotMask::Clear(this, MaskMaterialParameterCollection);
-
-	Super::EndPattern(bForceStop);
 }

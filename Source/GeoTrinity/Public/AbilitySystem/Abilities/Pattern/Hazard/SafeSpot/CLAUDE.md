@@ -1,6 +1,6 @@
 # Abilities/Pattern/Hazard/SafeSpot
 
-Safe spots of a hazard: places that shield from it. One system for every boss hazard; the pattern owns the *spots* (code, deterministic), the VFX only reads them through the mask MPC below (devastating: its AOE material; lateral wave: the zone layer, `../CLAUDE.md` "LateralWave").
+Safe spots of a hazard: places that shield from it. One system for every boss hazard; the pattern owns the *spots* (code, deterministic), the zone layer only reads them through the mask MPC below, uploaded by `UZoneHazardPattern::SetSafeSpots` (`../CLAUDE.md` "ZoneHazard").
 
 | File | Role |
 |---|---|
@@ -17,15 +17,15 @@ Safe spots of a hazard: places that shield from it. One system for every boss ha
 
 ## Sources (`ESafeSpotSource`, a pattern picks one or several)
 - `Pillars`: living `AGeoPillar` of the caster's hostile-or-neutral set; radius = collision radius. Devastating adds them as its front reaches them.
-- `Adds`: living adds of the caster's arena (`AGeoArena::GetLiveAdds()`, server only: a client sees none, the tutorial is solo); radius = the pattern's `SpotRadius`. No arena (the encounters' shared caster) = no add spots: one wave asset serves the miniboss (adds) and an encounter (fixed spots).
+- `Adds`: living adds of the caster's arena (`AGeoArena::GetLiveAdds()`, server only: a client sees none, the tutorial is solo); radius = the pattern's `AddSpotRadius` (at the payload's level; a pattern without one uses `SpotRadius`). No arena (the encounters' shared caster) = no add spots: one wave asset serves the miniboss (adds) and an encounter (fixed spots).
 - `Fixed`: world locations the pattern computes from offsets from the payload origin in its own frame, taken from its runtime pattern data (lateral wave: `FLateralWavePatternData`, given by the encounter per firing); radius = `SpotRadius`.
 - Read every tick: a dead add drops its spot at once. A spot exists from the telegraph on so the player reads it before the front moves.
 
 ## Mask (VFX)
 - `FSafeSpotMask::Set(World, Mpc, Spots, LaneDirection)` writes `PillarPosWS_XX` (alpha 1 = slot used, 0 = free) / `Pillar_Radius` / `SafeSpot_ShadowMode` / `SafeSpot_LaneDirection` (`GeoMaterialParams`) for the first 8 spots (radius and shadow mode of the first, direction = the travel's unit XY, read by `Lane` only), rest logged and skipped; `Clear` = `Set` with no spots, the unused sentinel in all 8.
-- The MPC is global: `Clear` at init and end of every pattern that uses it (devastating also at start); two patterns using it at once is unsupported (one live hazard per boss).
-- Material side: the shadow mode is the material scalar `SafeSpot_ShadowMode` (the `ESafeSpotShadow` ordinal: 0 Behind, 1 Lane, 2 Disc), written with the MPC upload. For a used slot, a pixel P is cut when `Disc`: `distance(P, Spot) <= Pillar_Radius`; `Lane`: `|dot(P - Spot, Right(LaneDirection))| <= Pillar_Radius`. `Behind`: P is cut when it lies beyond the spot as seen from `SafeSpot_OriginWS` (the hazard origin, written by `Set`) and within the spot's tangent lines (the `Shields` geometry). `MF_SafeSpotCut` (`/Game/Art/VFX/AOE/Functions`) outputs that `CutMask`.
-- Opt-in: the MPC is global, so the zone layer applies `CutMask` only to slots flagged `SafeSpotCut` (`UGeoZoneVisualComponent::bSafeSpotCut`, default false). The pattern that uploads the spots sets it on its own shape; every other shape ignores the mask.
-- Readers: devastating's AOE material (`Behind`), the zone layer `M_ZoneLayer` (`Behind`, `Disc` or `Lane`, a flagged slot covers nothing where cut, outline and shade included). No used slot = nothing cut, so every other beam is untouched; a material that ignores the MPC shows no cut, damage stays right.
+- The MPC is global: `UZoneHazardPattern` clears it at init and end (devastating also at start, `ClearSafeSpots`); two patterns using it at once is unsupported (one live hazard per boss).
+- Material side: the shadow mode is the material scalar `SafeSpot_ShadowMode` (the `ESafeSpotShadow` ordinal: 0 Behind, 1 Lane, 2 Disc), written with the MPC upload. For a used slot, a pixel P is cut when `Disc`: `distance(P, Spot) <= Pillar_Radius`; `Lane`: `|dot(P - Spot, Right(LaneDirection))| <= Pillar_Radius`. `Behind`: P is cut when it lies beyond the spot as seen from `SafeSpot_OriginWS` (the hazard origin, written by `Set`) and within the spot's tangent lines (the `Shields` geometry). `MF_SafeSpotCut` (`/Game/Art/VFX/ZoneLayer/Functions`, beside the zone layer that calls it) outputs that `CutMask`.
+- Opt-in: the MPC is global, so the zone layer applies `CutMask` only to slots flagged `SafeSpotCut` (`UGeoZoneVisualComponent::bSafeSpotCut`, default false). `SetSafeSpots` sets it on the uploading hazard's own shape; every other shape ignores the mask.
+- Reader: the zone layer `M_ZoneLayer` only (`Behind`, `Disc` or `Lane`, a flagged slot covers nothing where cut, outline and shade included). No used slot = nothing cut, so every other beam is untouched; a material that ignores the MPC shows no cut, damage stays right.
 - A beam pattern picks the mode by the shadow it gives its spots: the lateral wave `Lane` (+ direction), any other beam `Disc`.
 - Dedicated server never touches the MPC.

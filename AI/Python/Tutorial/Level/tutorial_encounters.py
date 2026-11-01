@@ -74,7 +74,8 @@ MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py:
 MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
 MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
 MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius -1)
-MINIBOSS_ALLY_TAG = "TutorialMinibossAlly"  # BP_TutorialSummonedDummy's AllySetup.Tag
+MINIBOSS_WALK_SPEED_MULTIPLIER = 0.5  # the boss walks between its points at half BP_Dummy's speed
+MINIBOSS_ALLY_TAG ="TutorialMinibossAlly"  # BP_TutorialSummonedDummy's AllySetup.Tag
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
 ZONE_ATTITUDE = 7  # ETeamAttitudeBitflag: Neutral | Friendly | Hostile, a zone acts on everyone
 NO_AGGRO_RADIUS = -1.0  # GeoEnemySetup default: the enemy waits to be hit
@@ -248,6 +249,7 @@ def build_miniboss_room():
     boss = Builder(arena).enemy_setup(MINIBOSS_TAG, "MinibossHealth")
     boss.set_editor_property("BehaviourStateTree", unreal.load_asset(MINIBOSS_TREE))
     boss.set_editor_property("AbilityTags", [tag(ability) for ability in MINIBOSS_ABILITIES])
+    boss.set_editor_property("WalkSpeedMultiplier", MINIBOSS_WALK_SPEED_MULTIPLIER)
     arena.set_editor_property("BossClass", unreal.load_asset(DUMMY_BP).generated_class())
     arena.set_editor_property("BossSetup", boss)
     arena.set_editor_property("ArenaTag", tag("Arena.Tutorial.Miniboss"))

@@ -45,6 +45,9 @@ GeoZoneLayer::FSlotTexels GeoZoneLayer::PackSlot(UGeoZoneVisualComponent const& 
 			Texels[2] = FLinearColor(Component.Shape.HalfWidth, 0.f, 0.f, 0.f);
 			break;
 		}
+	case EGeoZoneShape::Ring:
+		Texels[1] = FLinearColor(Origin.X, Origin.Y, Component.Shape.Radius, Component.Shape.InnerRadius);
+		break;
 	}
 
 	return Texels;

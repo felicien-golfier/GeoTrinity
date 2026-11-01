@@ -76,6 +76,15 @@ bool FGeoZoneLayerPackSlotTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("None: no fill-along flag"), UnfilledTexels[0].B, 3.f);
 	TestEqual(TEXT("None: nothing filled, whatever the timed fill"), UnfilledTexels[0].A, 0.f);
 
+	UGeoZoneVisualComponent* const Ring = SpawnZoneShape(*World, FVector(100.f, 200.f, 0.f), 0.f, FVector::ZeroVector);
+	Ring->Shape.Shape = EGeoZoneShape::Ring;
+	Ring->Shape.Radius = 400.f;
+	Ring->Shape.InnerRadius = 250.f;
+	GeoZoneLayer::FSlotTexels const RingTexels = GeoZoneLayer::PackSlot(*Ring);
+	TestEqual(TEXT("Ring head: shape ordinal 2"), RingTexels[0].R, 2.f);
+	TestEqual(TEXT("Ring: centre XY, outer, inner"), RingTexels[1], FLinearColor(100.f, 200.f, 400.f, 250.f));
+	TestEqual(TEXT("Ring: no third row"), RingTexels[2], FLinearColor::Transparent);
+
 	DestroyTestWorld(World);
 	return true;
 }

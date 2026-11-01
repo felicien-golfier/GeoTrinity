@@ -5,6 +5,7 @@
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/PlayableCharacter.h"
+#include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 FVector2D UGeoSummonAddAbility::GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* /*SourceASC*/,
@@ -28,7 +29,9 @@ void UGeoSummonAddAbility::OnPatternEnd()
 	if (ensureMsgf(Arena, TEXT("%s: the caster has no arena to summon into"), *GetName())
 		&& ensureMsgf(AddClass, TEXT("%s: no AddClass set"), *GetName()))
 	{
-		Arena->SpawnAdd(AddClass, FTransform(FVector(StoredPayload.Origin, ArbitraryCharacterZ)), &AddSetup);
+		bool const bSafeLevel = StoredPayload.AbilityLevel == GeoDifficultyMask::Safe;
+		Arena->SpawnAdd(AddClass, FTransform(FVector(StoredPayload.Origin, ArbitraryCharacterZ)),
+						bUseSafeAddSetup && bSafeLevel ? &SafeAddSetup : &AddSetup);
 	}
 
 	Super::OnPatternEnd();

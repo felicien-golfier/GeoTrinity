@@ -39,6 +39,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon")
 	FGeoEnemySetup AddSetup;
 
+	/** True: an ability running at Safe level spawns the add with SafeAddSetup instead of AddSetup. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon")
+	bool bUseSafeAddSetup = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon", meta = (EditCondition = "bUseSafeAddSetup"))
+	FGeoEnemySetup SafeAddSetup;
+
 	/** Largest distance between the picked player and the spot. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Summon", meta = (ClampMin = "0"))
 	float SpotRadius = 400.f;

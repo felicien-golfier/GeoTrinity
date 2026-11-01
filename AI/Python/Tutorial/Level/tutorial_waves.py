@@ -20,6 +20,7 @@ ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/LateralWave"
 OLD_ABILITY_DIR = "/Game/AbilitySystem/Abilities/Enemy/TutorialWaves"
 OLD_CASTER = "/Game/Characters/Enemies/Tutorial/BP_HiddenCaster_TutorialWaves"
 CATALOG = "/Game/AbilitySystem/Data/DA_AbilityInfo"
+CURVE_TABLE = "/Game/AbilitySystem/Data/CurveTables/CT_Tutorial"  # tutorial_assets.py: WaveAddLaneRadius, a dummy's lane
 MASK_COLLECTION = "/Game/Art/VFX/Abilities/Enemies/PillarsAOE/MPC_MaskedArea"
 WAVE_START_TAG ="TargetPoint.Tutorial.WaveStart"
 WAVE_TAG = "Ability.Spell.LateralWave"
@@ -77,10 +78,17 @@ def build_wave():
     cdo.set_editor_property("BandWidth", BAND_WIDTH)
     cdo.set_editor_property("HalfWidth", HALF_WIDTH)
     cdo.set_editor_property("SpotRadius", LANE_WIDTH * 0.5)
+    lane = unreal.ScalableFloat()
+    handle = unreal.CurveTableRowHandle()
+    handle.set_editor_property("CurveTable", unreal.load_asset(CURVE_TABLE))
+    handle.set_editor_property("RowName", "WaveAddLaneRadius")
+    lane.set_editor_property("Value", 1.0)
+    lane.set_editor_property("Curve", handle)
+    cdo.set_editor_property("AddSpotRadius", lane)
     cdo.set_editor_property("SafeSpotSources", [unreal.SafeSpotSource.FIXED, unreal.SafeSpotSource.ADDS])
     color = unreal.GeoColorParam()
     color.import_text("(Color=LethalDamage)")
-    cdo.set_editor_property("BeamColor", color)
+    cdo.set_editor_property("HazardColor", color)
     cdo.set_editor_property("MaskMaterialParameterCollection", unreal.load_asset(MASK_COLLECTION))
     commit_bp(pattern_bp)
 

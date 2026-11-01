@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "Tool/GeoDifficulty.h"
 
 #include "GeoGameMode.generated.h"
 
@@ -40,6 +41,9 @@ public:
 	 * the PIE "Play from Here" start first. Falls back to the engine pick when every start is tagged. */
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 
+	/** Sets the game state's difficulty to StartDifficulty before any actor begins play. */
+	virtual void InitGameState() override;
+
 	/** Transitions the match back to WaitingToStart, resetting the round. */
 	void RequestWaitingToStart() { SetMatchState(MatchState::WaitingToStart); }
 
@@ -49,4 +53,8 @@ public:
 	/** One player only: a remote joiner and a second local player are both refused (tutorial map). */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoGame")
 	bool bSoloOnly = false;
+
+	/** Difficulty the map starts at (tutorial map: Safe). Every enemy reads it as its level when it begins play. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoGame")
+	EGeoDifficulty StartDifficulty = EGeoDifficulty::Original;
 };

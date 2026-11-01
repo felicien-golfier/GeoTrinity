@@ -16,4 +16,4 @@
 - Zone shapes carry slots, not colours: `GeoZoneLayer::MakeColorMask` (`World/ZoneLayer/CLAUDE.md`), so the layer can merge overlaps. HUD colours stay `FLinearColor`.
 
 ## GeoNiagaraParams
-- One `inline FName const` per `User.*` param (bullet, cue meaning colours, wave AOE). Never type a name at a call site; Material / MPC names stay named constants local to their owner.
+- One `inline FName const` per `User.*` param (bullet, cue meaning colours). Never type a name at a call site; Material / MPC names stay named constants local to their owner.

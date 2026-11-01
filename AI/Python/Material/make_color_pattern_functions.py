@@ -8,7 +8,7 @@ Every MF_ColorPattern_* shares one pin contract (Position, Scroll, ColorCount in
 import unreal
 
 FOLDER = "/Game/Art/VFX/Generic/Materials/Functions"
-TELEGRAPH_FOLDER = "/Game/Art/VFX/AOE/Functions"
+TELEGRAPH_FOLDER = "/Game/Art/VFX/ZoneLayer/Functions"
 COLLECTION_FOLDER = "/Game/Art/VFX/Generic/Materials"
 # Each created with this value only: a rebuild keeps whatever the collection has been tuned to since.
 COLLECTION_KNOBS = {

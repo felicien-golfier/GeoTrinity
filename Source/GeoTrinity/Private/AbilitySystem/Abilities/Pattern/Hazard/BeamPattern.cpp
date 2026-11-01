@@ -12,11 +12,6 @@
 static TAutoConsoleVariable CVarDrawBeamBorder(TEXT("Geo.DrawBeamBorder"), false,
 											   TEXT("When true, draws the beam pattern's hit-scan rectangle borders"));
 
-UBeamPattern::UBeamPattern()
-{
-	bHasHazard = true;
-}
-
 void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
 	Super::OnCreate(AbilityTag, Owner);
@@ -25,37 +20,9 @@ void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 	{
 		SweepAngle = SweepBeamAbility->GetSweepAngle();
 	}
-
-	if (!GeoLib::IsDedicatedServer(GetWorld()))
-	{
-		BeamVisual = NewObject<UGeoZoneVisualComponent>(&Owner);
-		BeamVisual->SetupAttachment(Owner.GetRootComponent());
-		// Placed in world space by MoveBeamVfx, whatever the owner does.
-		BeamVisual->SetAbsolute(true, true, true);
-		BeamVisual->Shape.Shape = EGeoZoneShape::Beam;
-		BeamVisual->ColorMask = GeoZoneLayer::MakeColorMask(BeamColor, SecondaryBeamColors);
-		BeamVisual->SetZoneVisible(false);
-		BeamVisual->RegisterComponent();
-	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UBeamPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
-{
-	Super::InitPattern(Payload, PatternData);
-
-	if (IsValid(BeamVisual))
-	{
-		BeamVisual->Shape.Length = BeamRange;
-		BeamVisual->Shape.HalfWidth = BeamHalfWidth;
-		BeamVisual->Layer = EGeoZoneLayer::Telegraph;
-		BeamVisual->FillMode = TelegraphFillMode;
-		BeamVisual->SetTimedFill(StoredPayload.ServerSpawnTime, StartDelay);
-		MoveBeamVfx(-StartDelay);
-		BeamVisual->SetZoneVisible(true);
-	}
-}
-
 float UBeamPattern::GetBeamYaw(float const SpentTime, float const BossServerTime) const
 {
 	if (FollowBossOrientation && IsValid(StoredPayload.SourceAvatar))
@@ -78,36 +45,22 @@ FVector UBeamPattern::GetBeamOrigin(float const BossServerTime) const
 	return FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 }
 
-void UBeamPattern::MoveBeamVfx(float const SpentTime)
+void UBeamPattern::MoveHazardVisual(float const SpentTime)
 {
-	if (IsValid(BeamVisual))
+	if (IsValid(HazardVisual))
 	{
 		float const ServerTime = GeoLib::GetServerTime(GetWorld(), true);
-		BeamVisual->SetWorldLocationAndRotation(GetBeamOrigin(ServerTime),
-												FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f));
+		HazardVisual->Shape.Shape = EGeoZoneShape::Beam;
+		HazardVisual->Shape.Length = BeamRange;
+		HazardVisual->Shape.HalfWidth = BeamHalfWidth;
+		HazardVisual->SetWorldLocationAndRotation(GetBeamOrigin(ServerTime),
+												  FRotator(0.f, GetBeamYaw(SpentTime, ServerTime), 0.f));
 	}
-}
-
-void UBeamPattern::TickDuringInit(float const SpentTime)
-{
-	MoveBeamVfx(SpentTime);
-}
-
-void UBeamPattern::StartPattern()
-{
-	if (IsValid(BeamVisual))
-	{
-		BeamVisual->Layer = EGeoZoneLayer::Ground;
-		BeamVisual->FillMode = HazardFillMode;
-		BeamVisual->SetTimedFill(StoredPayload.ServerSpawnTime + StartDelay, GetHazardDuration());
-	}
-
-	Super::StartPattern();
 }
 
 void UBeamPattern::TickPattern(float const ServerTime, float const SpentTime)
 {
-	MoveBeamVfx(SpentTime);
+	Super::TickPattern(ServerTime, SpentTime);
 
 	if (GeoLib::IsServer(GetWorld()) && CVarDrawBeamBorder.GetValueOnGameThread())
 	{
@@ -139,28 +92,9 @@ bool UBeamPattern::IsInHazard(AActor const* Target, FVector2D const Location, fl
 							  BeamHalfWidth, OverlapMode, GeoASLib::GetTeamId(StoredPayload.SourceOwner));
 }
 
-void UBeamPattern::OnHazardEnd()
-{
-	Super::OnHazardEnd();
-	if (IsValid(BeamVisual))
-	{
-		BeamVisual->SetZoneVisible(false);
-	}
-}
-
 FGameplayCueParameters UBeamPattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
 {
 	FGameplayCueParameters CueParams = Super::FillCueParam(Cue, Payload);
 	CueParams.RawMagnitude = BeamRange;
 	return CueParams;
-}
-
-void UBeamPattern::EndPattern(bool const bForceStop)
-{
-	if (IsValid(BeamVisual))
-	{
-		BeamVisual->SetZoneVisible(false);
-	}
-
-	Super::EndPattern(bForceStop);
 }
