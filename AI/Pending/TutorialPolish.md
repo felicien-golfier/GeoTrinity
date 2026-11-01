@@ -15,3 +15,6 @@ Read first: `AI/CodingStyle.md`, `AI/Python/Tutorial/CLAUDE.md` ("Read the scene
 - [x] `encounters_diff.py` (carry hand edits), then `tutorial_encounters.py` (creates `Tut_Shoot_FirstDummyPoint`, removes arrival zones, rewrites steps)
 - [x] Headless `pie_tutorial_flow.py` (Landing → Shoot) and `pie_tutorial_jump.py`
 - [ ] User plays: Deploy and Special rooms (page after the Cat line; Special sting when the beam is never pressed); tune `FIRST_DUMMY_DEATH_SECONDS` (2 s placeholder) against the death montage; rewrite the sting line
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

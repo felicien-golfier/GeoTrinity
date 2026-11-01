@@ -169,3 +169,6 @@ Docs first: `Gem/CLAUDE.md` (profile events), `Encounter/Trigger/CLAUDE.md` (two
 - [ ] Intro screens: layered images + drift data (`IntroBoard.md`); layer art for pages 1-2
 - [ ] Landing level dressing; Cat hologram: mesh done (`SM_Cat`, `Cat/Mesh/generate_cat_mesh.py`), left: materials per slot (palette, open design above), placement; rig + animation → `CatAnimation.md`
 - [ ] Cat animations: whistle (note glyph + tail sway), stunned (jaw drop, wide eyes, spin)
+
+## Status 2026-11-01
+15 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

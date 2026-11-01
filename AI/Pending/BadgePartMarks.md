@@ -12,3 +12,6 @@ Done: `generate_class_badge_masks.py` (masks in `GamePictures/BadgeMasks/`, `LIN
 ## Verify
 - [ ] Look at the masks in game / preview: ring + inner on each movable part (Circle disc, 2 Square mandibles, Triangle needle + plug); confirm the thin lines (Square contour + circuit, Circle middle line) are the right ones; tune `INNER_SCALE`, `RING_WIDTH`, insets at the top of the script.
 - [ ] No `Source/` change: Tutorial gate not triggered.
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

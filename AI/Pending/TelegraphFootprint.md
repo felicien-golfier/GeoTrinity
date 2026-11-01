@@ -38,3 +38,6 @@ Docs written: `Source/GeoTrinity/Public/AbilitySystem/Abilities/Pattern/Hazard/C
 
 ## Verify
 - [ ] User check: no flash before the wave telegraph; full rectangle with lanes cut from frame 1; fill crosses start→far edge; devastating wave telegraph full circle with pillar shadows, fill from the centre (no PIE unless asked).
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

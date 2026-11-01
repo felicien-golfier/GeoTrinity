@@ -20,3 +20,6 @@ Docs written: none (a sweep, no feature). Scope: new features excluded (`Trainin
 - [ ] Sweep the rest. Every row left needs the user (look, feel, PIE, design question) or is an excluded feature: CatAnimation, CatClipsPick, CatEvilFace, CatLocomotionIdles, CatWalkRun, CatPortrait, CatLineTypewriter, EchoSocketHalo, EchoUiPolish, SoundConcurrency (bullet impacts by ear), TutorialPolish, TutorialTeleporters, TutorialExit, TeleportPortal, GemShapes3D, GemEcho, MessageLog, QuestDummies, TestAim, Tutorial. Re-check each for a row an agent can still do; otherwise list them for the user.
 - [ ] Zones room: docs and `tutorial_encounters.py` already hold a 2 s `delay()` after both Shield and Heal were entered (`ZoneColors`, `AI/Tutorial/Steps.md` step 7). Check the scene has it (`encounters_diff.py` through the bridge, editor open) before calling it done.
 - [ ] Delete this file when empty.
+
+## Status 2026-11-01
+3 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

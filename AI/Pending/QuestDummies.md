@@ -7,3 +7,6 @@ Done 2026-10-21: per-enemy respawn, `TimeLimitSeconds` countdown on world time, 
 
 ## Left (user)
 - [ ] Artifact "Tutorial Board" page 6 (`AI/Artifacts.md`): respawn timer becomes a 30 min quest limit, "ten" becomes nine; the user edits the artifact, Claude syncs back
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

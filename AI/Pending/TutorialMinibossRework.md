@@ -15,3 +15,6 @@ Done: code (`StartDifficulty`, `AddSpotRadius`, `SafeAddSetup`, `ZoneStartSize`)
 - [ ] The summon plays `SK_Star_PikeNova_Montage` on `BP_Dummy`: confirm it reads as the boss's summon and that its length suits 2 s.
 - [ ] Ally projectiles show the `AllyDamage` colour: `BP_TutorialPattern_AllySalve` has the head/trail override set, but a replicated projectile may carry its colour on its Blueprint (`Tool/Visual/CLAUDE.md`); if the colour does not show, colour the projectile Blueprint child.
 - [ ] Ally bullets never hurt the player: guaranteed by the hostile-only attitude of the salve pattern; look once in play.
+
+## Status 2026-11-01
+6 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone. Repo check: `WalkSpeedMultiplier` is in `GeoEnemySetup.h`, `ApplySetup` and `tutorial_encounters.py`; build, map value and tests remain.

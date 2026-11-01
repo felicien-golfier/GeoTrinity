@@ -44,3 +44,6 @@ Decided with the user: enemy character (replicated, hittable, reuses GAS + State
 - [ ] Tutorial gate (`Source/` touched): `GeoTrinity.Tutorial.FullRun` built and green (CLAUDE.md "Tutorial gate")
 - [ ] `Tutorial/Runtime/pie_training_cat.py` headless passes
 - [ ] User, in PIE when asked: pun cadence and range, retort reads, warning ring size, chase speed vs player (dash escape?), return and calm, the corner spot
+
+## Status 2026-11-01
+22 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

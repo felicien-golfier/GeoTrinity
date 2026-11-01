@@ -24,3 +24,6 @@ Read `AI/CodingStyle.md` first.
 ## Verify
 - [ ] Build editor, `Tools\Run_Tests.bat GeoTrinityUI`, tutorial gate (`GeoTrinity.Tutorial.FullRun`)
 - [ ] User looks at the portrait in the Zones room
+
+## Status 2026-11-01
+11 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

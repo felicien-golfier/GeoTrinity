@@ -11,3 +11,6 @@ Code done and built (Editor target): `GeoEchoHalo.h/.cpp`, halo built in `UGeoGe
 
 ## Tests
 - [ ] None automated (pure drawing); look judged on the loadout page when the user asks for an editor check.
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

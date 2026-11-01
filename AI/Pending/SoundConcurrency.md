@@ -23,3 +23,6 @@ Docs written: `Source/GeoTrinity/Public/AbilitySystem/Data/FX/CLAUDE.md` ("Sound
 ## Verify
 - [x] Built (DebugGame editor, 2026-10-27): `GeoTrinity.Sound.` green; the whole `GeoTrinity.Tutorial.` set green (31/31, FullRun included)
 - [ ] By ear in game only if the user asks.
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

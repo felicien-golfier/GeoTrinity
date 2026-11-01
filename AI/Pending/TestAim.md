@@ -15,3 +15,6 @@ Docs written: `Source/GeoTrinity/Public/Input/CLAUDE.md` ("Test aim"), `AI/MCP/M
 - [x] Heal by `mcp-epic` (2026-10-19): zone landed on the ally, three taps took Health 20 → 200, `Heal` step completed, `Tut_Pad_04_Exit` opened
 - [ ] Special: not granted in the rooms reachable (encounter 5 is a Fight room); find the step that unlocks it, then check what a `LeftShift` tap does before deciding on a hold seam
 - [ ] Then delete this file
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.
