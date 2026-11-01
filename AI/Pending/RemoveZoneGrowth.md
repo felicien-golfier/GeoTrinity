@@ -26,3 +26,6 @@ Docs written: none yet (workflow steps 2-3 when picked up). Owner docs: `Source/
 
 ## Verify
 - [ ] Build; `GeoTrinity.Tutorial.` full set green (Encounter / tutorial change).
+
+## Status 2026-11-01
+13 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

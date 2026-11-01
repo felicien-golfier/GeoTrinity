@@ -11,3 +11,6 @@ Done (2026-10-26, headless DebugGame commandlet): mesh + rig + every clip re-run
 
 ## Verify
 - [ ] User judges in the editor: grin / fangs read from above, idle beat timing, walk flash (16 frames per 56-frame stride; shorten `EVIL_FACE` in `cat_walks.py` if still too much), walks now peek (head pitch 20)
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

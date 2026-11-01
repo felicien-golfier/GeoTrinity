@@ -19,3 +19,6 @@ Docs written: `Source/GeoTrinity/Public/Characters/CLAUDE.md` ("Enemy setup", "E
 
 ## Verify
 - [ ] Build editor, run the new test and `GeoTrinity.Tutorial.FullRun` (update it if the miniboss start changes)
+
+## Status 2026-11-01
+8 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone. Repo check: the three Code items (`GeoEnemySetup::AggroRadius`, `AggroRadiusOverride`, `CheckAggroDistance`) are present in the repo; the Python setup rows, test and build remain.

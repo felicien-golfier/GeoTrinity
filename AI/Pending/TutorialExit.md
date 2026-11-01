@@ -7,3 +7,6 @@ Done 2026-10-21: script + map applied; `Tutorial/Runtime/pie_tutorial_jump.py` (
 
 ## Left (user)
 - [ ] Open question: the exit pad's look is the normal portal; fine, or a distinct colour for "last door"?
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

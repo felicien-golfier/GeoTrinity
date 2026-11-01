@@ -23,3 +23,6 @@ Docs written: `AI/Python/Boss/CLAUDE.md` ("Deploy clips"), `AI/SoundCreation.md`
 - [ ] Rig scripts: bone counts, weights, bounds match the old static mesh at rest (report in `AI/Output/`).
 - [ ] Clip silhouette check from above (`MCP_Animation.md`, "Checking a clip's silhouette"): frame 0 reads as a small square (turret) / closed hexagon (mine); last frame equals the old static look.
 - [ ] Tutorial gate: `GeoTrinity.Tutorial.FullRun` only if `Source/` changes (none planned).
+
+## Status 2026-11-01
+14 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

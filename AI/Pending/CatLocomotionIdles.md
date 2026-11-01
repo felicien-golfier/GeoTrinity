@@ -30,3 +30,5 @@ Assumption to confirm: "stretch in tuto" = `Cat_Reassemble`'s stretch beat (the 
 ## Verify
 - [ ] User, in the editor: Prowl at slow speeds, Fast at fast, the blend between; each idle variant plays over time without a pop; the Twist entrance stretch
 
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

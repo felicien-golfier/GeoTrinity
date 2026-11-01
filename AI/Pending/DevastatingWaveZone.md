@@ -37,3 +37,6 @@ Docs written: `Source/GeoTrinity/Public/AbilitySystem/Abilities/Pattern/Hazard/C
 
 ## Verify
 - [ ] User check: wave telegraph full circle with pillar shadows; live ring in `LethalDamage`, pillar shadows cut, band = hit band, shading inner → outer; lateral wave and hex beams unchanged.
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

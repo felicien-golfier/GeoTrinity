@@ -16,3 +16,6 @@ Docs written: `AI/Tutorial/CatAnimation.md`, `AI/MCP/MCP_Animation.md` ("Scale a
 
 ## Wire
 - [x] Picked clips into `ABP_Cat` (`cat_anim_blueprint.py`): see `Pending/CatLocomotionIdles.md`.
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

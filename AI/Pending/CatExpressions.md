@@ -42,3 +42,6 @@ Read `AI/CodingStyle.md` first.
 - [ ] `Tools\Build_Editor.bat` (editor closed, `GEO_NO_PAUSE=1`), `Tools\Run_Tests.bat GeoTrinityUI`
 - [ ] Tutorial gate: `GeoTrinity.Tutorial.FullRun` green
 - [ ] User looks: `WBP_CatLine` face unchanged (Neutral), loading screen runs the eight faces
+
+## Status 2026-11-01
+10 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

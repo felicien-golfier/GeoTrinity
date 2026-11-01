@@ -28,3 +28,6 @@ Docs written: `Source/GeoTrinity/Public/World/Camera/CLAUDE.md` ("Projection"), 
 ## Verify (user, by eye — not automated)
 - [ ] `Geo.CameraPerspective 1` in PIE: same floor point centred, zoom wheel / volumes / coop spread move the camera, stars still behind the floor, aim follows the cursor.
 - [ ] Outline post-process (`MI_DeployableOutline`) and any depth-reading material look right in perspective; note fixes here if not.
+
+## Status 2026-11-01
+9 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone. Repo check: docs (`Input/`, `Tool/` CLAUDE.md) describe `IntersectRayWithZPlane` but no `GeoCameraTests.cpp` exists; code not verified in the repo.

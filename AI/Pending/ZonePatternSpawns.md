@@ -45,3 +45,6 @@ Order matters: a Blueprint must be migrated while its old C++ parent and propert
 ## Verify
 - [ ] `Tools\Run_Tests.bat GeoTrinity.Abilities.SummonAddSetup`, the new spot and pattern tests.
 - [ ] `Tools\Run_Tests.bat GeoTrinity.Tutorial.` (tutorial gate, whole set), `FullRun` green.
+
+## Status 2026-11-01
+28 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

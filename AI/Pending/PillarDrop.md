@@ -26,3 +26,6 @@ Docs written: `Actor/Deployable/CLAUDE.md` ("Init phase"), `Actor/Deployable/Pil
 ## Verify
 - [x] `Tools\Run_Tests.bat GeoTrinity.Gameplay.Deployable` + `GeoTrinity.Tutorial.` (31 green)
 - [ ] After the items above: Editor build, `Tools\Run_Tests.bat GeoTrinity.Gameplay.Deployable`, then `GeoTrinity.Tutorial.` (tutorial gate, root `CLAUDE.md`)
+
+## Status 2026-11-01
+9 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

@@ -39,3 +39,6 @@ Read `AI/CodingStyle.md` first.
 - [ ] `Tools\Run_Tests.bat GeoTrinityUI`
 - [ ] Tutorial gate: `GeoTrinity.Tutorial.FullRun` green (root `CLAUDE.md`); the movie player is off in the editor, so it must not change
 - [ ] User looks in a standalone game or package (movie player is off in PIE): boot → menu, menu → tutorial, `Geo.Tutorial.Jump Dash`, tutorial exit; each ≥ 2.5 s, tip readable, bar ends full on a quick load, the tutorial's first line starts after the screen leaves
+
+## Status 2026-11-01
+18 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

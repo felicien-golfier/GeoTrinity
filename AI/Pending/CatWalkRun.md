@@ -19,3 +19,6 @@ Docs written: `AI/Tutorial/CatAnimation.md` ("Living, not mechanical" Walk / Run
 
 ## Verify
 - [x] Reports above; blend check: Prowl ↔ Fast at 0.5 weight keeps foot phases (no cross-over) — compare paw X per frame in the reports
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

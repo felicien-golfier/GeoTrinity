@@ -34,3 +34,6 @@ Today: Flat head pitch 20 (the model); Reach 0, Portal jump 0, walks 0 (`cat_wal
 - [x] `Tools\Build_Editor.bat` is up to date (the shim is in the DebugGame DLLs)
 - [x] With the editor open, run `AI/Python/Cat/Anim/cat_anim_blueprint.py` → `ABP_Cat`, read `AI/Output/cat_anim_bp.json`
 - [ ] User judges the feel in the editor (no PIE unless asked): idle head pitch / slid head / ears, walk stride, jump timing, portal size against the Cat, the cut at the plane (a throwaway skeletal-mesh actor in a scratch level only if a visual check is asked; no actor class for now)
+
+## Status 2026-11-01
+1 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

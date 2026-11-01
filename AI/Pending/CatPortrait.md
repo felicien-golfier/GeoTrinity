@@ -31,3 +31,6 @@ Read `AI/CodingStyle.md` first.
 ## Verify
 - [x] `Tools\Build_Editor.bat` (editor closed, `GEO_NO_PAUSE=1`), `Tools\Run_Tests.bat GeoTrinityUI` (2026-10-21: 4/4)
 - [ ] Look: user checks in game / bridge probe `Python/Runtime/pie_layout_audit.py`; no real-click PIE unless asked
+
+## Status 2026-11-01
+2 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

@@ -17,3 +17,6 @@ Size (measured by the dry run): 75 graphs, 40 of them carry rails, 427 rail rero
 ## Verify
 - [ ] User: open `MF_SafeSpotCut` and `M_ZoneLayer` and judge the layout against `M_MAskedArea`; node size estimates in the toolkit tuned if boxes touch or gaps are too wide
 - [ ] Lateral wave lanes and `Disc` hole still cut (open items of `BeamSafeSpotMask.md` "Verify")
+
+## Status 2026-11-01
+5 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.

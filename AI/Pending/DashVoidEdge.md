@@ -13,3 +13,6 @@ Docs written: none (a question for the user; nothing changed).
 - [ ] Make the void an arena hole done in code (a fall rule like `IsSupported` over a rectangle, or a hex arena with a void line), so landing near the edge follows the same limit as the hex boss?
 - [ ] Or keep real geometry and tune the character's perch (`PerchRadiusThreshold` / `PerchAdditionalHeight` on the movement component) to the same 30 cm margin, for every hole of the game?
 - [ ] Bot: `Path.DashFalls` / `FullRun` dash landing would get a "lands on the edge: dies" case.
+
+## Status 2026-11-01
+3 unticked item(s) remain; they need the editor, Blueprint/PIE, a build or test run, or a user decision, so none can be verified from the repo alone.
