@@ -31,7 +31,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 - Safe spots, the one occlusion path: `SetSafeSpots(Spots, LaneDirection, Origin)` = `FSafeSpotMask::Set` on the parent's `MaskMaterialParameterCollection` (`MPC_MaskedArea`) + `bSafeSpotCut` on the shape (`SafeSpot/CLAUDE.md` "Mask"). The parent clears the mask in `InitPattern` before the first placement and at `EndPattern`; `ClearSafeSpots()` for a child that restarts its spots. A hazard with no spots never calls them (shape uncut, MPC untouched, no MPC needed).
 
 ## Beam
-- Fired from `Payload.Origin` along `Yaw` for `BeamDuration`; hex boss ships two BP children (sweep laser, tile-carving ray).
+- Fired from `Payload.Origin` (the caster) along `GetTargetYaw()` for `BeamDuration`; hex boss ships two BP children (sweep laser, tile-carving ray).
 - Hits on entering (swept angle per target, `AnglesFromBeam`); per-second effects tick on everyone inside.
 - Shape `Beam`. `GetBeamOrigin()` + `MoveHazardVisual(SpentTime)` = the single aim path (wind-up and live); a child drawing something else with the same beam overrides `MoveHazardVisual` (lateral wave).
 - `OverlapMode` (`ETargetOverlapMode`, default Automatic = centre-only for Enemy source).
@@ -43,19 +43,19 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 
 ## DevastatingWave
 - Radius grows at `ExpansionSpeed` to `MaxRadius`; hit band `[R - AnnulusWidth, R]`, swept `FrontOffsets`.
-- `InitPattern` teleports the instigator to `Payload.Origin` (target point from the ability).
-- `UZoneHazardPattern` child: zone layer only, no Niagara. `MoveHazardVisual`, centred on `Payload.Origin`:
+- Centre = the first of `GetTargetLocations()` (the ability's `TargetPoint`): hit test, visual, safe spots and cues (`FillCueParam`) all read it. `InitPattern` teleports the instigator there.
+- `UZoneHazardPattern` child: zone layer only, no Niagara. `MoveHazardVisual`, on the centre:
   - wind-up: `Circle`, `Radius = MaxRadius`: the whole footprint at once; `TelegraphFillMode` `FromCore` (centre outward).
   - live: `Ring`, outer = front (`ExpansionSpeed * SpentTime`, ≤ `MaxRadius`), inner = `max(0, outer - AnnulusWidth)`: the drawn band is exactly the hit band; `HazardFillMode` `FromCore` (ring: inner radius → outer radius, over the wave's life).
 - Colour `LethalDamage` (constructor), as the lateral wave.
-- Safe spots = pillars, as `FSafeSpot` (`ESafeSpotShadow::Behind`, `SafeSpot/CLAUDE.md`) in `PillarSpots`, uploaded with `SetSafeSpots(PillarSpots, -, Payload.Origin)` ("ZoneHazard"); hit test and mask read the same list.
+- Safe spots = pillars, as `FSafeSpot` (`ESafeSpotShadow::Behind`, `SafeSpot/CLAUDE.md`) in `PillarSpots`, uploaded with `SetSafeSpots(PillarSpots, -, centre)` ("ZoneHazard"); hit test and mask read the same list.
   - Wind-up: every pillar (`AddPillarSpots(0)`) from the wind-up branch of `MoveHazardVisual`, so the telegraph shows all shadows from its first frame (and a pillar landing during the wind-up).
   - Live: `StartPattern` restarts the list (`ClearData` = `PillarSpots` emptied + `ClearSafeSpots`) before the base's live placement, each pillar is added as the front reaches it; the server kills those at `EndPattern`.
 - Pillar detection runs on all machines (deterministic); damage server-only.
 - Debug: `Geo.DrawDevastatingWave`.
 
 ## LateralWave
-- `UBeamPattern` child, a *pattern with spots to keep safe*: no lane logic of its own beyond the visual. Beam rectangle = `Payload.Origin` along the travel yaw (the pattern's own, never the caster's facing), `TravelDistance` long, `2 * HalfWidth` wide; the origin is the ability's first target (`LandsOnTarget` true; `Target` = `TargetPoint`).
+- `UBeamPattern` child, a *pattern with spots to keep safe*: no lane logic of its own beyond the visual. Beam rectangle = `FiringOrigin` along the travel yaw (the pattern's own, never the caster's facing), `TravelDistance` long, `2 * HalfWidth` wide; `FiringOrigin` = the first of `GetTargetLocations()` (the ability's `TargetPoint`), never `Payload.Origin`.
 - Travel yaw: `TravelYaw` (default, 0 = +X) unless the firing's `FLateralWavePatternData::bRandomDirection` is set (set only by the tutorial miniboss for now; the Zones room keeps its fixed yaw). Then `InitPattern` rolls one of 0 / 90 / 180 / 270 from `Payload.Seed` (same on every machine) and uses it for the whole firing.
 - A rolled wave starts at the arena edge opposite its travel and crosses the arena along it (start, `TravelDistance`, `HalfWidth` derived from the arena bounds along / across the roll, so a non-square room works); a fixed-yaw wave keeps the origin and values it is given.
 - Front crosses `TravelDistance` at `Speed`; the band `[front - BandWidth, front]` hits everything inside the rectangle, minus the safe spots.

@@ -96,13 +96,13 @@ void UGeoSacrificeDetonateAbility::Detonate(FGeoAbilityTargetData const& Ability
 		FDamageEffectData DamageEffect;
 		DamageEffect.Amount =
 			FScalableFloat(BaseDamage.GetValueAtLevel(GetAbilityLevel()) + SacrificeValue * SacrificeValueMultiplier);
-		for (AActor* Target : GeoASLib::GetInteractableActorsInLine(
+		for (AActor* HitActor : GeoASLib::GetInteractableActorsInLine(
 				 this, GeoASLib::GetTeamId(StoredPayload.SourceOwner), TeamAttitudeMask::Hostile, true,
 				 AbilityTargetData.Origin, ForwardVector, MaxRange, LineHalfWidth))
 		{
-			GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, GeoASLib::GetGeoAscFromActor(Target),
+			GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, GeoASLib::GetGeoAscFromActor(HitActor),
 											GetAbilityLevel(), AbilityTargetData.Seed, GetAbilityTag());
-			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
+			GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
 		}
 
 		// Consume the armed sacrifice: the channel becomes activatable again and the ability bar swaps back.

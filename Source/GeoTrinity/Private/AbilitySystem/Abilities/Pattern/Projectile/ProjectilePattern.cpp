@@ -35,23 +35,17 @@ void UProjectilePattern::SpawnSalve(TArray<float> const& Yaws, float const Salve
 	}
 }
 
-void USalvePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
-{
-	ensureMsgf(PatternData.GetPtr<FProjectilePatternData>(),
-			   TEXT("USalvePattern: PatternData is not an FProjectilePatternData — launch this pattern from an ability "
-					"filling the salve yaws"));
-
-	Super::InitPattern(Payload, PatternData);
-}
-
 void USalvePattern::StartPattern()
 {
 	Super::StartPattern();
 
-	if (FProjectilePatternData const* SalveData = StoredPatternData.GetPtr<FProjectilePatternData>())
+	TArray<float> Yaws;
+	for (int32 Index = 0; Index < GetTargetLocations().Num(); ++Index)
 	{
-		SpawnSalve(SalveData->Yaws, StoredPayload.ServerSpawnTime + StartDelay);
+		Yaws.Add(GetTargetYaw(Index));
 	}
+
+	SpawnSalve(Yaws, StoredPayload.ServerSpawnTime + StartDelay);
 
 	EndPattern();
 }

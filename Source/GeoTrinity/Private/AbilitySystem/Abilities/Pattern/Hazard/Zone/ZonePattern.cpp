@@ -1,7 +1,8 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
-#include "AbilitySystem/Abilities/Pattern/Hazard/ZonePattern.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/Zone/ZonePattern.h"
 
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/Component/FX/GeoIndicatorComponent.h"
@@ -23,26 +24,32 @@ void UZonePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 	if (bIsWindingUp)
 	{
 		FGeoIndicatorState State;
-		State.Location = FVector(StoredPayload.Origin, ArbitraryCharacterZ);
 		State.Size.X = ZoneParams.Size;
 		State.ColorMask = GeoZoneLayer::MakeColorMask(ZoneParams.Color, ZoneParams.SecondaryColors);
 		State.StartServerTime = StoredPayload.ServerSpawnTime;
 		State.Duration = StartDelay;
-		IndicatorComponent = UGeoIndicatorComponent::SpawnIndicator(this, State);
+		for (FVector2D const& Location : GetTargetLocations())
+		{
+			State.Location = FVector(Location, ArbitraryCharacterZ);
+			IndicatorComponents.Add(UGeoIndicatorComponent::SpawnIndicator(this, State));
+		}
 	}
 }
 
 void UZonePattern::StartPattern()
 {
-	RemoveIndicator();
+	RemoveIndicators();
 	Super::StartPattern();
 
 	if (!bHasHazard)
 	{
 		if (GeoLib::IsServer(GetWorld()))
 		{
-			GeoASLib::FullySpawnDeployable(GetZoneClass(), StoredPayload, EffectDataArray, ZoneParams,
-										   FTransform(FVector(StoredPayload.Origin, ArbitraryCharacterZ)));
+			for (FVector2D const& Location : GetTargetLocations())
+			{
+				GeoASLib::FullySpawnDeployable(GetZoneClass(), StoredPayload, EffectDataArray, ZoneParams,
+											   FTransform(FVector(Location, ArbitraryCharacterZ)));
+			}
 		}
 
 		EndPattern();
@@ -51,14 +58,44 @@ void UZonePattern::StartPattern()
 
 bool UZonePattern::IsInHazard(AActor const* Target, FVector2D const Location, float /*SpentTime*/) const
 {
-	return GeoASLib::IsInCircle(Target, Location, StoredPayload.Origin, ZoneParams.Size, ETargetOverlapMode::Automatic,
-								GeoASLib::GetTeamId(StoredPayload.SourceOwner));
+	FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(StoredPayload.SourceOwner);
+	for (FVector2D const& ZoneLocation : GetTargetLocations())
+	{
+		if (GeoASLib::IsInCircle(Target, Location, ZoneLocation, ZoneParams.Size, ETargetOverlapMode::Automatic,
+								 SourceTeam))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void UZonePattern::EndPattern(bool const bForceStop)
 {
-	RemoveIndicator();
+	RemoveIndicators();
 	Super::EndPattern(bForceStop);
+}
+
+void UZonePattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
+{
+	if (!Cue.IsValid() || GeoLib::IsDedicatedServer(GetWorld()))
+	{
+		return;
+	}
+
+	UGeoAbilitySystemComponent* const AvatarASC = GeoASLib::GetGeoAscFromActor(StoredPayload.SourceAvatar);
+	if (!ensureMsgf(IsValid(AvatarASC), TEXT("Pattern %s: source avatar has no ASC"), *GetName()))
+	{
+		return;
+	}
+
+	for (FVector2D const& Location : GetTargetLocations())
+	{
+		FGameplayCueParameters CueParams = FillCueParam(Cue, StoredPayload);
+		CueParams.Location = FVector(Location, 0.f);
+		GeoASLib::ExecuteGeoCue(AvatarASC, Cue, CueParams, true);
+	}
 }
 
 FGameplayCueParameters UZonePattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
@@ -82,12 +119,15 @@ TSubclassOf<AGeoDeployableBase> UZonePattern::GetZoneClass() const
 	return DefaultZoneClass;
 }
 
-void UZonePattern::RemoveIndicator()
+void UZonePattern::RemoveIndicators()
 {
-	if (IsValid(IndicatorComponent))
+	for (UGeoZoneVisualComponent* const Indicator : IndicatorComponents)
 	{
-		IndicatorComponent->DestroyComponent();
+		if (IsValid(Indicator))
+		{
+			Indicator->DestroyComponent();
+		}
 	}
 
-	IndicatorComponent = nullptr;
+	IndicatorComponents.Reset();
 }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbilitySystem/Data/FX/GeoCueParam.h"
+#include "AbilitySystem/Lib/GeoTarget.h"
 #include "CoreMinimal.h"
 #include "GeoGameplayAbility.h"
 #include "PatternAbilityParams.h"
@@ -47,12 +48,20 @@ public:
 
 protected:
 	/**
-	 * Stamps a fresh payload, multicasts the pattern to every machine and binds its end delegate.
-	 * Every launch re-syncs the pattern on the server time of that moment, so an ability may launch more than once.
-	 * Override to chain the next launch.
+	 * Stamps a fresh payload, resolves the picks (picking first when BeginPreLaunch did not), multicasts the pattern
+	 * with the resolved target locations to every machine and binds its end delegate; no location calls OnNoTarget
+	 * instead. Every launch re-syncs the pattern on the server time of that moment, so an ability may launch more than
+	 * once. Override to chain the next launch.
 	 */
 	UFUNCTION()
 	virtual void LaunchPattern();
+
+	/** Server. A launch found no target location, so nothing launched: ends the ability (not cancelled). Override to
+	 * keep a chain running. */
+	virtual void OnNoTarget();
+
+	/** Super's context, plus the activation's room (ActivationParams.ArenaTag) for TargetPoint. */
+	virtual FGeoTargetContext MakeTargetContext() const override;
 
 	/** Server. The pattern finished: ends the ability. Override to launch again instead of ending. */
 	UFUNCTION()
@@ -65,15 +74,9 @@ protected:
 	 */
 	virtual TInstancedStruct<FPatternData> CreatePatternData() const;
 
-	/** Returns the location of the TargetPointTag point of the ActivationParams.ArenaTag room, where the pattern
-	 * launches from instead. */
-	virtual FVector2D GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
-									  int Seed) const override;
-
 	/**
-	 * Server. Runs at activation, PreLaunchDelay seconds before the pattern launches. Base telegraphs the caster
-	 * itself; override to telegraph what the pattern is about to hit, and to resolve there — from LaunchSeed — whatever
-	 * the launch must not choose a second time.
+	 * Server. Runs at activation, PreLaunchDelay seconds before the pattern launches. Picks Target once, from
+	 * LaunchSeed, and marks each pick's actor with PreLaunchCue (the caster for a pick with no actor).
 	 */
 	virtual void BeginPreLaunch();
 
@@ -97,10 +100,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UPattern> PatternToLaunch;
 
-	/** Which AGeoTargetPoint of the ActivationParams.ArenaTag room the pattern launches from (TargetPoint.*). Unset
-	 * launches it from the caster. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))
-	FGameplayTag TargetPointTag;
+	/** This launch's targets, picked once (BeginPreLaunch, else LaunchPattern) and cleared after each launch. */
+	TArray<FGeoTargetPick> Picks;
 
 	// Telegraph time between the activation and the pattern launch. The ability holds its cooldown for that long too.
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility|Pattern", meta = (AllowPrivateAccess = "true"))

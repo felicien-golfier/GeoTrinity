@@ -20,7 +20,7 @@ struct GEOTRINITY_API FPatternAbilityParams : public FGameplayAbilityTargetData
 {
 	GENERATED_BODY()
 
-	/** The room (Arena.*) whose AGeoTargetPoint the ability's TargetPointTag names. */
+	/** The room (Arena.*) whose AGeoTargetPoint the ability's TargetPoint target names (FGeoTarget::TargetPointTag). */
 	UPROPERTY()
 	FGameplayTag ArenaTag;
 

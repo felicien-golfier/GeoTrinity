@@ -88,29 +88,29 @@ void UGeoSacrificeBeamAbility::TickBeam(float const /*DeltaTime*/, TArray<AActor
 
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 	TSet<AActor const*> CurrentTargets;
-	for (AActor* Target : ActorsInLine)
+	for (AActor* HitActor : ActorsInLine)
 	{
-		if (!Target->CanBeDamaged())
+		if (!HitActor->CanBeDamaged())
 		{
 			continue;
 		}
 
-		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
 		// The Square is the final redirect receiver — never sacrifice it. Walls CAN be sacrificed; the redirect
 		// shares they receive (and their own drain) carry bDoNotRedirectSacrifice so nothing loops.
-		if (Target == StoredPayload.SourceAvatar || !IsValid(TargetASC))
+		if (HitActor == StoredPayload.SourceAvatar || !IsValid(TargetASC))
 		{
 			continue;
 		}
 
-		CurrentTargets.Add(Target);
-		if (!SacrificedActors.Contains(Target))
+		CurrentTargets.Add(HitActor);
+		if (!SacrificedActors.Contains(HitActor))
 		{
-			SacrificedActors.Add(Target,
+			SacrificedActors.Add(HitActor,
 								 GeoASLib::ApplySingleEffectData(SacrificeMarkEffect, SourceASC, TargetASC,
 																 GetAbilityLevel(), StoredPayload.Seed,
 																 StoredPayload.AbilityTag));
-			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
+			GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
 		}
 	}
 

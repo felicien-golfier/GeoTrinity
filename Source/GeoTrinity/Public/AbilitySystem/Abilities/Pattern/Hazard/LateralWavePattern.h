@@ -110,8 +110,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoLateralWave|SafeSpots", meta = (AllowPrivateAccess = "true"))
 	FScalableFloat AddSpotRadius{150.f};
 
-	/** This firing's travel, set by InitPattern: Payload.Origin, TravelYaw, TravelDistance and HalfWidth, or the rolled
-	 * direction fitted to the arena. Everything after InitPattern reads these, never the defaults. */
+	/** This firing's travel, set by InitPattern: the first target location, TravelYaw, TravelDistance and HalfWidth, or
+	 * the rolled direction fitted to the arena. Everything after InitPattern reads these, never the defaults. */
 	FVector2D FiringOrigin = FVector2D::ZeroVector;
 	float FiringYaw = 0.f;
 	float FiringTravelDistance = 0.f;

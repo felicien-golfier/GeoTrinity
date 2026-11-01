@@ -74,6 +74,13 @@ public:
 	/** True when the pattern needs its caster's arena itself; its launching ability answers RequiresArena with it. */
 	virtual bool RequiresArena() const { return false; }
 
+	/** Sets this launch's target locations, before InitPattern; none given = {DefaultLocation} (the caster). */
+	void SetTargetLocations(TArray<FVector2D> Locations, FVector2D DefaultLocation);
+
+	/** Every target location of this launch (the launching ability's Target, resolved on the server). Never empty
+	 * once set: a pattern with a single centre uses the first. */
+	TArray<FVector2D> const& GetTargetLocations() const { return TargetLocations; }
+
 	UPROPERTY(BlueprintAssignable)
 	FOnPatternEvent OnPatternEnd;
 	UPROPERTY(BlueprintAssignable)
@@ -100,6 +107,10 @@ protected:
 	 */
 	virtual void TickDuringInit(float SpentTime /* /!\ SpentTime is NEGATIVE value until 0 when StartPattern */
 	);
+
+	/** Yaw from the payload origin (the caster) towards target location Index; the payload's yaw when it stands on the
+	 * origin, so a Forward 0 target keeps the caster's facing. */
+	float GetTargetYaw(int32 Index = 0) const;
 
 	/** How long the hazard stays live, from SpentTime 0. The default 0 judges a single instant. */
 	virtual float GetHazardDuration() const;
@@ -189,4 +200,6 @@ private:
 	FGeoHazardJudge HazardJudge;
 
 	bool bHazardEnded = false;
+
+	TArray<FVector2D> TargetLocations;
 };

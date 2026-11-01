@@ -559,6 +559,7 @@ void UGeoAbilitySystemComponent::OnRemoveAbility(FGameplayAbilitySpec& AbilitySp
 }
 
 void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPayload Payload, UClass* PatternClass,
+																	  TArray<FVector2D> const& TargetLocations,
 																	  TInstancedStruct<FPatternData> PatternData)
 {
 	checkf(PatternClass, TEXT("PatternStartMulticast: Invalid PatternClass"));
@@ -580,6 +581,7 @@ void UGeoAbilitySystemComponent::PatternStartMulticast_Implementation(FAbilityPa
 		return;
 	}
 
+	Pattern->SetTargetLocations(TargetLocations, Payload.Origin);
 	Pattern->InitPattern(Payload, PatternData);
 }
 

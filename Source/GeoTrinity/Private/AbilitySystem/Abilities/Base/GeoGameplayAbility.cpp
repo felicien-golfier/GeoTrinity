@@ -555,8 +555,7 @@ int32 UGeoGameplayAbility::GetPlayingFireSectionIndex(AActor const* Avatar) cons
 }
 
 void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC,
-												 FExternalProjectileParams const& Params,
-												 EProjectileTarget const Target) const
+												 FExternalProjectileParams const& Params) const
 {
 	int const Seed = GetNewSeed();
 	FVector const Origin = GetFireOrigin(Avatar, SourceASC, Seed);
@@ -571,9 +570,25 @@ void UGeoGameplayAbility::SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySyst
 	Payload.AbilityLevel = SourceASC->GetCombatLevel();
 	Payload.AbilityTag = GetAbilityTag();
 
+	FGeoTargetContext Context;
+	Context.Caster = Avatar;
+	Context.Origin = Payload.Origin;
+	Context.Yaw = Yaw;
+	Context.Seed = Seed;
+
 	// Cosmetic, but the effect data still has to ride along: it is what picks the shot's buff VFX.
-	GeoASLib::SpawnProjectileSpread(Avatar->GetWorld(), Params, Target, Origin, Yaw, 0.f, Payload,
+	GeoASLib::SpawnProjectileSpread(Avatar->GetWorld(), Params, Target, Context, Origin, 0.f, Payload,
 									GetEffectDataArray());
+}
+
+FGeoTargetContext UGeoGameplayAbility::MakeTargetContext() const
+{
+	FGeoTargetContext Context;
+	Context.Caster = GetAvatarActorFromActorInfo();
+	Context.Origin = StoredPayload.Origin;
+	Context.Yaw = StoredPayload.Yaw;
+	Context.Seed = StoredPayload.Seed;
+	return Context;
 }
 
 void UGeoGameplayAbility::SetChargeGaugeVisible(APlayableCharacter* Character, bool bVisible)

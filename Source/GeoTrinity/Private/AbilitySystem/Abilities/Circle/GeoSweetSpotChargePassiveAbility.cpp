@@ -27,7 +27,7 @@ bool UGeoSweetSpotChargePassiveAbility::IsReady(UAbilitySystemComponent const& A
 
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoSweetSpotChargePassiveAbility::GetClassGauge(UAbilitySystemComponent const& ASC, float& OutFill,
-													   bool& bOutReady) const
+													  bool& bOutReady) const
 {
 	OutFill = GetGaugeRatio(ASC);
 	bOutReady = IsReady(ASC);

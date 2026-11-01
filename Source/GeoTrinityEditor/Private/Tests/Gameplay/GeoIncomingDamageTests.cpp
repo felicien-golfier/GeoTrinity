@@ -52,7 +52,10 @@ bool FGeoIncomingDamageStagesTest::RunTest(FString const& /*Parameters*/)
 	// Stage 1 takes 40 and stage 2 takes 20 of the 60 left: the victim loses 40, and stage 2 saw what stage 1 left.
 	float ShareSaw = -1.f;
 	GameState->OnIncomingDamage.AddLambda(
-		[](UAbilitySystemComponent&, FGameplayEffectContextHandle const&, float, float& Spared) { Spared += 40.f; });
+		[](UAbilitySystemComponent&, FGameplayEffectContextHandle const&, float, float& Spared)
+		{
+			Spared += 40.f;
+		});
 	GameState->OnIncomingDamageShare.AddLambda(
 		[&ShareSaw](UAbilitySystemComponent&, FGameplayEffectContextHandle const&, float const Damage, float& Spared)
 		{
@@ -69,7 +72,9 @@ bool FGeoIncomingDamageStagesTest::RunTest(FString const& /*Parameters*/)
 	GameState->OnIncomingDamage.Clear();
 	GameState->OnIncomingDamage.AddLambda(
 		[](UAbilitySystemComponent&, FGameplayEffectContextHandle const&, float const Damage, float& Spared)
-		{ Spared = Damage; });
+		{
+			Spared = Damage;
+		});
 	ShareSaw = -1.f;
 	ResetVictim();
 	ApplyIncomingDamage(*VictimASC, 100.f);

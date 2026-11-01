@@ -69,20 +69,20 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 	UGeoAbilitySystemComponent* SourceASC = GetGeoAbilitySystemComponentFromActorInfo();
 	if (ensureMsgf(SourceASC, TEXT("UGeoDetonateWallsAbility: invalid ASC on server")))
 	{
-		for (AActor* Target : ActorsInLine)
+		for (AActor* HitActor : ActorsInLine)
 		{
-			if (Target == Avatar || Target->IsA<AGeoWall>() || !Target->CanBeDamaged())
+			if (HitActor == Avatar || HitActor->IsA<AGeoWall>() || !HitActor->CanBeDamaged())
 			{
 				continue;
 			}
 
-			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+			UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
 			if (!IsValid(TargetASC))
 			{
 				continue;
 			}
 
-			if (GeoASLib::IsTeamAttitudeAligned(Avatar, Target, TeamAttitudeMask::Hostile))
+			if (GeoASLib::IsTeamAttitudeAligned(Avatar, HitActor, TeamAttitudeMask::Hostile))
 			{
 				bHasAppliedEffectWithABoostedValue = WallCount > 0;
 				if (bIsServer)
@@ -93,7 +93,7 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 													AbilityTargetData.Seed, GetAbilityTag());
 				}
 			}
-			else if (GeoASLib::IsTeamAttitudeAligned(Avatar, Target, TeamAttitudeMask::FriendlyOrNeutral))
+			else if (GeoASLib::IsTeamAttitudeAligned(Avatar, HitActor, TeamAttitudeMask::FriendlyOrNeutral))
 			{
 				bHasAppliedEffectWithABoostedValue = WallCount > 0;
 				if (bIsServer)
@@ -105,7 +105,7 @@ void UGeoDetonateWallsAbility::FireRay(FGeoAbilityTargetData const& AbilityTarge
 				}
 			}
 
-			GeoASLib::NotifyAbilityHit(StoredPayload, Target);
+			GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
 		}
 	}
 

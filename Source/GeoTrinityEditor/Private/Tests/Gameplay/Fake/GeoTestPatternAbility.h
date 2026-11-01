@@ -4,14 +4,20 @@
 
 #include "AbilitySystem/Abilities/Base/PatternAbility.h"
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicPatternAbility.h"
-#include "AbilitySystem/Abilities/Boss/GeoSummonAddAbility.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/Zone/SpawnAddPattern.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/Zone/SpawnPillarPattern.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/Zone/ZonePattern.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
-#include "AbilitySystem/Abilities/Pattern/Projectile/ProjectilePattern.h"
+#include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
+#include "Actor/Deployable/Pillar/GeoPillar.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/EnemyCharacter.h"
 #include "CoreMinimal.h"
+#include "Tests/Gameplay/Fake/GeoTestDeployable.h"
+#include "Tool/GeoDifficulty.h"
+#include "Tool/UGeoGameplayLibrary.h"
 
 #include "GeoTestPatternAbility.generated.h"
 
@@ -33,6 +39,58 @@ class UGeoTestBarePattern : public UPattern
 
 public:
 	virtual void OnCreate(FGameplayTag, AActor&) override {}
+};
+
+/** Pattern of a test recording its launches, read by the target tests: InitPattern only counts and keeps the payload,
+ * so the pattern never runs nor ends. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestTargetPattern : public UGeoTestBarePattern
+{
+	GENERATED_BODY()
+
+public:
+	virtual void InitPattern(FAbilityPayload const& Payload,
+							 TInstancedStruct<FPatternData> const& /*PatternData*/) override
+	{
+		StoredPayload = Payload;
+		++LaunchCount;
+	}
+
+	FAbilityPayload const& GetLaunchedPayload() const { return StoredPayload; }
+	/** GetTargetYaw, for the test. */
+	float GetYawTowards(int32 const Index) const { return GetTargetYaw(Index); }
+
+	int32 LaunchCount = 0;
+};
+
+/** Pattern ability of a test launching UGeoTestTargetPattern at whatever Target the test sets. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestTargetPatternAbility : public UPatternAbility
+{
+	GENERATED_BODY()
+
+public:
+	UGeoTestTargetPatternAbility()
+	{
+		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+		NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
+		PatternToLaunch = UGeoTestTargetPattern::StaticClass();
+	}
+
+	void SetTarget(FGeoTarget const& NewTarget) { Target = NewTarget; }
+
+	/** Launches PreLaunchDelay seconds after activation, marking with a cue carrying CueTag meanwhile. */
+	void SetPreLaunch(float const Delay, FGameplayTag const CueTag)
+	{
+		PreLaunchDelay = Delay;
+		PreLaunchCue.CueTag = CueTag;
+	}
+
+	/** AddPreLaunchCue, for the test: a second pick on an already marked actor. */
+	void MarkForPreLaunch(UGeoAbilitySystemComponent* const TargetASC) { AddPreLaunchCue(TargetASC); }
+
+	/** How many ASCs the pre-launch cue marks right now. */
+	int32 GetPreLaunchMarkCount() const { return PreLaunchCueASCs.Num(); }
 };
 
 /** Pattern of a test with no montage. */
@@ -111,14 +169,15 @@ public:
 	UGeoTestDataPatternAbility() { PatternToLaunch = UGeoTestSilentPattern::StaticClass(); }
 
 	TInstancedStruct<FPatternData> LaunchedPatternData;
-	/** Where the launch would have left from (GetFireOrigin2D). */
-	FVector2D LaunchedOrigin = FVector2D::ZeroVector;
+	/** Where the launch would have landed: its Target's locations, resolved. */
+	TArray<FVector2D> LaunchedLocations;
 
 protected:
 	virtual void LaunchPattern() override
 	{
 		LaunchedPatternData = CreatePatternData();
-		LaunchedOrigin = CreateAbilityPayload(LaunchSeed).Origin;
+		StoredPayload = CreateAbilityPayload(LaunchSeed);
+		LaunchedLocations = GeoASLib::GetTargetLocations(Target, MakeTargetContext());
 	}
 
 	/** No pattern was launched: skips UPatternAbility's stop of it. */
@@ -148,47 +207,118 @@ class UGeoTestPointPatternAbility : public UGeoTestDataPatternAbility
 public:
 	UGeoTestPointPatternAbility() { InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor; }
 
-	/** Sets the target point tag so this ability looks up its fire origin from the matching arena point. */
-	void SetPointTag(FGameplayTag const Tag) { TargetPointTag = Tag; }
+	/** Targets the point tagged Tag in the activation's room. */
+	void SetPointTag(FGameplayTag const Tag)
+	{
+		Target.Mode = EGeoTarget::TargetPoint;
+		Target.TargetPointTag = Tag;
+	}
 };
 
-/** Salve ability whose aim a test reads, for a salve leaving the world origin at the given Target. */
+/** Salve ability whose aim a test reads, for a salve leaving the world origin at the given Target mode. */
 UCLASS(NotPlaceable, Transient)
 class UGeoTestSalveAbility : public UGeoPeriodicPatternAbility
 {
 	GENERATED_BODY()
 
 public:
-	/** Returns the yaws the salve computes for AimTarget, launching from the world origin. */
-	TArray<float> GetAimYaws(EProjectileTarget const AimTarget)
+	/** Returns the target locations the salve would aim at in Mode, launching from the world origin. */
+	TArray<FVector2D> GetAimLocations(EGeoTarget const Mode)
 	{
-		Target = AimTarget;
-		return CreatePatternData().Get<FProjectilePatternData>().Yaws;
+		Target.Mode = Mode;
+		StoredPayload.Origin = FVector2D::ZeroVector;
+		return GeoASLib::GetTargetLocations(Target, MakeTargetContext());
 	}
 };
 
-/** Summon ability bringing a plain enemy, tagged "Summoned" with 300 max health by its AddSetup. Summon runs the end
- * of its pattern at once; the test creates the UGeoTestBarePattern instance that end looks for. */
+/** Launches Pattern from Caster at Locations as PatternStartMulticast would, its wind-up just started. */
+inline void LaunchTestPattern(UPattern& Pattern, AActor* const Caster, TArray<FVector2D> const& Locations,
+							  int32 const Level = GeoDifficultyMask::Original)
+{
+	FAbilityPayload Payload;
+	Payload.Origin = FVector2D(Caster->GetActorLocation());
+	Payload.ServerSpawnTime = GeoLib::GetServerTime(Caster->GetWorld(), true);
+	Payload.AbilityLevel = Level;
+	Payload.SourceOwner = Caster;
+	Payload.SourceAvatar = Caster;
+	Pattern.SetTargetLocations(Locations, Payload.Origin);
+	Pattern.InitPattern(Payload, TInstancedStruct<FPatternData>());
+}
+
+/** Burst zone of a test, radius 100, with a 10 s wind-up the test never waits for. */
 UCLASS(NotPlaceable, Transient)
-class UGeoTestSummonAddAbility : public UGeoSummonAddAbility
+class UGeoTestZonePattern : public UZonePattern
 {
 	GENERATED_BODY()
 
 public:
-	UGeoTestSummonAddAbility()
+	virtual void OnCreate(FGameplayTag, AActor&) override
 	{
-		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-		PatternToLaunch = UGeoTestBarePattern::StaticClass();
+		StartDelay = 10.f;
+		bHasHazard = true;
+		ZoneParams.Size = 100.f;
+		ZoneParams.Color.Color = EGeoColor::Damage;
+	}
+
+	int32 GetTelegraphCount() const { return IndicatorComponents.Num(); }
+	bool IsLocationInHazard(AActor const* Target, FVector2D const Location) const
+	{
+		return IsInHazard(Target, Location, 0.f);
+	}
+};
+
+/** Pillar with working attributes, the way BP_Pillar_Deployable's would be. */
+UCLASS(NotPlaceable, Transient)
+class AGeoTestPillar : public AGeoPillar
+{
+	GENERATED_BODY()
+
+public:
+	AGeoTestPillar(FObjectInitializer const& ObjectInitializer) : Super(ObjectInitializer)
+	{
+		Cast<UGeoAbilitySystemComponent>(GetAbilitySystemComponent())->DefaultAttributes =
+			UGeoTestDeployableAttributes::StaticClass();
+	}
+};
+
+/** Pillar pattern of a test: AGeoTestPillar, with a 10 s wind-up the test never waits for. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestPillarPattern : public USpawnPillarPattern
+{
+	GENERATED_BODY()
+
+public:
+	UGeoTestPillarPattern() { PillarClass = AGeoTestPillar::StaticClass(); }
+
+	virtual void OnCreate(FGameplayTag, AActor&) override
+	{
+		StartDelay = 10.f;
+		bHasHazard = true;
+		ZoneParams.Color.Color = EGeoColor::Damage;
+	}
+};
+
+/** Add pattern of a test: brings a plain enemy, tagged "Summoned" with 300 max health by AddSetup, "SafeSummoned" by
+ * SafeAddSetup, with a 10 s wind-up the test never waits for. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestSpawnAddPattern : public USpawnAddPattern
+{
+	GENERATED_BODY()
+
+public:
+	UGeoTestSpawnAddPattern()
+	{
 		AddClass = AEnemyCharacter::StaticClass();
 		AddSetup.Tag = TEXT("Summoned");
 		AddSetup.MaxHealth = FScalableFloat(300.f);
+		bUseSafeAddSetup = true;
+		SafeAddSetup.Tag = TEXT("SafeSummoned");
 	}
 
-	/** Triggers the summon directly, as if the pattern ended at Origin, without going through the ability fire flow. */
-	void Summon(FVector2D const Origin)
+	virtual void OnCreate(FGameplayTag, AActor&) override
 	{
-		StoredPayload.SourceAvatar = GetAvatarActorFromActorInfo();
-		StoredPayload.Origin = Origin;
-		OnPatternEnd();
+		StartDelay = 10.f;
+		bHasHazard = true;
+		ZoneParams.Color.Color = EGeoColor::Damage;
 	}
 };

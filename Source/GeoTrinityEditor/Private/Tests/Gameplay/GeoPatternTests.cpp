@@ -7,6 +7,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/GameInstance.h"
+#include "EngineUtils.h"
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/AutomationTest.h"
@@ -132,7 +133,7 @@ bool FGeoSalveAimTest::RunTest(FString const& /*Parameters*/)
 
 	AGeoTestCasterArena* const Arena =
 		World->SpawnActor<AGeoTestCasterArena>(FVector(0.f, 1000.f, 0.f), FRotator::ZeroRotator);
-	auto const GetAimYaws = [](AActor* const Caster, EProjectileTarget const Target)
+	auto const GetAimYaws = [](AActor* const Caster, EGeoTarget const Mode)
 	{
 		UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Caster);
 		FGameplayAbilitySpec const* Spec = ASC->FindAbilitySpecFromClass(UGeoTestSalveAbility::StaticClass());
@@ -141,10 +142,16 @@ bool FGeoSalveAimTest::RunTest(FString const& /*Parameters*/)
 			Spec = ASC->FindAbilitySpecFromHandle(
 				ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSalveAbility::StaticClass(), 1)));
 		}
-		return CastChecked<UGeoTestSalveAbility>(Spec->GetPrimaryInstance())->GetAimYaws(Target);
+		TArray<float> Yaws;
+		for (FVector2D const& Location :
+			 CastChecked<UGeoTestSalveAbility>(Spec->GetPrimaryInstance())->GetAimLocations(Mode))
+		{
+			Yaws.Add(static_cast<float>(FMath::RadiansToDegrees(FMath::Atan2(Location.Y, Location.X))));
+		}
+		return Yaws;
 	};
 
-	TArray<float> const PlayerYaws = GetAimYaws(Arena->GetBoss(), EProjectileTarget::AllPlayers);
+	TArray<float> const PlayerYaws = GetAimYaws(Arena->GetBoss(), EGeoTarget::AllPlayers);
 	if (TestEqual(TEXT("AllPlayers: one yaw per live player"), PlayerYaws.Num(), 2))
 	{
 		TestTrue(TEXT("At each player"), FMath::IsNearlyEqual(FMath::Abs(PlayerYaws[0] - PlayerYaws[1]), 180.f, 0.1f));
@@ -153,17 +160,101 @@ bool FGeoSalveAimTest::RunTest(FString const& /*Parameters*/)
 	FGeoEnemySetup AllySetup;
 	AllySetup.Team = ETeam::Player;
 	AEnemyCharacter* const Ally = Arena->SpawnAdd(AEnemyCharacter::StaticClass(), FTransform(), &AllySetup);
-	TestEqual(TEXT("Boss, no fight: none"), GetAimYaws(Ally, EProjectileTarget::Boss).Num(), 0);
+	TestEqual(TEXT("Boss, no fight: none"), GetAimYaws(Ally, EGeoTarget::Boss).Num(), 0);
 
 	Arena->StartFight();
-	TArray<float> const BossYaws = GetAimYaws(Ally, EProjectileTarget::Boss);
+	TArray<float> const BossYaws = GetAimYaws(Ally, EGeoTarget::Boss);
 	if (TestEqual(TEXT("Boss, fighting: one yaw"), BossYaws.Num(), 1))
 	{
 		TestEqual(TEXT("At the fighting arena's boss"), BossYaws[0], 90.f, 0.1f);
 	}
 
 	Arena->GetBoss()->Death();
-	TestEqual(TEXT("Boss dead: none"), GetAimYaws(Ally, EProjectileTarget::Boss).Num(), 0);
+	TestEqual(TEXT("Boss dead: none"), GetAimYaws(Ally, EGeoTarget::Boss).Num(), 0);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+/** A world with a game state and a caster arena, for a pattern cast by its boss. */
+static AGeoTestCasterArena* PrepareZoneWorld(FAutomationTestBase& Test, UWorld& World)
+{
+	World.SetGameInstance(NewObject<UGameInstance>(GEngine));
+	Test.AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, -1);
+	World.SetGameState(World.SpawnActor<AGeoGameState>());
+	return World.SpawnActor<AGeoTestCasterArena>();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoZoneSeveralLocationsTest, "GeoTrinity.Pattern.ZoneSeveralLocations",
+								 GeoPatternTestFlags)
+
+bool FGeoZoneSeveralLocationsTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AEnemyCharacter* const Boss = PrepareZoneWorld(*this, *World)->GetBoss();
+	UGeoTestZonePattern* const Pattern = CastChecked<UGeoTestZonePattern>(
+		GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(UGeoTestZonePattern::StaticClass(), FGameplayTag()));
+
+	FVector2D const First(1000.f, 0.f);
+	FVector2D const Second(-1000.f, 500.f);
+	LaunchTestPattern(*Pattern, Boss, {First, Second});
+	TestEqual(TEXT("One telegraph per location"), Pattern->GetTelegraphCount(), 2);
+	TestTrue(TEXT("In the first circle"), Pattern->IsLocationInHazard(Boss, First + FVector2D(50.f, 0.f)));
+	TestTrue(TEXT("In the second circle"), Pattern->IsLocationInHazard(Boss, Second + FVector2D(0.f, 50.f)));
+	TestFalse(TEXT("Outside both"), Pattern->IsLocationInHazard(Boss, FVector2D(0.f, 3000.f)));
+
+	static_cast<UPattern*>(Pattern)->EndPattern(true);
+	TestEqual(TEXT("Force-stop drops every telegraph"), Pattern->GetTelegraphCount(), 0);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSpawnPillarPatternTest, "GeoTrinity.Pattern.SpawnPillar", GeoPatternTestFlags)
+
+bool FGeoSpawnPillarPatternTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AEnemyCharacter* const Boss = PrepareZoneWorld(*this, *World)->GetBoss();
+	UPattern* const Pattern =
+		GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(UGeoTestPillarPattern::StaticClass(), FGameplayTag());
+	auto const FindPillars = [World](double const LocationY)
+	{
+		TArray<AGeoTestPillar*> Pillars;
+		for (TActorIterator<AGeoTestPillar> It(World); It; ++It)
+		{
+			if (FMath::IsNearlyEqual(It->GetActorLocation().Y, LocationY, 1.0))
+			{
+				Pillars.Add(*It);
+			}
+		}
+
+		return Pillars;
+	};
+
+	double const ReleasedY = 2000.0;
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(2000.f, ReleasedY), FVector2D(-2000.f, ReleasedY)});
+	TArray<AGeoTestPillar*> const Released = FindPillars(ReleasedY);
+	if (TestEqual(TEXT("One pillar per location"), Released.Num(), 2))
+	{
+		TestTrue(TEXT("During the telegraph: arriving"), Released[0]->IsInitialising());
+		TestFalse(TEXT("During the telegraph: not damageable"), Released[0]->CanBeDamaged());
+		Pattern->EndPattern();
+		TestFalse(TEXT("Natural end: released"), Released[0]->IsInitialising() || Released[1]->IsInitialising());
+		TestTrue(TEXT("Natural end: live and damageable"),
+				 Released[0]->IsActive() && Released[0]->CanBeDamaged() && Released[1]->CanBeDamaged());
+	}
+
+	double const ExpiredY = -2000.0;
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(2000.f, ExpiredY)});
+	TArray<AGeoTestPillar*> const Expired = FindPillars(ExpiredY);
+	if (TestEqual(TEXT("One pillar on the location"), Expired.Num(), 1))
+	{
+		Pattern->EndPattern(true);
+		TestFalse(TEXT("Force-stop: expired"), Expired[0]->IsActive());
+	}
 
 	DestroyTestWorld(World);
 	return true;

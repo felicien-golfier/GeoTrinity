@@ -93,6 +93,21 @@ void UPattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPat
 	}
 }
 
+void UPattern::SetTargetLocations(TArray<FVector2D> Locations, FVector2D const DefaultLocation)
+{
+	TargetLocations = MoveTemp(Locations);
+	if (TargetLocations.IsEmpty())
+	{
+		TargetLocations.Add(DefaultLocation);
+	}
+}
+
+float UPattern::GetTargetYaw(int32 const Index) const
+{
+	FVector2D const ToTarget = TargetLocations[Index] - StoredPayload.Origin;
+	return ToTarget.IsNearlyZero() ? StoredPayload.Yaw : FMath::RadiansToDegrees(FMath::Atan2(ToTarget.Y, ToTarget.X));
+}
+
 void UPattern::ExecuteGameplayCue(FGeoCueParam const& Cue)
 {
 	// Skip only the dedicated server, which has no viewport; every rendering machine runs the pattern itself.

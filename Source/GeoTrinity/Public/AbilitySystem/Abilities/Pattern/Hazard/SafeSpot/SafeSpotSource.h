@@ -25,14 +25,15 @@ enum class ESafeSpotSource : uint8
  * Gathers the safe spots from every source in Sources, all casting Shadow, read as they stand now.
  *
  * @param WorldContext     World context object.
- * @param Payload          Firing payload; pillar distance is measured from Payload.Origin.
+ * @param Payload          Firing payload: its owner's team and its caster's arena.
+ * @param Center           The pattern's centre, pillar distance is measured from it.
  * @param Sources          Which sources to gather spots from.
  * @param Shadow           Shadow type each gathered spot casts.
- * @param MaxDistance      Furthest a pillar may be from Payload.Origin to count. 0 = no limit.
+ * @param MaxDistance      Furthest a pillar may be from Center to count. 0 = no limit.
  * @param Radius           Radius of Adds and Fixed spots (world units).
  * @param FixedLocations   World-space locations of Fixed spots.
  */
 GEOTRINITY_API TArray<FSafeSpot> GatherSafeSpots(UObject const* WorldContext, FAbilityPayload const& Payload,
-												 TArray<ESafeSpotSource> const& Sources, ESafeSpotShadow Shadow,
-												 float MaxDistance, float Radius,
+												 FVector2D Center, TArray<ESafeSpotSource> const& Sources,
+												 ESafeSpotShadow Shadow, float MaxDistance, float Radius,
 												 TArray<FVector2D> const& FixedLocations);

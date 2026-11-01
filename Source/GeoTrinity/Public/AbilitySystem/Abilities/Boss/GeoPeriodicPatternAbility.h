@@ -7,8 +7,6 @@
 
 #include "GeoPeriodicPatternAbility.generated.h"
 
-enum class EProjectileTarget : uint8;
-
 /**
  * Fires salves at its Target, again and again. It never ends on its own, every salve schedules the next one, so a
  * single activation keeps the boss firing. One launch of its USalvePattern is one salve, aimed and stamped here right
@@ -30,16 +28,15 @@ public:
 								 FGameplayEventData const* TriggerEventData) override;
 
 protected:
-	/** Aims from the origin the salve about to leave was stamped with: one yaw per direction of Target
-	 * (GeoASLib::GetTargetDirections). */
-	virtual TInstancedStruct<FPatternData> CreatePatternData() const override;
-
 	/** Fires one salve, sizing a new burst first when the previous one is spent, then schedules what comes next: the
 	 * next salve of the burst, or the first salve of the next burst. */
 	virtual void LaunchPattern() override;
 
 	/** A finished salve ends nothing: the next one was already scheduled when this one left. */
 	virtual void OnPatternEnd() override {}
+
+	/** A salve with no target is skipped; the schedule keeps running. */
+	virtual void OnNoTarget() override {}
 
 	/** Sets how many salves the next burst holds and how far apart they leave, from the boss health and the party size.
 	 */
@@ -56,10 +53,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMax = 5.f;
-
-	/** What each salve aims at. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility")
-	EProjectileTarget Target;
 
 private:
 	int32 RemainingSalveCount = 0;

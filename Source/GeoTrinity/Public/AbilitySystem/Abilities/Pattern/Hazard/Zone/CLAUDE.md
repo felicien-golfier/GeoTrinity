@@ -11,7 +11,7 @@ Patterns that telegraph circles on the ground, then land there. Hazard and lag-c
 A child only adds what lands with the hit. Telegraph, hit and cues belong to the parent, so the whole family looks the same.
 
 ## ZonePattern
-- `LandsOnTarget()` true. One circle per `GetTargetLocations()` (`../../CLAUDE.md`, "Pattern.h"); how many and where = the ability's `Target` (`Base/CLAUDE.md`, "Pattern target").
+- One circle per `GetTargetLocations()`, cues included (`ExecuteGameplayCue`) (`../../CLAUDE.md`, "Pattern.h"); how many and where = the ability's `Target` (`Base/CLAUDE.md`, "Pattern target").
 - Telegraph: one `UGeoIndicatorComponent` per location for the whole wind-up, radius `ZoneParams.Size`, `ColorMask` from `ZoneParams.Color` + `SecondaryColors`. The only wind-up visual of the family. All removed in `StartPattern` and `EndPattern`.
 - `ZoneParams.LifeDrainMaxDuration` picks the landing:
   - 0 = burst: `bHasHazard`, the base judge applies `GetHazardEffects()` to whoever `TeamAttitude` matches in any circle; ends once the judge `IsOver`. `StartCue` = the burst.

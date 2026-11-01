@@ -22,7 +22,7 @@ float ULateralWavePattern::RollTravelYaw(int32 const Seed)
 
 void ULateralWavePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
 {
-	FiringOrigin = Payload.Origin;
+	FiringOrigin = GetTargetLocations()[0];
 	FiringYaw = TravelYaw;
 	FiringTravelDistance = TravelDistance;
 	FiringHalfWidth = HalfWidth;
@@ -80,12 +80,12 @@ TArray<FSafeSpot> ULateralWavePattern::GetSafeSpots() const
 
 	TArray<ESafeSpotSource> Sources = SafeSpotSources;
 	bool const bGatherAdds = Sources.Remove(ESafeSpotSource::Adds) > 0 && GeoLib::IsServer(GetWorld());
-	TArray<FSafeSpot> Spots =
-		GatherSafeSpots(this, StoredPayload, Sources, ESafeSpotShadow::Lane, 0.f, SpotRadius, FixedLocations);
+	TArray<FSafeSpot> Spots = GatherSafeSpots(this, StoredPayload, FiringOrigin, Sources, ESafeSpotShadow::Lane, 0.f,
+											  SpotRadius, FixedLocations);
 	if (bGatherAdds)
 	{
-		Spots.Append(GatherSafeSpots(this, StoredPayload, {ESafeSpotSource::Adds}, ESafeSpotShadow::Lane, 0.f,
-									 AddSpotRadius.GetValueAtLevel(StoredPayload.AbilityLevel), {}));
+		Spots.Append(GatherSafeSpots(this, StoredPayload, FiringOrigin, {ESafeSpotSource::Adds}, ESafeSpotShadow::Lane,
+									 0.f, AddSpotRadius.GetValueAtLevel(StoredPayload.AbilityLevel), {}));
 	}
 
 	return Spots;

@@ -58,6 +58,7 @@
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
+#include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -1043,11 +1044,12 @@ bool FGeoEncounterAbilityRoomTest::RunTest(FString const& /*Parameters*/)
 	TArray<UGameplayAbility*> const Instances = ASC->FindAbilitySpecFromHandle(Handle)->GetAbilityInstances();
 	UGeoTestPointPatternAbility const* const Ability =
 		Instances.IsEmpty() ? nullptr : Cast<UGeoTestPointPatternAbility>(Instances.Last());
-	if (TestNotNull(TEXT("The ability runs"), Ability))
+	if (TestNotNull(TEXT("The ability runs"), Ability)
+		&& TestEqual(TEXT("One target location"), Ability->LaunchedLocations.Num(), 1))
 	{
-		TestEqual(TEXT("It leaves from its point in the action's room, not another room's (X)"),
-				  Ability->LaunchedOrigin.X, 400.0);
-		TestEqual(TEXT("(Y)"), Ability->LaunchedOrigin.Y, 250.0);
+		TestEqual(TEXT("It targets its point in the action's room, not another room's (X)"),
+				  Ability->LaunchedLocations[0].X, 400.0);
+		TestEqual(TEXT("(Y)"), Ability->LaunchedLocations[0].Y, 250.0);
 	}
 
 	DestroyTestWorld(World);
@@ -2660,31 +2662,46 @@ bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Arena->GetBoss());
-	ASC->CreatePatternInstance(UGeoTestBarePattern::StaticClass(), FGameplayTag());
-	FGameplayAbilitySpecHandle const Handle =
-		ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSummonAddAbility::StaticClass(), 1));
-	UGeoTestSummonAddAbility* const Summon =
-		Cast<UGeoTestSummonAddAbility>(ASC->FindAbilitySpecFromHandle(Handle)->GetPrimaryInstance());
-	if (TestNotNull(TEXT("The summon is instanced"), Summon))
+	AEnemyCharacter* const Boss = Arena->GetBoss();
+	UPattern* const Pattern = GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(
+		UGeoTestSpawnAddPattern::StaticClass(), FGameplayTag());
+	auto const FindAdds = [World](FName const Tag)
 	{
-		Summon->Summon(FVector2D(400.f, 0.f));
-		AEnemyCharacter* Add = nullptr;
-		for (TActorIterator<AEnemyCharacter> It(World); It && !Add; ++It)
+		TArray<AEnemyCharacter*> Adds;
+		for (TActorIterator<AEnemyCharacter> It(World); It; ++It)
 		{
-			Add = It->ActorHasTag(TEXT("Summoned")) ? *It : nullptr;
+			if (It->ActorHasTag(Tag))
+			{
+				Adds.Add(*It);
+			}
 		}
 
-		if (TestNotNull(TEXT("The add spawns with the summon's AddSetup"), Add))
-		{
-			TestTrue(TEXT("An add of the caster's arena"), Arena->GetLiveAdds().Contains(Add));
-			TestEqual(TEXT("With the setup's max health"),
-					  GeoASLib::GetGeoAscFromActor(Add)->GetNumericAttributeBase(
-						  UGeoAttributeSetBase::GetMaxHealthAttribute()),
-					  300.f);
-			TestEqual(TEXT("On the summoned spot"), Add->GetActorLocation().X, 400.0, 1.0);
-		}
+		return Adds;
+	};
+
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(400.f, 0.f)});
+	TestEqual(TEXT("No add before the hit"), FindAdds(TEXT("Summoned")).Num(), 0);
+	Pattern->EndPattern(true);
+	TestEqual(TEXT("Force-stop: nothing spawned"), FindAdds(TEXT("Summoned")).Num(), 0);
+
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(400.f, 0.f), FVector2D(-400.f, 0.f)});
+	Pattern->EndPattern();
+	TArray<AEnemyCharacter*> const Adds = FindAdds(TEXT("Summoned"));
+	if (TestEqual(TEXT("Natural end: one add per location, with AddSetup"), Adds.Num(), 2))
+	{
+		TestTrue(TEXT("Adds of the caster's arena"), Arena->GetLiveAdds().Contains(Adds[0]));
+		TestEqual(TEXT("With the setup's max health"),
+				  GeoASLib::GetGeoAscFromActor(Adds[0])->GetNumericAttributeBase(
+					  UGeoAttributeSetBase::GetMaxHealthAttribute()),
+				  300.f);
+		TestEqual(TEXT("On their locations"), FMath::Abs(Adds[0]->GetActorLocation().X), 400.0, 1.0);
+		TestEqual(TEXT("Each its own"), Adds[0]->GetActorLocation().X + Adds[1]->GetActorLocation().X, 0.0, 1.0);
 	}
+
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(0.f, 400.f)}, GeoDifficultyMask::Safe);
+	Pattern->EndPattern();
+	TestEqual(TEXT("Safe level: SafeAddSetup"), FindAdds(TEXT("SafeSummoned")).Num(), 1);
+	TestEqual(TEXT("Safe level: not AddSetup"), FindAdds(TEXT("Summoned")).Num(), 2);
 
 	DestroyTestWorld(World);
 	return true;

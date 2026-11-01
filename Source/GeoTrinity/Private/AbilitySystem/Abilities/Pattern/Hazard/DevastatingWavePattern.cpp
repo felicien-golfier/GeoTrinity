@@ -30,13 +30,13 @@ void UDevastatingWavePattern::InitPattern(FAbilityPayload const& Payload,
 		return;
 	}
 
-	StoredPayload.SourceAvatar->SetActorLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+	StoredPayload.SourceAvatar->SetActorLocation(FVector(GetCenter(), ArbitraryCharacterZ));
 }
 
 void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
 {
 	bool bAdded = false;
-	for (FSafeSpot const& Spot : GatherSafeSpots(this, StoredPayload, {ESafeSpotSource::Pillars},
+	for (FSafeSpot const& Spot : GatherSafeSpots(this, StoredPayload, GetCenter(), {ESafeSpotSource::Pillars},
 												 ESafeSpotShadow::Behind, MaxDistance, 0.f, {}))
 	{
 		if (!PillarSpots.ContainsByPredicate(
@@ -52,7 +52,7 @@ void UDevastatingWavePattern::AddPillarSpots(float const MaxDistance)
 
 	if (bAdded)
 	{
-		SetSafeSpots(PillarSpots, FVector2D::ZeroVector, StoredPayload.Origin);
+		SetSafeSpots(PillarSpots, FVector2D::ZeroVector, GetCenter());
 	}
 }
 
@@ -71,6 +71,7 @@ void UDevastatingWavePattern::StartPattern()
 FGameplayCueParameters UDevastatingWavePattern::FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload)
 {
 	FGameplayCueParameters CueParams = Super::FillCueParam(Cue, Payload);
+	CueParams.Location = FVector(GetCenter(), 0.f);
 	CueParams.RawMagnitude = MaxRadius;
 	float const LifeTime = MaxRadius / ExpansionSpeed;
 	CueParams.Normal = FVector(LifeTime, TravelTime, 1.f - (LifeTime - TravelTime) / LifeTime);
@@ -96,7 +97,7 @@ void UDevastatingWavePattern::MoveHazardVisual(float const SpentTime)
 {
 	if (IsValid(HazardVisual))
 	{
-		HazardVisual->SetWorldLocation(FVector(StoredPayload.Origin, ArbitraryCharacterZ));
+		HazardVisual->SetWorldLocation(FVector(GetCenter(), ArbitraryCharacterZ));
 		if (SpentTime < 0.f)
 		{
 			AddPillarSpots(0.f);
@@ -122,14 +123,14 @@ bool UDevastatingWavePattern::IsInHazard(AActor const* /*Target*/, FVector2D con
 										 float const SpentTime) const
 {
 	float const WaveRadius = FMath::Min(ExpansionSpeed * SpentTime, MaxRadius);
-	float const FrontOffset = WaveRadius - FVector2D::Distance(StoredPayload.Origin, Location);
+	float const FrontOffset = WaveRadius - FVector2D::Distance(GetCenter(), Location);
 	return FrontOffset >= 0.f && FrontOffset <= AnnulusWidth
-		&& !FSafeSpot::AnyShields(PillarSpots, Location, StoredPayload.Origin, FVector2D::ZeroVector);
+		&& !FSafeSpot::AnyShields(PillarSpots, Location, GetCenter(), FVector2D::ZeroVector);
 }
 
 void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 {
-	FVector const Center(StoredPayload.Origin, ArbitraryCharacterZ);
+	FVector const Center(GetCenter(), ArbitraryCharacterZ);
 	DrawDebugCircle(GetWorld(), Center, CurrentRadius, 64, FColor::Red, false, 0.f, 0, 3.f, FVector::XAxisVector,
 					FVector::YAxisVector, false);
 	DrawDebugCircle(GetWorld(), Center, FMath::Max(0.f, CurrentRadius - AnnulusWidth), 64, FColor::Green, false, 0.f, 0,
@@ -140,7 +141,7 @@ void UDevastatingWavePattern::DrawDebugWave(float CurrentRadius) const
 	{
 		FVector2D const PillarLocation(PillarSpot.Location);
 		float const PillarRadius = PillarSpot.Radius;
-		FVector2D const CenterToPillar(PillarLocation - StoredPayload.Origin);
+		FVector2D const CenterToPillar(PillarLocation - GetCenter());
 		float const PillarDistance = CenterToPillar.Size();
 		FVector2D const PillarDir(CenterToPillar / PillarDistance);
 		FVector2D const PillarPerp(-PillarDir.Y, PillarDir.X);

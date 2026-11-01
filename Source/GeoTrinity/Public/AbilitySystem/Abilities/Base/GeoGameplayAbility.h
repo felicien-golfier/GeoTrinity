@@ -6,6 +6,7 @@
 #include "AbilityPayload.h"
 #include "AbilitySystem/Data/EffectData.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Lib/GeoTarget.h"
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
 
@@ -19,7 +20,6 @@ class UEffectDataAsset;
 class UGeoAbilitySystemComponent;
 class UPattern;
 class APlayableCharacter;
-enum class EProjectileTarget : uint8;
 
 UENUM(BlueprintType)
 enum class EFireMode : uint8
@@ -235,7 +235,10 @@ protected:
 	 * directions. Shared body of the RemoteFireShot overrides — same CDO-only constraints apply.
 	 */
 	void SpawnRemoteProjectiles(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC,
-								FExternalProjectileParams const& Params, EProjectileTarget Target) const;
+								FExternalProjectileParams const& Params) const;
+
+	/** What Target is read against: the avatar as caster, Origin, Yaw and Seed from StoredPayload, no room. */
+	virtual FGeoTargetContext MakeTargetContext() const;
 
 	/**
 	 * Starts a timer (or charge window) after which BuildDataAndFire is called.
@@ -311,6 +314,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Animation")
 	TObjectPtr<UAnimMontage> AnimMontage;
+
+	/** What the ability fires at or places on (GeoASLib::PickTargets). Read only by abilities that fire or place. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
+	FGeoTarget Target;
 
 	// Define the way the ability start to Fire. After a charge time or directly after FireDelay.
 	// When FireMode = Charge, we use FireDelay as max charge time.

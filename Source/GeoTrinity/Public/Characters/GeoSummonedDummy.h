@@ -10,7 +10,7 @@
 #include "GeoSummonedDummy.generated.h"
 
 /**
- * Add a boss summons (GeoSummonAddAbility, tutorial miniboss). A zone grows at its feet for as long as it lives and
+ * Add a boss summons (USpawnAddPattern, tutorial miniboss). A zone grows at its feet for as long as it lives and
  * dies with it; killed, it leaves an ally of AllyClass in its place, an add of the same arena.
  */
 UCLASS()

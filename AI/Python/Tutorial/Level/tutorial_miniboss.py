@@ -52,7 +52,6 @@ ALLY_ACTOR_TAG = "TutorialMinibossAlly"
 SUMMONS_PER_WAVE = 3  # CyclesRequired: Board page 13, tip 3 ("every third Dummy")
 SHOOT_START_SECONDS = 0.2  # the salve keeps firing on its own; the state only starts it
 SUMMON_WIND_UP = 2.0  # seconds the landing spot is telegraphed and the boss stands still, at every level
-SUMMON_SPOT_RADIUS = 0.0
 SUMMON_MONTAGE = "/Game/Characters/Anim/Star/SK_Star_PikeNova_Montage"  # the Pillar's drop clip, on BP_Dummy's SK_Star
 HOSTILE_ATTITUDE = 4  # ETeamAttitudeBitflag: acts on the other team
 COLUMN = 1.0  # CT_Tutorial is flat: every difficulty column holds the same value
@@ -157,12 +156,19 @@ def build_salve():
     cdo.set_editor_property("AbilityTags", tags)
     cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
     cdo.set_editor_property("EffectDataInstances", [damage_effect("MinibossProjectileDamage")])
-    cdo.set_editor_property("Target", unreal.ProjectileTarget.ALL_PLAYERS)
+    set_target(cdo, "(Mode=AllPlayers)")
     waves.commit_bp(ability_bp)
     waves.register(ability_bp, SALVE_TAG, "Tutorial salve",
                    "Salve of the tutorial miniboss fight: the boss and its summons at the players.")
     log("salve", "created" if created else "updated")
     return ability_bp
+
+
+def set_target(cdo, text):
+    """Writes the members text names into the ability's Target, keeping the others."""
+    target = cdo.get_editor_property("Target").copy()
+    target.import_text(text)
+    cdo.set_editor_property("Target", target)
 
 
 def build_ally_salve(salve_bp):
@@ -184,31 +190,48 @@ def build_ally_salve(salve_bp):
     cdo.set_editor_property("AbilityTags", tags)
     cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
     cdo.set_editor_property("EffectDataInstances", [damage_effect("AllyProjectileDamage")])
-    cdo.set_editor_property("Target", unreal.ProjectileTarget.BOSS)
+    set_target(cdo, "(Mode=Boss)")
     waves.commit_bp(ability_bp)
     waves.register(ability_bp, ALLY_SALVE_TAG, "Tutorial ally salve",
                    "Salve of the tutorial miniboss fight: the summons' allies at the boss.")
     log("ally salve", "created" if created else "updated")
 
 
-def build_summon(add_class):
-    """Telegraphs the landing spot in the Damage colour, hits there, then the dummy lands with its AddSetup."""
-    ability_bp, created = waves.make_bp("GA_TutorialMinibossSummon", ABILITY_DIR,
-                                        unreal.load_class(None, "/Script/GeoTrinity.GeoSummonAddAbility"))
-    cdo = unreal.get_default_object(ability_bp.generated_class())
-    tags = unreal.GameplayTagContainer()
-    tags.import_text('(GameplayTags=((TagName="%s")))' % SUMMON_TAG)
-    cdo.set_editor_property("AbilityTags", tags)
-    pattern_bp, _ = waves.make_bp("BP_TutorialPattern_Summon", ABILITY_DIR, unreal.load_asset(SUMMON_PATTERN).generated_class())
-    unreal.get_default_object(pattern_bp.generated_class()).set_editor_property(
-        "AnimMontage", unreal.load_asset(SUMMON_MONTAGE))
-    waves.commit_bp(pattern_bp)
-    cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
+def native_child(name, parent_path):
+    """The Blueprint under parent_path; one that exists is reparented, so whatever references it stays valid."""
+    parent_class = unreal.load_class(None, parent_path)
+    blueprint, created = waves.make_bp(name, ABILITY_DIR, parent_class)
+    if not created:
+        unreal.BlueprintEditorLibrary.reparent_blueprint(blueprint, parent_class)
+    return blueprint, created
+
+
+def build_summon_pattern(add_class):
+    """The look of the Training Room's burst (SUMMON_PATTERN), the Pillar clip, and the dummy landing with its AddSetup."""
+    pattern_bp, _ = native_child("BP_TutorialPattern_Summon", "/Script/GeoTrinity.SpawnAddPattern")
+    cdo = unreal.get_default_object(pattern_bp.generated_class())
+    look = unreal.get_default_object(unreal.load_asset(SUMMON_PATTERN).generated_class())
+    for name in ("ZoneParams", "TeamAttitude", "StartCue"):
+        cdo.set_editor_property(name, look.get_editor_property(name))
+    cdo.set_editor_property("AnimMontage", unreal.load_asset(SUMMON_MONTAGE))
     cdo.set_editor_property("AddClass", add_class)
     cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", SALVE_TAG))
     cdo.set_editor_property("bUseSafeAddSetup", True)
     cdo.set_editor_property("SafeAddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", ""))
-    cdo.set_editor_property("SpotRadius", SUMMON_SPOT_RADIUS)
+    waves.commit_bp(pattern_bp)
+    return pattern_bp
+
+
+def build_summon(add_class):
+    """Telegraphs a player's place in the Damage colour, hits there, then the dummy lands (build_summon_pattern)."""
+    pattern_bp = build_summon_pattern(add_class)
+    ability_bp, created = native_child("GA_TutorialMinibossSummon", "/Script/GeoTrinity.PatternAbility")
+    cdo = unreal.get_default_object(ability_bp.generated_class())
+    tags = unreal.GameplayTagContainer()
+    tags.import_text('(GameplayTags=((TagName="%s")))' % SUMMON_TAG)
+    cdo.set_editor_property("AbilityTags", tags)
+    cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
+    set_target(cdo, "(Mode=RandomPlayers,Count=1)")
     cdo.set_editor_property("FireDelay", SUMMON_WIND_UP)
     cdo.set_editor_property("EffectDataInstances", [damage_effect("DummyLandingDamage")])
     waves.commit_bp(ability_bp)

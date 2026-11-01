@@ -73,7 +73,11 @@ bool UGeoRecallTurretAbility::IsBlinkRecallReady(UAbilitySystemComponent const& 
 	FGameplayAbilityActorInfo const* ActorInfo = ASC.AbilityActorInfo.Get();
 	return ActorInfo && GetCooldownTimeRemaining(ActorInfo) <= 0.f
 		&& GetActiveTurrets(ActorInfo->AvatarActor.Get())
-			   .ContainsByPredicate([](AGeoTurret const* Turret) { return Turret->IsBlinking(); });
+			   .ContainsByPredicate(
+				   [](AGeoTurret const* Turret)
+				   {
+					   return Turret->IsBlinking();
+				   });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -89,7 +93,10 @@ bool UGeoRecallTurretAbility::GetGaugeLabel(UAbilitySystemComponent const& ASC, 
 {
 	int32 const BlinkingTurrets = IsBlinkRecallReady(ASC)
 		? static_cast<int32>(Algo::CountIf(GetActiveTurrets(ASC.AbilityActorInfo->AvatarActor.Get()),
-										   [](AGeoTurret const* Turret) { return Turret->IsBlinking(); }))
+										   [](AGeoTurret const* Turret)
+										   {
+											   return Turret->IsBlinking();
+										   }))
 		: 0;
 	OutLabel = BlinkingTurrets > 0 ? FText::AsNumber(BlinkingTurrets) : FText::GetEmpty();
 	return BlinkingTurrets > 0;
@@ -135,16 +142,16 @@ TArray<UGeoAbilitySystemComponent*> UGeoRecallTurretAbility::FindTargets(AActor 
 		return Targets;
 	}
 
-	for (AActor* Target :
+	for (AActor* ActorInLine :
 		 GeoASLib::GetInteractableActorsInLine(this, GeoASLib::GetTeamId(Instigator), OverlapAttitude, false, Origin,
 											   ToInstigator / MaxRange, MaxRange, LineHalfWidth))
 	{
-		if (Target == Instigator)
+		if (ActorInLine == Instigator)
 		{
 			continue;
 		}
 
-		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(ActorInLine);
 		if (IsValid(TargetASC))
 		{
 			Targets.Add(TargetASC);

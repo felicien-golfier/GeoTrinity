@@ -8,7 +8,7 @@
 
 void UGeoAutomaticProjectileAbility::RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const
 {
-	SpawnRemoteProjectiles(Avatar, SourceASC, ProjectileParams, Target);
+	SpawnRemoteProjectiles(Avatar, SourceASC, ProjectileParams);
 }
 
 bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
@@ -31,7 +31,7 @@ bool UGeoAutomaticProjectileAbility::ExecuteShot_Implementation()
 	}
 
 	FVector const Origin{StoredPayload.Origin, ArbitraryCharacterZ};
-	return GeoASLib::SpawnProjectileSpread(GetWorld(), ProjectileParams, Target, Origin, StoredPayload.Yaw,
+	return GeoASLib::SpawnProjectileSpread(GetWorld(), ProjectileParams, Target, MakeTargetContext(), Origin,
 										   StoredPayload.ServerSpawnTime, StoredPayload, GetEffectDataArray(),
 										   PredictionKey)
 		> 0;

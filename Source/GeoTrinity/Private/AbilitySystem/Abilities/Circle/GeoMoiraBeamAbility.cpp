@@ -95,24 +95,24 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 		return;
 	}
 
-	for (AActor* Target : ActorsInLine)
+	for (AActor* HitActor : ActorsInLine)
 	{
 
-		if (Target == Character)
+		if (HitActor == Character)
 		{
 			continue;
 		}
 
-		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
 		if (!TargetASC)
 		{
 			continue;
 		}
 
 
-		if (Target->IsA<AGeoHealingZone>()) // We get the Healing zones.
+		if (HitActor->IsA<AGeoHealingZone>()) // We get the Healing zones.
 		{
-			AGeoHealingZone* Zone = CastChecked<AGeoHealingZone>(Target);
+			AGeoHealingZone* Zone = CastChecked<AGeoHealingZone>(HitActor);
 			UAbilitySystemComponent* ZoneASC = Zone->GetAbilitySystemComponent();
 			float const MaxHealth = TargetASC->GetDefaultAttributeValue(UGeoAttributeSetBase::GetMaxHealthAttribute());
 			if (!ensureMsgf(MaxHealth > 0.f, TEXT("%hs: %s has no static default MaxHealth"), __FUNCTION__,
@@ -150,11 +150,11 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			RemainingDuration += AbsorbedDuration;
 			ChannelDuration += AbsorbedDuration;
 		}
-		else if (GeoLib::IsServer(GetWorld()) && Target->CanBeDamaged())
+		else if (GeoLib::IsServer(GetWorld()) && HitActor->CanBeDamaged())
 		{
 			float BoostPerAbsorbedZone = 1 + FMath::Max(BeamRatio - 1.f, 0.f) * DamageAndHealBoostPerAbsorbedZone;
 
-			if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::Hostile))
+			if (GeoASLib::IsTeamAttitudeAligned(Character, HitActor, TeamAttitudeMask::Hostile))
 			{
 				FDamageEffectData DamageEffect;
 				DamageEffect.Amount =
@@ -163,7 +163,7 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 				GeoASLib::ApplySingleEffectData(DamageEffect, SourceASC, TargetASC, StoredPayload.AbilityLevel,
 												StoredPayload.Seed, StoredPayload.AbilityTag);
 			}
-			else if (GeoASLib::IsTeamAttitudeAligned(Character, Target, TeamAttitudeMask::FriendlyOrNeutral))
+			else if (GeoASLib::IsTeamAttitudeAligned(Character, HitActor, TeamAttitudeMask::FriendlyOrNeutral))
 			{
 
 				FHealEffectData HealEffect;
@@ -175,6 +175,6 @@ void UGeoMoiraBeamAbility::TickBeam(float const DeltaTime, TArray<AActor*> const
 			}
 		}
 
-		GeoASLib::NotifyAbilityHit(StoredPayload, Target);
+		GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
 	}
 }

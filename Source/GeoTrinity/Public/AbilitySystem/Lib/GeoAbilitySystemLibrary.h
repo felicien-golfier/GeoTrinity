@@ -5,6 +5,7 @@
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Data/GeoAbilityTargetTypes.h"
+#include "AbilitySystem/Lib/GeoTarget.h"
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
@@ -13,18 +14,6 @@
 #include "Tool/Team.h"
 
 #include "GeoAbilitySystemLibrary.generated.h"
-
-/** Where a projectile ability or pattern aims, through GetTargetDirections, the one aim code of all of them. */
-UENUM(BlueprintType)
-enum class EProjectileTarget : uint8
-{
-	/** Along the caster's yaw. */
-	Forward,
-	/** One direction per live player. */
-	AllPlayers,
-	/** The live boss of the fighting arena (AGeoArena::GetFightingArena); none outside a fight. */
-	Boss
-};
 
 class AGeoDeployableBase;
 class AGeoProjectile;
@@ -294,28 +283,37 @@ public:
 	 */
 	static void FinishSpawnProjectile(UWorld const* World, AGeoProjectile* Projectile, FTransform const& SpawnTransform,
 									  float SpawnServerTime, FPredictionKey PredictionKey);
+	/** TARGETING (the one targeting code of every ability) **/
+
 	/**
-	 * Returns normalized launch directions for a projectile ability based on the targeting mode.
-	 *
-	 * @param World   The world context (used to find the players or the fighting arena's boss).
-	 * @param Target  Targeting mode (EProjectileTarget).
-	 * @param Yaw     Instigator facing yaw in degrees; defines the forward direction for Forward mode.
-	 * @param Origin  3D world position of the fire socket; used to compute per-target directions.
-	 * @return        Array of normalized direction vectors, one per intended projectile.
+	 * Chooses Target's targets, seeded from Context.Seed. Empty when there is nothing to target: nothing fires.
+	 * A pick follows its actor until resolved (ResolvePicks), so a target chosen ahead of the launch is hit where it
+	 * stands then.
 	 */
-	static TArray<FVector> GetTargetDirections(UWorld const* World, EProjectileTarget Target, float Yaw,
+	static TArray<FGeoTargetPick> PickTargets(FGeoTarget const& Target, FGeoTargetContext const& Context);
+
+	/** Where each pick stands now: its actor's location plus its offset, or its chosen location once the actor is gone.
+	 */
+	static TArray<FVector2D> ResolvePicks(TArray<FGeoTargetPick> const& Picks);
+
+	/** PickTargets then ResolvePicks at once. */
+	static TArray<FVector2D> GetTargetLocations(FGeoTarget const& Target, FGeoTargetContext const& Context);
+
+	/**
+	 * One normalized horizontal direction per target location, from Origin; a location on Origin gives the
+	 * Context.Yaw direction.
+	 */
+	static TArray<FVector> GetTargetDirections(FGeoTarget const& Target, FGeoTargetContext const& Context,
 											   FVector const& Origin);
 
 	/**
-	 * Fully spawns one projectile per direction returned by GetTargetDirections.
+	 * Fully spawns one projectile per direction returned by GetTargetDirections, all from Origin.
 	 *
-	 * @param Origin           World-space spawn point, shared by every projectile of the spread.
-	 * @param Yaw              Instigator facing yaw in degrees, defining the Forward direction.
 	 * @param SpawnServerTime  Synchronized server time at spawn, used to fast-forward position by elapsed ping.
 	 * @return                 Number of projectiles actually spawned.
 	 */
-	static int32 SpawnProjectileSpread(UWorld* World, FExternalProjectileParams const& Params, EProjectileTarget Target,
-									   FVector const& Origin, float Yaw, float SpawnServerTime,
+	static int32 SpawnProjectileSpread(UWorld* World, FExternalProjectileParams const& Params, FGeoTarget const& Target,
+									   FGeoTargetContext const& Context, FVector const& Origin, float SpawnServerTime,
 									   FAbilityPayload const& Payload,
 									   TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 									   FPredictionKey PredictionKey = FPredictionKey{});

@@ -2,10 +2,8 @@
 
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicPatternAbility.h"
 
-#include "AbilitySystem/Abilities/Pattern/Projectile/ProjectilePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
-#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/PlayableCharacter.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -17,7 +15,7 @@ UGeoPeriodicPatternAbility::UGeoPeriodicPatternAbility()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
-	Target = EProjectileTarget::AllPlayers;
+	Target.Mode = EGeoTarget::AllPlayers;
 }
 
 void UGeoPeriodicPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
@@ -28,18 +26,6 @@ void UGeoPeriodicPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle cons
 	RemainingSalveCount = 0;
 
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-}
-
-TInstancedStruct<FPatternData> UGeoPeriodicPatternAbility::CreatePatternData() const
-{
-	FProjectilePatternData SalveData;
-	for (FVector const& Direction : GeoASLib::GetTargetDirections(GetWorld(), Target, StoredPayload.Yaw,
-																  FVector(StoredPayload.Origin, ArbitraryCharacterZ)))
-	{
-		SalveData.Yaws.Add(Direction.Rotation().Yaw);
-	}
-
-	return TInstancedStruct<FPatternData>::Make<FProjectilePatternData>(SalveData);
 }
 
 void UGeoPeriodicPatternAbility::SizeBurst()

@@ -14,9 +14,10 @@ Patterns that spawn `AGeoProjectile`s. Rules (lag compensation, instance rule) i
 - Ends projectiles on actor destruction.
 
 ## ConeSpray
+- Fan centred on `GetTargetYaw()`.
 - Each salve stamped with its scheduled `ServerSpawnTime` (`spawn + StartDelay + N*SalveFrequencySec`), not tick time.
 - Ends once the last salve is out; bullets fly on their own.
 - `OnCreate` pre-warms the pool; reset `SpawnedSalveCount` in `InitPattern`.
 
 ## Salve
-- Yaw per bullet = towards each `GetTargetLocations()` entry from `Payload.Origin` (zero length = `Payload.Yaw`); no pattern data. The locations are resolved on the server and travel with the pattern start, since a client only knows its own controller.
+- One bullet per target location, yaw = `GetTargetYaw(i)` (`../CLAUDE.md`, "Pattern.h"); no pattern data. The locations are resolved on the server and travel with the pattern start, since a client only knows its own controller.

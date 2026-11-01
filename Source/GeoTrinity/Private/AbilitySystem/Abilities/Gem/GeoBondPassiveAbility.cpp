@@ -40,13 +40,13 @@ void UGeoBondPassiveAbility::ShareIncomingDamage(UAbilitySystemComponent& Victim
 	UGeoAbilitySystemComponent* HolderASC = GetGeoAbilitySystemComponentFromActorInfo();
 	APlayableCharacter const* Holder = Cast<APlayableCharacter>(GetAvatarActorFromActorInfo());
 	if (Victim && Holder && !Holder->IsDead() && &VictimASC != HolderASC && !Victim->IsDead()
-		&& !Victim->IsInvulnerable()
-		&& !(GeoDamageContext && GeoDamageContext->DoNotRedirectSacrifice()))
+		&& !Victim->IsInvulnerable() && !(GeoDamageContext && GeoDamageContext->DoNotRedirectSacrifice()))
 	{
 		bool const bVictimReduced = !(GeoDamageContext && GeoDamageContext->ShouldSkipStatModifiers());
 		float const VictimReduction = bVictimReduced
-			? FMath::Clamp(GeoASLib::GetStatValue(&VictimASC, UCharacterAttributeSet::GetDamageReductionAttribute(), 0.f),
-						   0.f, 0.99f)
+			? FMath::Clamp(
+				  GeoASLib::GetStatValue(&VictimASC, UCharacterAttributeSet::GetDamageReductionAttribute(), 0.f), 0.f,
+				  0.99f)
 			: 0.f;
 		float const HolderReduction = FMath::Clamp(
 			GeoASLib::GetStatValue(HolderASC, UCharacterAttributeSet::GetDamageReductionAttribute(), 0.f), 0.f, 1.f);

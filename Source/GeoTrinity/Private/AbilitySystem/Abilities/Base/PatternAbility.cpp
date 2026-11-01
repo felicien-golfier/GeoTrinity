@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
 #include "GeoTrinity/GeoTrinity.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -29,6 +30,7 @@ void UPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle const Handle,
 
 	LaunchSeed = GetNewSeed();
 	ActivationParams = MakeActivationParams(TriggerEventData);
+	StoredPayload = CreateAbilityPayload(LaunchSeed);
 
 	if (PreLaunchDelay > 0.f)
 	{
@@ -75,9 +77,21 @@ TInstancedStruct<FPatternData> UPatternAbility::CreatePatternData() const
 	return ActivationParams.PatternData;
 }
 
+FGeoTargetContext UPatternAbility::MakeTargetContext() const
+{
+	FGeoTargetContext Context = Super::MakeTargetContext();
+	Context.ArenaTag = ActivationParams.ArenaTag;
+	return Context;
+}
+
 void UPatternAbility::BeginPreLaunch()
 {
-	AddPreLaunchCue(GetGeoAbilitySystemComponentFromActorInfo());
+	Picks = GeoASLib::PickTargets(Target, MakeTargetContext());
+	for (FGeoTargetPick const& Pick : Picks)
+	{
+		AActor* const MarkedActor = Pick.Actor.IsValid() ? Pick.Actor.Get() : GetAvatarActorFromActorInfo();
+		AddPreLaunchCue(GeoASLib::GetGeoAscFromActor(MarkedActor));
+	}
 }
 
 void UPatternAbility::AddPreLaunchCue(UGeoAbilitySystemComponent* TargetASC)
@@ -117,17 +131,38 @@ void UPatternAbility::LaunchPattern()
 {
 	RemovePreLaunchCues();
 	StoredPayload = CreateAbilityPayload(LaunchSeed);
-
-	UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
-	ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, CreatePatternData());
-	UPattern* PatternInstance = nullptr;
-	if (!ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
-					TEXT("Pattern Instance doesn't exist when launching PatternAbility !")))
+	if (Picks.IsEmpty())
 	{
-		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
-		return;
+		Picks = GeoASLib::PickTargets(Target, MakeTargetContext());
 	}
-	PatternInstance->OnPatternEnd.AddUniqueDynamic(this, &UPatternAbility::OnPatternEnd);
+
+	TArray<FVector2D> const TargetLocations = GeoASLib::ResolvePicks(Picks);
+	Picks.Reset();
+	if (TargetLocations.IsEmpty())
+	{
+		UE_LOG(LogGeoASC, Log, TEXT("%s: no target location, nothing launched"), *GetName());
+		OnNoTarget();
+	}
+	else
+	{
+		UGeoAbilitySystemComponent* ASC = GetGeoAbilitySystemComponentFromActorInfo();
+		ASC->PatternStartMulticast(StoredPayload, PatternToLaunch, TargetLocations, CreatePatternData());
+		UPattern* PatternInstance = nullptr;
+		if (ensureMsgf(ASC->FindPatternByClass(PatternToLaunch, PatternInstance),
+					   TEXT("Pattern Instance doesn't exist when launching PatternAbility !")))
+		{
+			PatternInstance->OnPatternEnd.AddUniqueDynamic(this, &UPatternAbility::OnPatternEnd);
+		}
+		else
+		{
+			EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, true);
+		}
+	}
+}
+
+void UPatternAbility::OnNoTarget()
+{
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 }
 
 void UPatternAbility::OnPatternEnd()
@@ -142,24 +177,6 @@ void UPatternAbility::OnPatternEnd()
 	}
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false, false);
 	PatternInstance->OnPatternEnd.RemoveDynamic(this, &UPatternAbility::OnPatternEnd);
-}
-
-FVector2D UPatternAbility::GetFireOrigin2D(AActor* Instigator, UGeoAbilitySystemComponent* SourceASC,
-										   int const Seed) const
-{
-	if (!TargetPointTag.IsValid())
-	{
-		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
-	}
-
-	TArray<AActor*> const FirePoints = GeoLib::GetTargetPoints(this, TargetPointTag, ActivationParams.ArenaTag);
-	if (!ensureMsgf(!FirePoints.IsEmpty(), TEXT("%hs: %s has no %s point to launch from in room %s"), __FUNCTION__,
-					*GetName(), *TargetPointTag.ToString(), *ActivationParams.ArenaTag.ToString()))
-	{
-		return Super::GetFireOrigin2D(Instigator, SourceASC, Seed);
-	}
-
-	return FVector2D(FirePoints[0]->GetActorLocation());
 }
 
 void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbilityActorInfo const* ActorInfo,
@@ -179,5 +196,6 @@ void UPatternAbility::EndAbility(FGameplayAbilitySpecHandle Handle, FGameplayAbi
 	}
 
 	ActivationParams = FPatternAbilityParams();
+	Picks.Reset();
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

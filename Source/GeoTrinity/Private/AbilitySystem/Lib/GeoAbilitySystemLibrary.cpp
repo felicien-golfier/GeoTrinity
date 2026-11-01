@@ -6,6 +6,7 @@
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
+#include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Data/EffectData.h"
@@ -699,8 +700,8 @@ UGeoAbilitySystemLibrary::FullySpawnProjectile(UWorld* const World, FExternalPro
 }
 
 int32 UGeoAbilitySystemLibrary::SpawnProjectileSpread(UWorld* const World, FExternalProjectileParams const& Params,
-													  EProjectileTarget const Target, FVector const& Origin,
-													  float const Yaw, float const SpawnServerTime,
+													  FGeoTarget const& Target, FGeoTargetContext const& Context,
+													  FVector const& Origin, float const SpawnServerTime,
 													  FAbilityPayload const& Payload,
 													  TArray<TInstancedStruct<FEffectData>> const& EffectDataArray,
 													  FPredictionKey PredictionKey)
@@ -711,7 +712,7 @@ int32 UGeoAbilitySystemLibrary::SpawnProjectileSpread(UWorld* const World, FExte
 	}
 
 	int32 SpawnedCount = 0;
-	for (FVector const& Direction : GetTargetDirections(World, Target, Yaw, Origin))
+	for (FVector const& Direction : GetTargetDirections(Target, Context, Origin))
 	{
 		FTransform const SpawnTransform{Direction.Rotation().Quaternion(), Origin};
 		if (ensureMsgf(FullySpawnProjectile(World, Params, SpawnTransform, Payload, EffectDataArray, SpawnServerTime,
@@ -791,43 +792,128 @@ void UGeoAbilitySystemLibrary::FinishSpawnProjectile(UWorld const* World, AGeoPr
 	}
 }
 
-TArray<FVector> UGeoAbilitySystemLibrary::GetTargetDirections(UWorld const* World, EProjectileTarget const Target,
-															  float const Yaw, FVector const& Origin)
+TArray<FGeoTargetPick> UGeoAbilitySystemLibrary::PickTargets(FGeoTarget const& Target, FGeoTargetContext const& Context)
 {
-	switch (Target)
+	TArray<FGeoTargetPick> Picks;
+	if (!ensureMsgf(IsValid(Context.Caster), TEXT("%hs: no caster to target from"), __FUNCTION__))
 	{
-	case EProjectileTarget::Forward:
-		{
-			return {FRotator(0.f, Yaw, 0.f).Vector()};
-		}
+		return Picks;
+	}
 
-	case EProjectileTarget::AllPlayers:
+	auto const AddActorPick = [&Picks](AActor* const Actor, FVector2D const Offset)
+	{
+		Picks.Add({Actor, Offset, FVector2D(Actor->GetActorLocation()) + Offset});
+	};
+
+	switch (Target.Mode)
+	{
+	case EGeoTarget::Forward:
+		Picks.Add({nullptr, FVector2D::ZeroVector,
+				   Context.Origin + FVector2D(FRotator(0.f, Context.Yaw, 0.f).Vector()) * Target.Distance});
+		break;
+
+	case EGeoTarget::AllPlayers:
+		for (APlayableCharacter* const Player : GeoLib::GetAlivePlayers(Context.Caster))
 		{
-			TArray<FVector> Directions;
-			for (APlayableCharacter const* const Player : GeoLib::GetAlivePlayers(World))
+			AddActorPick(Player, FVector2D::ZeroVector);
+		}
+		break;
+
+	case EGeoTarget::RandomPlayers:
+		{
+			TArray<APlayableCharacter*> const Players = GeoLib::GetAlivePlayers(Context.Caster);
+			if (Players.IsEmpty())
 			{
-				Directions.Add((Player->GetActorLocation() - Origin).GetSafeNormal());
+				UE_LOG(LogGeoASC, Log, TEXT("%hs: no live player to target"), __FUNCTION__);
+				break;
 			}
-			return Directions;
+
+			UGeoAbilitySystemComponent const* const CasterASC = GetGeoAscFromActor(Context.Caster);
+			UGeoAttributeSetBase const* const AttributeSet =
+				CasterASC ? CasterASC->GetSet<UGeoAttributeSetBase>() : nullptr;
+			float const HealthRatio = AttributeSet ? AttributeSet->GetHealthRatio() : 1.f;
+			int32 TargetCount = Target.Count;
+			for (float const Ratio : Target.ExtraBelowHealth)
+			{
+				TargetCount += HealthRatio < Ratio ? 1 : 0;
+			}
+
+			FRandomStream const Stream(Context.Seed);
+			int32 const FirstPlayerIndex = Stream.RandHelper(Players.Num());
+			for (int32 Index = 0; Index < TargetCount; ++Index)
+			{
+				FVector2D Offset = FVector2D::ZeroVector;
+				if (Index >= Players.Num())
+				{
+					float const Angle = Stream.FRandRange(0.f, 2.f * PI);
+					float const Radius = Stream.FRandRange(Target.MinScatterRadius, Target.MaxScatterRadius);
+					Offset = FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius;
+				}
+
+				AddActorPick(Players[(FirstPlayerIndex + Index) % Players.Num()], Offset);
+			}
+			break;
 		}
 
-	case EProjectileTarget::Boss:
+	case EGeoTarget::Boss:
 		{
-			AGeoArena const* const Arena = AGeoArena::GetFightingArena(World);
-			AEnemyCharacter const* const Boss = Arena ? Arena->GetBoss() : nullptr;
+			AGeoArena const* const Arena = AGeoArena::GetFightingArena(Context.Caster);
+			AEnemyCharacter* const Boss = Arena ? Arena->GetBoss() : nullptr;
 			if (IsValid(Boss) && !Boss->IsDead())
 			{
-				return {(Boss->GetActorLocation() - Origin).GetSafeNormal()};
+				AddActorPick(Boss, FVector2D::ZeroVector);
 			}
-
-			return {};
+			break;
 		}
 
-	default:
+	case EGeoTarget::TargetPoint:
 		{
-			return {};
+			TArray<AActor*> const Points = Context.ArenaTag.IsValid()
+				? GeoLib::GetTargetPoints(Context.Caster, Target.TargetPointTag, Context.ArenaTag)
+				: TArray<AActor*>();
+			if (ensureMsgf(!Points.IsEmpty(), TEXT("%hs: no %s point in room %s"), __FUNCTION__,
+						   *Target.TargetPointTag.ToString(), *Context.ArenaTag.ToString()))
+			{
+				Picks.Add({nullptr, FVector2D::ZeroVector, FVector2D(Points[0]->GetActorLocation())});
+			}
+			break;
 		}
 	}
+
+	return Picks;
+}
+
+TArray<FVector2D> UGeoAbilitySystemLibrary::ResolvePicks(TArray<FGeoTargetPick> const& Picks)
+{
+	TArray<FVector2D> Locations;
+	Locations.Reserve(Picks.Num());
+	for (FGeoTargetPick const& Pick : Picks)
+	{
+		AActor const* const Actor = Pick.Actor.Get();
+		Locations.Add(IsValid(Actor) ? FVector2D(Actor->GetActorLocation()) + Pick.Offset : Pick.Location);
+	}
+
+	return Locations;
+}
+
+TArray<FVector2D> UGeoAbilitySystemLibrary::GetTargetLocations(FGeoTarget const& Target,
+															   FGeoTargetContext const& Context)
+{
+	return ResolvePicks(PickTargets(Target, Context));
+}
+
+TArray<FVector> UGeoAbilitySystemLibrary::GetTargetDirections(FGeoTarget const& Target,
+															  FGeoTargetContext const& Context, FVector const& Origin)
+{
+	FVector const YawDirection = FRotator(0.f, Context.Yaw, 0.f).Vector();
+	TArray<FVector> Directions;
+	for (FVector2D const& Location : GetTargetLocations(Target, Context))
+	{
+		FVector const ToLocation(Location - FVector2D(Origin), 0.f);
+		Directions.Add(ToLocation.IsNearlyZero() ? YawDirection : ToLocation.GetUnsafeNormal());
+	}
+
+	return Directions;
 }
 
 ETeamAttitudeBitflag UGeoAbilitySystemLibrary::GetAttitudeBitflag(ETeamAttitude::Type Attitude)

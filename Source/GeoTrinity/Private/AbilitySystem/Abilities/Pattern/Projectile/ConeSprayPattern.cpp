@@ -42,7 +42,7 @@ void UConeSprayPattern::SpawnSpraySalve() const
 	Yaws.Reserve(ProjectileCountPerSalve);
 	for (int Index = 0; Index < ProjectileCountPerSalve; ++Index)
 	{
-		Yaws.Add(StoredPayload.Yaw
+		Yaws.Add(GetTargetYaw()
 				 + FMath::Lerp(-ConeAngle * 0.5f, ConeAngle * 0.5f,
 							   static_cast<float>(Index) / static_cast<float>(ProjectileCountPerSalve - 1)));
 	}

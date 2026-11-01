@@ -10,7 +10,7 @@
 
 void UGeoProjectileAbility::RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const
 {
-	SpawnRemoteProjectiles(Avatar, SourceASC, ProjectileParams, Target);
+	SpawnRemoteProjectiles(Avatar, SourceASC, ProjectileParams);
 }
 
 void UGeoProjectileAbility::Fire(FGeoAbilityTargetData const& AbilityTargetData)
@@ -72,8 +72,10 @@ void UGeoProjectileAbility::SpawnProjectileUsingDirection(FVector const& Directi
 void UGeoProjectileAbility::SpawnProjectilesUsingTarget(float const ProjectileYaw, FVector const& Origin,
 														float const SpawnServerTime)
 {
-	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(GetWorld(), Target, ProjectileYaw, Origin);
-	for (FVector const& Direction : Directions)
+	FGeoTargetContext Context = MakeTargetContext();
+	Context.Origin = FVector2D(Origin);
+	Context.Yaw = ProjectileYaw;
+	for (FVector const& Direction : GeoASLib::GetTargetDirections(Target, Context, Origin))
 	{
 		SpawnProjectileUsingDirection(Direction, Origin, SpawnServerTime);
 	}

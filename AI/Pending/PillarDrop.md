@@ -20,7 +20,7 @@ Docs written: `Actor/Deployable/CLAUDE.md` ("Init phase"), `Actor/Deployable/Pil
 
 ## Tests
 - [ ] `GeoDeployableInitTests.cpp` — add: auto-finish (`bAutoFinishInit` true ends by itself at `InitDuration`); `FinishInit` on a non-initialising deployable leaves it damageable, no second spawn cue (fails on the old code); landing restores the rest transform with a curve ≠ 0 at 1; `InitCue` `Normal.Y` = time since `InitStartServerTime`.
-- [ ] `USpawnPillarPattern` — with `StartDelay <= TravelTime` the pillars stay damageable (natural end / force-stop: `ZonePatternSpawns.md`). Lightest layer per `AI/Testing.md`; row in `Tests/Gameplay/CLAUDE.md`.
+- [ ] `USpawnPillarPattern` — with `StartDelay <= TravelTime` the pillars stay damageable (natural end / force-stop: `GeoTrinity.Pattern.SpawnPillar`). Lightest layer per `AI/Testing.md`; row in `Tests/Gameplay/CLAUDE.md`.
 - [ ] Check: boss destroyed mid-telegraph (no `EndAbility` → no `EndPattern`?) leaves inert pillars; if so, expire them from the pattern's teardown.
 
 ## Verify

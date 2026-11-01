@@ -9,7 +9,6 @@
 
 #include "GeoProjectileAbility.generated.h"
 
-enum class EProjectileTarget : uint8;
 /**
  * Single-shot ability that spawns one or more projectiles on activation.
  * Fires client-predicted on the local machine and authoritative on the server via OnFireTargetDataReceived.
@@ -25,7 +24,7 @@ public:
 	virtual void RemoteFireShot(AActor* Avatar, UGeoAbilitySystemComponent* SourceASC) const override;
 
 protected:
-	/** Spawns client-predicted projectiles toward each direction from GetTargetDirections for the payload target mode. */
+	/** Spawns client-predicted projectiles toward each direction of GeoASLib::GetTargetDirections for Target. */
 	virtual void Fire(FGeoAbilityTargetData const& AbilityTargetData) override;
 
 	/** Server. Spawns the authoritative projectile using the target data received from the predicting client. */
@@ -52,9 +51,9 @@ protected:
 	virtual void SpawnProjectile(FTransform const& SpawnTransform, float SpawnServerTime) const;
 
 	/**
-	 * Spawns one projectile per direction returned by GetTargetDirections for the given Target mode.
+	 * Spawns one projectile per direction returned by GeoASLib::GetTargetDirections for Target.
 	 *
-	 * @param ProjectileYaw    Yaw angle used for Forward mode targeting.
+	 * @param ProjectileYaw    Facing yaw: Forward's direction.
 	 * @param Origin           World-space origin for direction calculations.
 	 * @param SpawnServerTime  Synchronized server time for position fast-forwarding.
 	 */
@@ -64,7 +63,4 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbility")
 	FExternalProjectileParams ProjectileParams;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbility")
-	EProjectileTarget Target;
 };

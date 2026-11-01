@@ -8,8 +8,6 @@
 
 #include "GeoAutomaticProjectileAbility.generated.h"
 
-enum class EProjectileTarget : uint8;
-
 /**
  * High fire rate ability that spawns projectiles while input is held.
  * Combines the automatic firing loop from UGeoAutomaticFireAbility with projectile spawning.
@@ -29,7 +27,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	FExternalProjectileParams ProjectileParams;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
-	EProjectileTarget Target;
 };

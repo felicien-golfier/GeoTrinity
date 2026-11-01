@@ -23,7 +23,7 @@
 ## Targeting
 The one targeting code of every ability: projectiles, salves, beams, zones, pillars, adds, waves. Never aim or placement code of its own in an ability, pattern or firer.
 - Everything is a location first; a direction = location − origin, zero length = the context's yaw.
-- `FGeoTarget` = `Mode` (`EGeoTarget`) + the params of every mode, shown only for theirs (`EditCondition`). One per ability (`Target`, on `UGeoGameplayAbility`; `Abilities/Base/CLAUDE.md`, "Target"). A second need on one ability (where to fire from) = a second `FGeoTarget` there, read through the same functions; never a parallel enum.
+- `FGeoTarget` = `Mode` (`EGeoTarget`, Python name `GeoTargetMode`) + the params of every mode, shown only for theirs (`EditCondition`). One per ability (`Target`, on `UGeoGameplayAbility`; `Abilities/Base/CLAUDE.md`, "Target"). A second need on one ability (where to fire from) = a second `FGeoTarget` there, read through the same functions; never a parallel enum.
 - `FGeoTargetContext`: `Caster`, `Origin`, `Yaw`, `Seed`, `ArenaTag` (the room; pattern abilities only). Built by the ability (`MakeTargetContext`), never by a firer.
 - `PickTargets(Target, Context)` → `TArray<FGeoTargetPick>`: the one code choosing, seeded from `Context.Seed`. A pick = `Actor` + `Offset` (follows that actor) and `Location` (kept once the actor is gone, so a death mid-cast still lands).
 - `ResolvePicks(Picks)` → locations, at the moment of firing. `GetTargetLocations(Target, Context)` = pick then resolve at once; `GetTargetDirections(Target, Context, Origin)` on top of it.

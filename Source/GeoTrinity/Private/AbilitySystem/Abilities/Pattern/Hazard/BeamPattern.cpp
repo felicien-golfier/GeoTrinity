@@ -32,7 +32,7 @@ float UBeamPattern::GetBeamYaw(float const SpentTime, float const BossServerTime
 
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
 	float const SweepSign = StoredPayload.Seed % 2 == 0 ? 1.f : -1.f;
-	return StoredPayload.Yaw - SweepSign * (2.f * SweepAngle * SweptFraction);
+	return GetTargetYaw() - SweepSign * (2.f * SweepAngle * SweptFraction);
 }
 
 FVector UBeamPattern::GetBeamOrigin(float const BossServerTime) const

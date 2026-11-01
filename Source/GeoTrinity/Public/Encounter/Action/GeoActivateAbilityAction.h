@@ -43,7 +43,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	TSubclassOf<UGeoGameplayAbility> AbilityClass;
 
-	/** The room the ability fires in: its points (an ability's TargetPointTag) are the ones carrying this tag. */
+	/** The room the ability fires in: its points (an ability's TargetPoint target) are the ones carrying this tag. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter", meta = (Categories = "Arena"))
 	FGameplayTag ArenaTag;
 

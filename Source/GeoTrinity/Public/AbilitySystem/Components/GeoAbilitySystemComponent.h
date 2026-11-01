@@ -164,12 +164,12 @@ public:
 	void StopAllActivePatterns();
 
 	/**
-	 * Multicast RPC that instantiates PatternClass on every client and calls InitPattern with Payload.
-	 * PatternData carries optional pattern-specific replicated data (an FPatternData subclass); unset for patterns that
-	 * need none. Called by UPatternAbility on the server after activation.
+	 * Multicast RPC that instantiates PatternClass on every client, sets its TargetLocations and calls InitPattern
+	 * with Payload. PatternData carries optional pattern-specific replicated data (an FPatternData subclass); unset for
+	 * patterns that need none. Called by UPatternAbility on the server after activation.
 	 */
 	UFUNCTION(NetMulticast, reliable)
-	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass,
+	void PatternStartMulticast(FAbilityPayload Payload, UClass* PatternClass, TArray<FVector2D> const& TargetLocations,
 							   TInstancedStruct<FPatternData> PatternData);
 
 	/**

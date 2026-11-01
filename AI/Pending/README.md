@@ -31,7 +31,6 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 
 | Priority | File |
 |---|---|
-| 0 | `TargetMerge.md` |
 | 1 | `TelegraphFootprint.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |
@@ -58,7 +57,6 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 2 | `CatExpressions.md` |
 | 2 | `CatLineEmotions.md` |
 | 2 | `DevastatingWaveZone.md` |
-| 2 | `ZonePatternSpawns.md` |
 | 3 | `CatAnimation.md` |
 | 3 | `CatClipsPick.md` |
 | 3 | `CatEvilFace.md` |

@@ -9,16 +9,16 @@
 #include "Characters/EnemyCharacter.h"
 #include "Tool/Team.h"
 
-TArray<FSafeSpot> GatherSafeSpots(UObject const* WorldContext, FAbilityPayload const& Payload,
+TArray<FSafeSpot> GatherSafeSpots(UObject const* WorldContext, FAbilityPayload const& Payload, FVector2D const Center,
 								  TArray<ESafeSpotSource> const& Sources, ESafeSpotShadow const Shadow,
 								  float const MaxDistance, float const Radius, TArray<FVector2D> const& FixedLocations)
 {
 	TArray<FSafeSpot> Spots;
 	if (Sources.Contains(ESafeSpotSource::Pillars))
 	{
-		for (AGeoPillar* const Pillar : GeoASLib::GetInteractableActors<AGeoPillar>(
-				 WorldContext, GeoASLib::GetTeamId(Payload.SourceOwner), TeamAttitudeMask::HostileOrNeutral, true,
-				 Payload.Origin, MaxDistance))
+		for (AGeoPillar* const Pillar :
+			 GeoASLib::GetInteractableActors<AGeoPillar>(WorldContext, GeoASLib::GetTeamId(Payload.SourceOwner),
+														 TeamAttitudeMask::HostileOrNeutral, true, Center, MaxDistance))
 		{
 			Spots.Add({FVector2D(Pillar->GetActorLocation()), Pillar->GetSimpleCollisionRadius(), Shadow, Pillar});
 		}

@@ -49,11 +49,14 @@ protected:
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
 	/** Ends the wave: the server kills the pillars it reached (not on a force-stop). */
 	virtual void EndPattern(bool bForceStop = false) override;
-	/** Centred on the wave origin: wind-up = the MaxRadius circle, with every pillar's shadow (AddPillarSpots(0));
+	/** Centred on GetCenter(): wind-up = the MaxRadius circle, with every pillar's shadow (AddPillarSpots(0));
 	 * live = the ring between the front and AnnulusWidth behind it, the hit band. */
 	virtual void MoveHazardVisual(float SpentTime) override;
 
 private:
+	/** The wave's centre: the first target location (the ability's TargetPoint). */
+	FVector2D GetCenter() const { return GetTargetLocations()[0]; }
+
 	/** Draws the wave front (red) and inner annulus (green) circles, plus each pillar's safe-zone shadow.
 	 * Gated on the Geo.DrawDevastatingWave CVar. */
 	void DrawDebugWave(float CurrentRadius) const;

@@ -183,18 +183,18 @@ void UGeoChargeBeamAbility::DealDamage() const
 	FGenericTeamId const SourceTeam = GeoASLib::GetTeamId(Avatar);
 	float const SeenServerTime = GeoLib::GetPerceivedServerTime(Avatar) - GeoLib::GetReplicationDelay(Avatar);
 	TArray<TInstancedStruct<FEffectData>> const Effects = GetEffectDataArray();
-	for (AActor* Target : GeoASLib::GetInteractableActors(this, SourceTeam, TeamAttitudeMask::HostileOrNeutral,
-														  /*bMustBeDamageable*/ true))
+	for (AActor* HitActor : GeoASLib::GetInteractableActors(this, SourceTeam, TeamAttitudeMask::HostileOrNeutral,
+															/*bMustBeDamageable*/ true))
 	{
-		FVector2D const SeenLocation(GeoLib::GetPoseAt(Target, SeenServerTime).Location);
-		if (Target == Avatar
-			|| !GeoASLib::IsInLine(Target, SeenLocation, StoredPayload.Origin, ForwardVector, MaxRange,
+		FVector2D const SeenLocation(GeoLib::GetPoseAt(HitActor, SeenServerTime).Location);
+		if (HitActor == Avatar
+			|| !GeoASLib::IsInLine(HitActor, SeenLocation, StoredPayload.Origin, ForwardVector, MaxRange,
 								   /*LineHalfWidth*/ 0.f, ETargetOverlapMode::Automatic, SourceTeam))
 		{
 			continue;
 		}
 
-		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(Target);
+		UGeoAbilitySystemComponent* TargetASC = GeoASLib::GetGeoAscFromActor(HitActor);
 		if (!IsValid(TargetASC))
 		{
 			continue;
@@ -202,7 +202,7 @@ void UGeoChargeBeamAbility::DealDamage() const
 
 		GeoASLib::ApplyEffectFromEffectData(Effects, SourceASC, TargetASC, GetAbilityLevel(), StoredPayload.Seed,
 											GetAbilityTag());
-		GeoASLib::NotifyAbilityHit(StoredPayload, Target);
+		GeoASLib::NotifyAbilityHit(StoredPayload, HitActor);
 	}
 
 	// A sweet-spot release spends the full gauge whether or not it hit anything — the boosted beam was fired.

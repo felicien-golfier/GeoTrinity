@@ -1,8 +1,8 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
-#include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

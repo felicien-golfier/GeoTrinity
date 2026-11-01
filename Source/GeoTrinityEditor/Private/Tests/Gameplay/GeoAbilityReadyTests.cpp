@@ -37,8 +37,7 @@ bool FGeoAbilityReadyTest::RunTest(FString const& /*Parameters*/)
 	UGeoGameplayAbility const* Detonate =
 		LoadAbilityCDO(TEXT("Square/SacrificeBeam/GA_Square_Special_SacrificeDetonate"));
 	UGeoGameplayAbility const* Recall = LoadAbilityCDO(TEXT("Triangle/TurretRecall/GA_TurretRecall"));
-	if (!TestTrue(TEXT("Every ability Blueprint loads"),
-				  Bond && Wake && SweetSpot && HealReturn && Detonate && Recall))
+	if (!TestTrue(TEXT("Every ability Blueprint loads"), Bond && Wake && SweetSpot && HealReturn && Detonate && Recall))
 	{
 		return false;
 	}
@@ -107,8 +106,7 @@ bool FGeoAbilityReadyTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoAbilityOwnerDeathTest, "GeoTrinity.Abilities.OwnerDeath",
-								 GeoAbilityReadyTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoAbilityOwnerDeathTest, "GeoTrinity.Abilities.OwnerDeath", GeoAbilityReadyTestFlags)
 
 bool FGeoAbilityOwnerDeathTest::RunTest(FString const& /*Parameters*/)
 {
@@ -133,15 +131,18 @@ bool FGeoAbilityOwnerDeathTest::RunTest(FString const& /*Parameters*/)
 	ASC->InitAbilityActorInfo(Character, Character);
 
 	FGameplayAbilitySpecHandle const BondHandle = ASC->GiveAbility(FGameplayAbilitySpec(Bond->GetClass(), 1));
-	FGameplayAbilitySpecHandle const HealReturnHandle = ASC->GiveAbility(FGameplayAbilitySpec(HealReturn->GetClass(), 1));
+	FGameplayAbilitySpecHandle const HealReturnHandle =
+		ASC->GiveAbility(FGameplayAbilitySpec(HealReturn->GetClass(), 1));
 	bool const bBondActive = ASC->TryActivateAbility(BondHandle);
 	bool const bHealReturnActive = ASC->TryActivateAbility(HealReturnHandle);
 	if (TestTrue(TEXT("Both passives activate"), bBondActive && bHealReturnActive))
 	{
 		ASC->HandleOwnerDeath({});
 
-		TestTrue(TEXT("A Core passive stays active through death"), ASC->FindAbilitySpecFromHandle(BondHandle)->IsActive());
-		TestFalse(TEXT("Any other ability ends at death"), ASC->FindAbilitySpecFromHandle(HealReturnHandle)->IsActive());
+		TestTrue(TEXT("A Core passive stays active through death"),
+				 ASC->FindAbilitySpecFromHandle(BondHandle)->IsActive());
+		TestFalse(TEXT("Any other ability ends at death"),
+				  ASC->FindAbilitySpecFromHandle(HealReturnHandle)->IsActive());
 	}
 
 	GEngine->DestroyWorldContext(World);

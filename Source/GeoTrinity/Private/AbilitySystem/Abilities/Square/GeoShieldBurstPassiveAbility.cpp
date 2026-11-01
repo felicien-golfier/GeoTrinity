@@ -139,8 +139,10 @@ void UGeoShieldBurstPassiveAbility::SpawnShieldBurst()
 
 	FVector const Origin =
 		GetFireOrigin(StoredPayload.SourceAvatar, GetGeoAbilitySystemComponentFromActorInfo(), StoredPayload.Seed);
-	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(
-		GetWorld(), EProjectileTarget::Forward, GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed), Origin);
+	FGeoTargetContext Context = MakeTargetContext();
+	Context.Origin = FVector2D(Origin);
+	Context.Yaw = GetFireYaw(StoredPayload.SourceAvatar, StoredPayload.Seed);
+	TArray<FVector> const Directions = GeoASLib::GetTargetDirections(FGeoTarget(), Context, Origin);
 
 	if (!ensureMsgf(Directions.Num() == 1, TEXT("%hs: expected a single fire direction, got %d"), __FUNCTION__,
 					Directions.Num()))

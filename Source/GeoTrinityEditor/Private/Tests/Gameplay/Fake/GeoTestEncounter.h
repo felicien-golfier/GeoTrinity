@@ -318,7 +318,7 @@ class AGeoTestSummonedDummy : public AGeoSummonedDummy
 public:
 	AGeoTestSummonedDummy()
 	{
-		ZoneParams.Size = 100.f;
+		ZoneStartSize = FScalableFloat(100.f);
 		ZoneParams.GrowToSize = FScalableFloat(600.f);
 		ZoneParams.GrowSeconds = FScalableFloat(10.f);
 		ZoneParams.Color.Color = EGeoColor::Damage;
