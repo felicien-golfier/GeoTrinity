@@ -13,7 +13,7 @@ One boss encounter and everything room-shaped. The arena drives itself; GameStat
 
 ## GeoArena
 - Reached by abilities via `GetArenaOfBoss(Boss)` (reads `AEnemyCharacter::Arena`). One boss per arena.
-- Knows no ability: a pattern ability of its boss or adds reads its `ArenaTag` itself (`AbilitySystem/Abilities/Base/CLAUDE.md`, "Activation params"); `EProjectileTarget::Boss` reads `GetFightingArena()->GetBoss()`.
+- Knows no ability: a pattern ability of its boss or adds reads its `ArenaTag` itself (`AbilitySystem/Abilities/Base/CLAUDE.md`, "Activation params"); `EGeoTarget::Boss` reads `GetFightingArena()->GetBoss()`.
 - Fight driven by replicated `bFighting`:
   - `StartFight()` (from `AGeoEnemyAIController::TriggerAggro`): sets `bFighting`, boss bar, GameState checkpoint tag, closes barrier, arms `CommitFightTimer`; refuses when already fighting.
   - `CommitFight()`: teleports players to `TargetPoint.FightLocation` (skips those inside `FightZoneTagName`).

@@ -4,7 +4,8 @@ Automation tests of the `GeoTrinity` module. Fakes they spawn: `Fake/CLAUDE.md`.
 
 | File | Covers |
 |---|---|
-| `GeoPatternTests.cpp` | Safe spot maths: `Behind` / `Lane` / `Disc` shadows, mask slots; salve aim per `EProjectileTarget` |
+| `GeoPatternTests.cpp` | Safe spot maths: `Behind` / `Lane` / `Disc` shadows, mask slots; salve aim per `EGeoTarget` |
+| `GeoTargetTests.cpp` | Targeting (`Lib/CLAUDE.md`, "Targeting"): each mode's locations, seeded picks, health steps, scatter, follow / gone actor, empty = nothing fires, pattern origin / yaw per `LandsOnTarget` |
 | `GeoGemTests.cpp` | Gem catalog, sockets, stats, CSV sync, deployable start health |
 | `GeoCatLineBankTests.cpp` | Cat line bank: parse, bags, file order, live reload, missing file |
 | `GeoAbilityReadyTests.cpp` | Ability ready state |

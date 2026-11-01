@@ -21,7 +21,13 @@
 - `bActivateOnFreshPressOnly` for abilities sharing one input.
 - Server-driven abilities (`ServerInitiated`/`ServerOnly`/passive) activate without TriggerEventData and build payload from avatar state (`STTask_FireAbility` path).
 - `OnFireTargetDataReceived` is server-only by design; `Fire()` always sends the RPC.
-- `GetFireOrigin2D` / `GetFireYaw` are the override points for aim (a pattern ability's place: its `Spot`, "Spots" below).
+- `GetFireOrigin2D` / `GetFireYaw` are where the shot leaves from and its facing; what it aims at is `Target` ("Target" below), never an override of these.
+
+### Target
+- `Target` (`FGeoTarget`, `Lib/CLAUDE.md` "Targeting") lives here: every ability carries it, dashes included; default `Forward`, `Distance` 0. Only abilities that fire or place something read it.
+- `MakeTargetContext()`: caster = avatar, `Origin` / `Yaw` / `Seed` from `StoredPayload`, `ArenaTag` from a pattern ability's activation params (empty otherwise, so `TargetPoint` finds nothing outside one).
+- From = the context: a projectile leaves its fire origin, a pattern its caster or its first target ("Pattern target" below). A from chosen by targeting = a second `FGeoTarget`, when a case needs it.
+- Players' abilities run on the client too: `Forward` is local; seeded modes read the payload's seed, so client and server agree.
 
 ### RequiresArena
 - `RequiresArena() const` virtual, false: true = needs the caster's arena itself, beyond a room tag (`FPatternAbilityParams`; hex tiles, adds): `GeoSpawnOnTileAbility`, `GeoSweepBeamAbility`, `GeoTileBombAbility`; `UPatternAbility` answers its `PatternToLaunch` CDO's `UPattern::RequiresArena()` (`UTileCarveRayPattern`, `USpawnAddPattern` true).
@@ -56,26 +62,22 @@
 - `CreatePatternData()` computes pattern-specific data once on server; pattern reads it via `StoredPatternData.GetPtr<T>()`.
 - Activation params (below): the base `CreatePatternData()` returns `ActivationParams.PatternData` (unset when none). One ability, its pattern configured per firing at runtime (lateral wave safe spots). An override computing its own data ignores it.
 
-### Spots
-- Where a pattern lands is data, never a subclass: `Spot` (`EPatternSpot`, per Blueprint, default `Caster`) + the params of that mode, shown only for it (`EditCondition`). A new way of choosing = an enum value, its params, a case in `PickSpots`.
-- `PickSpots` is the one code choosing, seeded from `LaunchSeed`. A pick (`FPatternSpotPick`) = `Target` + `Offset` (follows that actor up to the launch) and `Location` (used when there is no target or it is gone), so a death mid-cast still lands.
-- Picked once per launch: in `BeginPreLaunch` with a `PreLaunchDelay`, else at the launch. A chained launch picks again.
-- `BeginPreLaunch` marks each pick's target with `PreLaunchCue`; a pick with no target marks the caster.
-- At launch each pick resolves to one location, server only, so every machine lands on the same places: the first = `Payload.Origin` (`GetFireOrigin2D`), all of them go through `PatternStartMulticast` (`UPattern::GetSpots()`, `Pattern/CLAUDE.md`). A pattern that only reads the origin uses the first.
-- No pick (no point, no player alive) = the caster, the one fallback; a missing point ensures first.
-
-| `EPatternSpot` | Params | Picks |
-|---|---|---|
-| `Caster` | — | The caster |
-| `TargetPoint` | `TargetPointTag` | The first point tagged it + `ActivationParams.ArenaTag` (`GeoLib::GetTargetPoints`) |
-| `Players` | `SpotCount`, `ExtraSpotBelowHealth`, `MinScatterRadius`, `MaxScatterRadius` | Live players from a seeded start. Count = `SpotCount` + one per `ExtraSpotBelowHealth` ratio above the caster's health, never the number of players; one spot per player, those beyond the alive count scattered around a player |
+### Pattern target
+- What a pattern hits is the ability's `Target` (above), never a subclass. Its pattern class says how it reads it: `UPattern::LandsOnTarget()` on the `PatternToLaunch` CDO (`Pattern/CLAUDE.md`), like `RequiresArena()`.
+  - Lands on it (zones, pillars, adds, both waves): `Payload.Origin` = the first target location; yaw = `GetFireYaw`.
+  - Leaves the caster (salves, sprays, beams): `Payload.Origin` = the caster; yaw = towards the first target location (zero length = `GetFireYaw`, so a `GetFireYaw` override such as the sweep beam's still aims a `Forward` 0).
+- Picked once per launch (`GeoASLib::PickTargets`, context seed = `LaunchSeed`): in `BeginPreLaunch` with a `PreLaunchDelay`, else at the launch. A chained launch picks again.
+- `BeginPreLaunch` marks each pick's actor with `PreLaunchCue`, once per actor; a pick with no actor marks the caster.
+- At launch the picks resolve (`ResolvePicks`), server only, so every machine uses the same places: all go through `PatternStartMulticast` (`UPattern::GetTargetLocations()`), the first sets the payload (above). Picks cleared after each launch.
+- No target location at launch = nothing launches: the ability ends (not cancelled) without a pattern; a chained ability (`GeoPeriodicPatternAbility`) skips that launch and keeps its schedule.
+- `GetFireOrigin2D` = the first resolved location when the pattern lands on it, else `Super` (the CDO call of `UGeoAbilitySystemComponent`'s event activation has none).
 
 ### Activation params
 - The firer only decides data; the ability does the rest with it (where to look, what to aim at). No firer implements anything, the ability names no arena or encounter class.
 - `FPatternAbilityParams` (`FGameplayAbilityTargetData` child, server only, never replicated): `ArenaTag` (the room of its points), `PatternData` (unset = the ability's own).
 - `MakeActivationParams` at activation (server), kept in `ActivationParams` until the ability ends: the params of `TriggerEventData->TargetData[0]` when given (an encounter firing, `GeoActivateAbilityAction`), else the caster's arena's `ArenaTag` (`GetArenaOfBoss`), no pattern data. That fallback is the one arena lookup of the pattern path.
-- No room (a dummy with no arena): a `TargetPoint` ability ensures and launches from the caster.
-- Aim is ability data, never the firer's: `EProjectileTarget` on the ability (`Lib/CLAUDE.md`, "Targeting").
+- No room (a dummy with no arena): a `TargetPoint` ability ensures and launches nothing.
+- Aim is ability data, never the firer's: the ability's `Target` ("Target" above).
 - `UGeoGameplayAbility::ActivateAbility` reads `TargetData[0]` as fire data only when it is an `FGeoAbilityTargetData`, so an encounter firing of a non-pattern ability is a plain server-driven activation.
 - Exceptions that read the arena itself: `RequiresArena()` (above).
 - Fill derived data with explicit template: `TInstancedStruct<FPatternData>::Make<FDerived>(...)`.

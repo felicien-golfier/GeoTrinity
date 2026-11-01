@@ -7,7 +7,7 @@ One **temporary** file per feature: everything only this feature's implementatio
 # <Feature> — pending
 
 Goal: one line — the Why.
-Priority: 1 | 2 | 3 — 1 = next to pick up; listed in "Order" below.
+Priority: 0 | 1 | 2 | 3 — 0 = before everything else, 1 = next to pick up; listed in "Order" below.
 Docs written: list of CLAUDE.md files that describe it.
 
 ## Code (to implement)
@@ -27,10 +27,11 @@ Docs written: list of CLAUDE.md files that describe it.
 - A step an editor script can do becomes a script row; the rest stays here for the user.
 
 ## Order
-Every Pending file carries `Priority:` (1 high, 2 normal, 3 later). This list is sorted by it: a new file, or a changed priority, moves its row in the same change; a deleted file leaves it.
+Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). This list is sorted by it: a new file, or a changed priority, moves its row in the same change; a deleted file leaves it.
 
 | Priority | File |
 |---|---|
+| 0 | `TargetMerge.md` |
 | 1 | `TelegraphFootprint.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |

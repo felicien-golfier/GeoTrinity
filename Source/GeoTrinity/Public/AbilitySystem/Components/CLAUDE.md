@@ -7,7 +7,7 @@
 - **Startup**: `GiveStartupAbilities()` from `UAbilityInfo`, filtered by `EPlayerClass`; skips `bGiveAtStartup` false and the world's `LockedAbilityTags` (`World/CLAUDE.md`).
 - **Late grant**: `GiveClassAbility(PlayerClass, AbilityTag)`: that class entry of `UAbilityInfo`, with its `InputTag`, through the same grant as startup; false (nothing granted) when already granted or unknown.
 - **Fire helpers**: `GetFireSectionIndex(AbilityTag)` montage counter; `Set/GetLastBasicAbilityTarget` (server weak ptr, read by `AGeoTurret::FindBestTarget`).
-- **Patterns** (enemy): `CreatePatternInstance`, `FindPatternByClass`, `StopAllActivePatterns`, `PatternStartMulticast(Payload, Class, Spots, Data)`.
+- **Patterns** (enemy): `CreatePatternInstance`, `FindPatternByClass`, `StopAllActivePatterns`, `PatternStartMulticast(Payload, Class, TargetLocations, Data)` (`SetTargetLocations` on the pattern before `InitPattern`).
 - **Ability set events**: `OnAbilitySetChanged` (native multicast) fires from the `OnGiveAbility` / `OnRemoveAbility` overrides, on the server and on clients once a spec replicates; the ability bar rebuilds on it (`GeoTrinityUI/.../HUD/AbilityBar/CLAUDE.md`).
 - **Delegates for passives**: `OnHealProvided`, `OnDamageDealt(float, Tag)`, `OnHealthChanged`, `OnMaxHealthChanged`.
 - **Delegates raised by shared abilities** (their code never names the listener): `OnDashAiming` (Start, bHasDirection, Direction&, Distance&; server + predicting client), `OnDashStarted` (server), `OnDeployableLanded` (a throw landed, server), `OnDeployableDestroyedByDamage` (hit-killed deployable ends its blink, server).

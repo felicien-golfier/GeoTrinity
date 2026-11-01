@@ -1,11 +1,11 @@
 # Abilities/Boss
 
-Server-only boss abilities. Where comes from the activation params (`Base/CLAUDE.md`, "Activation params"), whom from the ability's own `EProjectileTarget`; only a `RequiresArena()` ability reaches the arena itself, via `AGeoArena::GetArenaOfBoss(StoredPayload.Owner)`, never looked up by class.
-A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving ray, cone spray, pillars, summons): where it lands is its `Spot` param (`Base/CLAUDE.md`, "Spots"), what lands is its pattern.
+Server-only boss abilities. Where comes from the activation params (`Base/CLAUDE.md`, "Activation params"), whom from the ability's own `Target` (`Base/CLAUDE.md`, "Target"); only a `RequiresArena()` ability reaches the arena itself, via `AGeoArena::GetArenaOfBoss(StoredPayload.Owner)`, never looked up by class.
+A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving ray, cone spray, pillars, summons): where it lands is its `Target` (`Base/CLAUDE.md`, "Pattern target"), what lands is its pattern.
 
 | File | Role |
 |---|---|
-| `GeoPeriodicPatternAbility.h` | Never ends: each `USalvePattern` launch is one salve at its `Target`, aimed and stamped right before it leaves, then schedules the next |
+| `GeoPeriodicPatternAbility.h` | Never ends: burst timing only; each `USalvePattern` launch is one salve at its `Target`, picked and stamped right before it leaves, then schedules the next |
 | `GeoSweepBeamAbility.h` | Beam aimed at the hex arena centre (`GetFireYaw` override) |
 | `GeoTileBombAbility.h` | Draws a live player, spawns `AGeoBombZone` attached to them; not a pattern (replicated deployable) |
 | `GeoSpawnOnTileAbility.h` | Turret / mine drop on arena tiles; ServerOnly, not a pattern |
@@ -24,5 +24,5 @@ A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving 
 - Two phases live on `AGeoBombZone` (`Actor/Deployable/BombZone`).
 
 ## GeoPeriodicPatternAbility
-- One yaw per direction of `GeoASLib::GetTargetDirections(Target)` (default `AllPlayers`). No target (boss dead, no fight) → nothing fired.
+- Burst timing only (rounds by health, salves per round by player count); aim is the base's `Target` (constructor default `AllPlayers`), one bullet per target location (`Pattern/Projectile/CLAUDE.md`, "Salve"). No target (boss dead, no fight) → that launch skipped, schedule kept.
 - An aim variant is a Blueprint child setting only `Target` (tutorial: `GA_TutorialSalve` for the boss and its summons, its child `GA_TutorialAllySalve` = `Boss` for their allies); the pattern BP's bullets are `OverlapAttitude` hostile only, so each side hits only the other (an ally's bullet never hurts the player). The ally child owns its pattern Blueprint child: head and trail `AllyDamage` colour, and its damage is its own row (`AllyProjectileDamage`).

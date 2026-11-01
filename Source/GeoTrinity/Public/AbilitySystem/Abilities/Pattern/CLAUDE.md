@@ -12,7 +12,8 @@ Flow: `UPatternAbility::ActivateAbility` → `PatternStartMulticast` → every m
 
 ## Pattern.h
 - `UPattern`: `OnCreate(AbilityTag)`, `InitPattern(Payload, PatternData)`, pure `StartPattern()`, `EndPattern(bForceStop)`.
-- `GetSpots()`: every location this launch lands on, set by `PatternStartMulticast` before `InitPattern` (`Base/CLAUDE.md`, "Spots"). Never empty: no spots given = `{Payload.Origin}`. First = `Payload.Origin`.
+- `GetTargetLocations()`: every target location of this launch, set by `PatternStartMulticast` before `InitPattern` (`Base/CLAUDE.md`, "Pattern target"). Never empty: none given = `{Payload.Origin}`.
+- `LandsOnTarget() const` virtual, read on the CDO by the launching ability: true = the pattern lands on its targets (`Payload.Origin` = the first), false (default) = it leaves the caster towards them. True: `UZonePattern` (and its children), `UDevastatingWavePattern`, `ULateralWavePattern`.
 - `EndPattern(false)`: jumps montage to end section + broadcasts `OnPatternEnd`; `true`: immediate stop, no broadcast (ability's `EndAbility` path).
 - `UTickablePattern`: extend for new patterns; implement `TickPattern(ServerTime, SpentTime)`.
   - `SpentTime = ServerTime - Payload.ServerSpawnTime`; no delta time, deterministic.

@@ -6,7 +6,7 @@ Patterns that spawn `AGeoProjectile`s. Rules (lag compensation, instance rule) i
 |---|---|
 | `SpiralPattern.h` | Expanding circular sprays (`NumberProjectileByRound`, `TimeForOneRound`, `RoundNumber`); owns and drives its projectiles |
 | `ConeSprayPattern.h` | `SalveNumber` salves `SalveFrequencySec` apart, fanned over `ConeAngle` (hex boss) |
-| `ProjectilePattern.h` | `USalvePattern` + data: one salve's yaws, resolved on server by the launching ability |
+| `ProjectilePattern.h` | `UProjectilePattern` base (`SpawnSalve`) + `USalvePattern`: one bullet per target location |
 
 ## Spiral
 - Config via one `ProjectileParams` (`FExternalProjectileParams`); requests projectiles from the pool directly and calls `ApplyProjectileParams` before `Init()`.
@@ -19,4 +19,4 @@ Patterns that spawn `AGeoProjectile`s. Rules (lag compensation, instance rule) i
 - `OnCreate` pre-warms the pool; reset `SpawnedSalveCount` in `InitPattern`.
 
 ## Salve
-- Whole salve (every yaw) travels with the pattern data; a client only knows its own controller.
+- Yaw per bullet = towards each `GetTargetLocations()` entry from `Payload.Origin` (zero length = `Payload.Yaw`); no pattern data. The locations are resolved on the server and travel with the pattern start, since a client only knows its own controller.

@@ -55,7 +55,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 - Debug: `Geo.DrawDevastatingWave`.
 
 ## LateralWave
-- `UBeamPattern` child, a *pattern with spots to keep safe*: no lane logic of its own beyond the visual. Beam rectangle = `Payload.Origin` along the travel yaw (the pattern's own, never the caster's facing), `TravelDistance` long, `2 * HalfWidth` wide; the origin is the ability's `TargetPoint` spot.
+- `UBeamPattern` child, a *pattern with spots to keep safe*: no lane logic of its own beyond the visual. Beam rectangle = `Payload.Origin` along the travel yaw (the pattern's own, never the caster's facing), `TravelDistance` long, `2 * HalfWidth` wide; the origin is the ability's first target (`LandsOnTarget` true; `Target` = `TargetPoint`).
 - Travel yaw: `TravelYaw` (default, 0 = +X) unless the firing's `FLateralWavePatternData::bRandomDirection` is set (set only by the tutorial miniboss for now; the Zones room keeps its fixed yaw). Then `InitPattern` rolls one of 0 / 90 / 180 / 270 from `Payload.Seed` (same on every machine) and uses it for the whole firing.
 - A rolled wave starts at the arena edge opposite its travel and crosses the arena along it (start, `TravelDistance`, `HalfWidth` derived from the arena bounds along / across the roll, so a non-square room works); a fixed-yaw wave keeps the origin and values it is given.
 - Front crosses `TravelDistance` at `Speed`; the band `[front - BandWidth, front]` hits everything inside the rectangle, minus the safe spots.
