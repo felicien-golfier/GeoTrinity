@@ -112,7 +112,7 @@ Fires a projectile toward each player simultaneously.
 Sticks a bomb to a player; carves the tiles where they stand when it blows
 
 [Ability.Spell.SweepBeam]
-Sweeps a 90 deg laser across the arena centre
+Sweeps a 160 deg laser across the arena centre
 
 [Ability.Spell.ConeSpray]
 Sprays a mess of bullets in a 60 deg cone the boss faces

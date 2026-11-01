@@ -878,6 +878,16 @@ TArray<FGeoTargetPick> UGeoAbilitySystemLibrary::PickTargets(FGeoTarget const& T
 			}
 			break;
 		}
+
+	case EGeoTarget::ArenaCenter:
+		{
+			AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(Context.Caster);
+			if (ensureMsgf(Arena, TEXT("%hs: %s has no arena"), __FUNCTION__, *Context.Caster->GetName()))
+			{
+				Picks.Add({nullptr, FVector2D::ZeroVector, FVector2D(Arena->GetActorLocation())});
+			}
+			break;
+		}
 	}
 
 	return Picks;

@@ -70,11 +70,22 @@ Every ability an encounter fires runs on one caster per world, owned by `UGeoEnc
 ## Jump start
 Start a chain of encounters at a later one, as if the earlier ones had been played (tutorial: `AI/Tutorial/Flow.md`, "Jump to a room"). Same mechanism as the arrival reset: the world-URL jump is a reset whose target comes from the portal instead of a start action.
 - `AGeoEncounter::JumpStart`: optional level reference to the `APlayerStart` of its room. Target (`FindJumpTarget()`) from the world URL's portal: a number N = the Nth encounter along the chain (0 = the start encounter); else the encounter whose `JumpStart->PlayerStartTag` equals it.
-- With a target, no `bStartOnBeginPlay` start; the target's `BeginPlay` moves the first local pawn onto its `JumpStart` (a number matches no tag, so the engine spawned it on the default start; `GameClasses/Match/CLAUDE.md`, "Player starts"), then calls its `StartAfterSkippingChain()`. No target (no portal, no match, number past the chain's end) → normal start.
+- With a target, no `bStartOnBeginPlay` start; once the player is ready (Start gate), the target moves the first local pawn onto its `JumpStart` (a number matches no tag, so the engine spawned it on the default start; `GameClasses/Match/CLAUDE.md`, "Player starts"), then calls its `StartAfterSkippingChain()`. No target (no portal, no match, number past the chain's end) → normal start.
 - Chain: from the `bStartOnBeginPlay` encounter (`FindChainStart()`), next = the `Target` of the first `GeoStartEncounterAction` in its steps (any action list), until the target. Target not on the chain → log, start it with nothing skipped. The walk lives on the encounter: it reads other encounters' steps.
 - Skip replay, strict order: encounter by encounter along the chain; per encounter, steps in list order; per step, `OnEnter` actions then `OnExit` actions, each in list order → `OnSkipped()`. All in one call, before the target's `Start()`. Pairs that must cancel out (movement lock / unlock) therefore net to zero.
 - Rule actions are never replayed: reactions to events (quips, fail paths). Anything that must hold after a skip (an unlock, a lock / unlock pair) sits in `OnEnter` / `OnExit`.
 - `OnSkipped()` (`UGeoEncounterAction`, `BlueprintNativeEvent`): no-op by default; an action overrides it only for a lasting effect on the player (`Action/CLAUDE.md`). Never latent, no `Finish()`.
+
+## Start gate
+The two starts of `BeginPlay` (the jump target's `StartAfterSkippingChain`, the `bStartOnBeginPlay` `Start`) run only once the player is ready: the world's first player controller exists and has a pawn. Every first action needs it (`GeoSetMovementLockedAction`, `GeoUnlockAbilityAction`, cat speech, player triggers), and the jump moves that pawn.
+- Why: the controller (login) and its pawn (possession) are not guaranteed to exist when the level's actors begin play (PIE, listen-server start order).
+- `BeginPlay` picks the start (jump target is this → jump start, else `bStartOnBeginPlay` → `Start`), then `TryBeginStart()`: ready → run it; else wait for the missing part, by event, never polled:
+  - no controller → `FGameModeEvents::OnGameModePostLoginEvent()` (fires before `HandleStartingNewPlayer` spawns the pawn, so a controller usually still waits for its pawn after it);
+  - controller, no pawn → its `OnPossessedPawnChanged`.
+  Each wake-up re-runs `TryBeginStart()`: still not ready → keep waiting (next missing part).
+- Once started, or on `EndPlay`: every binding is removed; the start runs at most once.
+- Server only, like the starts themselves; a client binds nothing.
+- Chain starts (`GeoStartEncounterAction`, the pad's portal) are not gated: they come from a running encounter, the player exists.
 
 ## Invariants
 - Authority only: every step change goes through one server gate (`GeoLib::IsServer`, in the change request that `Start`, `Restart` and `GoToStep` share); clients hold the actor and run nothing; nothing replicates. What a client must see travels by the action's own means (cue, replicated state of the thing it changes), never through the encounter. A solo map still runs as a listen server (`GeoLib::IsServer` is false in Standalone).

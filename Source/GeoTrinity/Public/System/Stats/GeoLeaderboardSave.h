@@ -107,12 +107,28 @@ public:
 	/** Loads the leaderboard from disk, or hands back an empty one the first time. Never null. */
 	static UGeoLeaderboardSave* Load();
 
-	/** Adds Entry in ranking order and writes the leaderboard back to disk, unless it is already recorded. */
+	/** Adds Entry (see AddAttempt) and writes the leaderboard back to disk, unless it is already recorded. */
 	static void Record(FGeoAttemptEntry const& Entry);
+
+	/** Adds Entry, then Prune()s. True when Entry is still listed afterwards, i.e. it is some player's best. Memory
+	 *  only. */
+	bool AddAttempt(FGeoAttemptEntry const& Entry);
+
+	/** Keeps one best attempt per player, per boss and difficulty: an attempt stays while it is the best of at least
+	 *  one of its players (by player name), ties keeping the earlier one. Leaves Entries sorted, best first. */
+	void Prune();
+
+	/** Empties Entries when bWipe is set and CurrentStamp differs from the stored BuildStamp, then stores it. True
+	 *  when it wiped. */
+	bool ApplyBuildWipe(bool bWipe, FString const& CurrentStamp);
 
 	/** Every attempt recorded on this machine, best first. */
 	UPROPERTY()
 	TArray<FGeoAttemptEntry> Entries;
+
+	/** Build that last wiped this file (see ApplyBuildWipe); empty until a wipe happened. */
+	UPROPERTY()
+	FString BuildStamp;
 
 private:
 	static constexpr TCHAR const* FileName = TEXT("GeoLeaderboard.sav");

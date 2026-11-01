@@ -21,6 +21,8 @@ enum class EGeoTarget : uint8
 	Boss,
 	/** The first point tagged TargetPointTag in the context's room. */
 	TargetPoint,
+	/** The location of the caster's arena (AGeoArena::GetArenaOfBoss); none, with an ensure, when it has no arena. */
+	ArenaCenter,
 };
 
 /** What an ability targets: a mode and the params of every mode, each shown only for its own. */

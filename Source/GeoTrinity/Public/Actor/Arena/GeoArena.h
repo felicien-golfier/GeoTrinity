@@ -122,6 +122,10 @@ public:
 	 */
 	static AGeoArena* GetFightingArena(UObject const* WorldContextObject);
 
+	/** The class the fountain throws: GemDropClass, else the project one (UGameDataSettings::GemDropClass), else the
+	 * silent native AGeoGemDrop with an ensure. */
+	TSubclassOf<AGeoGemDrop> GetGemDropClass() const;
+
 	/** Seconds after the kill the fountain throws drop ThrowIndex of ThrowCount at: 0 for the first, FountainDuration
 	 *  for the last, bunched toward the start by FountainFrontLoad. */
 	float GetFountainThrowTime(int32 ThrowIndex, int32 ThrowCount) const;
@@ -183,9 +187,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "GeoLoot")
 	FGeoBossLoot BossLoot;
 
-	/** The actor each gem and shard of the kill is thrown out as; a Blueprint child sets the look and feel. */
+	/** The actor each gem and shard of the kill is thrown out as, when this arena wants a drop other than the project
+	 * one. Null = UGameDataSettings::GemDropClass. */
 	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain")
-	TSubclassOf<AGeoGemDrop> GemDropClass = AGeoGemDrop::StaticClass();
+	TSubclassOf<AGeoGemDrop> GemDropClass;
 
 	/** Seconds from the first throw to the last. */
 	UPROPERTY(EditAnywhere, Category = "GeoLoot|Fountain", meta = (ClampMin = 0.1))

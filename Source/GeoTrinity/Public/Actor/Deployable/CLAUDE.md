@@ -27,6 +27,12 @@ Every deployable. Extend `AGeoDeployableBase` for a new one.
 - `InitCue` + `Init` moment fire at its start like the other moments (cue `Normal.X` = `InitDuration`, `Normal.Y` = time already spent since `InitStartServerTime`, so a telegraph or notify ends on the landing on every machine, late client included); spawn cue + `Spawn` moment wait for the landing.
 - `IsInitialising()`; `Expire(true)` is the way to cancel one.
 
+## Zone through a cue
+- A deployable has no zone of its own: whether it shows one, and which, is a Blueprint choice per moment. Set a moment cue (`InitCue`, `SpawnCue`, `BlinkingCue`, `ExplodeCue`, `ExpireCue`, `RecallCue`) to a child of `UGeoZoneIndicatorCue` (`Abilities/Common/CLAUDE.md`) and the zone layer draws it; unset = nothing.
+- The moment cues already carry what the zone needs (`GetGenericCueParams`): location, `RawMagnitude` = `Params.Size` (radius), `Normal.X` = the moment's duration (init: `InitDuration`; spawn: `LifeDrainMaxDuration`; blink: `BlinkDuration`), colour + secondary colours of the `FGeoCueParam`. Attached to the deployable's root, so it rides a moving one.
+- Colour = the hit's meaning (`Tool/Visual/CLAUDE.md`).
+- A cue that is not a zone cue calls `UGeoAbilitySystemLibrary::SpawnZoneShape` (same path). A shape that outlives its moment is ended by its `Duration`; the deployable never tracks it.
+
 ## Override points
 - `RecallEffect(Value)`: server end-of-life behaviour (default none).
 - `ExplodeEffect(...)`: default applies `EffectDataArray` within `Params.Size`, lag-compensated through `JudgeExplosion` (`FGeoLagCompensatedEvent`, driven by `SetTimerForNextTick`); `TimeBeforeDestroyAtExpire` must outlive 2 × `MaxLatencyCompensation`.

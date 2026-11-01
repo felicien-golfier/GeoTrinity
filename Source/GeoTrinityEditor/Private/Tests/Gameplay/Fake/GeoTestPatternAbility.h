@@ -4,6 +4,7 @@
 
 #include "AbilitySystem/Abilities/Base/PatternAbility.h"
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicPatternAbility.h"
+#include "AbilitySystem/Abilities/Pattern/Hazard/BeamPattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/Zone/SpawnAddPattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/Zone/SpawnPillarPattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/Zone/ZonePattern.h"
@@ -244,6 +245,24 @@ inline void LaunchTestPattern(UPattern& Pattern, AActor* const Caster, TArray<FV
 	Pattern.SetTargetLocations(Locations, Payload.Origin);
 	Pattern.InitPattern(Payload, TInstancedStruct<FPatternData>());
 }
+
+/** Beam of a test, never launched: reads its yaw along the sweep, from the world origin. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestBeamPattern : public UBeamPattern
+{
+	GENERATED_BODY()
+
+public:
+	void Aim(float const NewSweepAngle, int32 const Seed, FVector2D const& TargetLocation)
+	{
+		SweepAngle = NewSweepAngle;
+		StoredPayload.Seed = Seed;
+		SetTargetLocations({TargetLocation}, StoredPayload.Origin);
+	}
+
+	/** GetBeamYaw, Fraction of the way through the sweep. */
+	float GetYawAtFraction(float const Fraction) const { return GetBeamYaw(Fraction * BeamDuration, 0.f); }
+};
 
 /** Burst zone of a test, radius 100, with a 10 s wind-up the test never waits for. */
 UCLASS(NotPlaceable, Transient)

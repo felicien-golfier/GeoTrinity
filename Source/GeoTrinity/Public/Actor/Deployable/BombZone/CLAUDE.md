@@ -3,6 +3,7 @@
 `GeoBombZone.h` — hex-boss tile bomb, dropped on and attached to a player by `UGeoTileBombAbility`.
 
 - The drain/blink lifecycle is the two phases: drain (`LifeDrainMaxDuration`) = riding the carrier, blink (`BlinkDuration`) = planted telegraph. Fuse = sum.
+- Zones (`../CLAUDE.md` "Zone through a cue"): `SpawnCue` zone cue `Neutral` while riding, `BlinkingCue` zone cue `Damage` once planted.
 - Ride = server `AttachToActor` by the ability; replicated attachment tracks the carrier everywhere.
 - `OnBlinkVisualStarted` detaches (`KeepWorld`) on the server only → plant-and-flee.
 - `RecallEffect` (server, `bExplodeAtRecall`): base `Explode` first, then `DestroyTilesInRadius`; no `IsOverAliveTile` gate (a gone tile just widens the hole).

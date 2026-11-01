@@ -1,12 +1,11 @@
 # Abilities/Boss
 
 Server-only boss abilities. Where comes from the activation params (`Base/CLAUDE.md`, "Activation params"), whom from the ability's own `Target` (`Base/CLAUDE.md`, "Target"); only a `RequiresArena()` ability reaches the arena itself, via `AGeoArena::GetArenaOfBoss(StoredPayload.Owner)`, never looked up by class.
-A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving ray, cone spray, pillars, summons): where it lands is its `Target` (`Base/CLAUDE.md`, "Pattern target"), what lands is its pattern.
+A plain `UPatternAbility` + pattern Blueprint needs no class here (tile-carving ray, cone spray, sweep beam, pillars, summons): where it lands is its `Target` (`Base/CLAUDE.md`, "Pattern target"), what lands is its pattern.
 
 | File | Role |
 |---|---|
 | `GeoPeriodicPatternAbility.h` | Never ends: burst timing only; each `USalvePattern` launch is one salve at its `Target`, picked and stamped right before it leaves, then schedules the next |
-| `GeoSweepBeamAbility.h` | Beam aimed at the hex arena centre (`GetFireYaw` override) |
 | `GeoTileBombAbility.h` | Draws a live player, spawns `AGeoBombZone` attached to them; not a pattern (replicated deployable) |
 | `GeoSpawnOnTileAbility.h` | Turret / mine drop on arena tiles; ServerOnly, not a pattern |
 

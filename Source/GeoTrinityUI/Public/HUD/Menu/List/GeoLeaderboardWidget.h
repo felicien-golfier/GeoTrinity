@@ -22,15 +22,16 @@ struct FGeoLeaderboardPlayer;
  * UGeoLeaderboardSave), one tab per boss fought, a strip of difficulty tabs under them — a boss always opens on
  * Original — and, inside a boss and a difficulty, those attempts best first. Least health left leads, so a kill tops
  * the list and a boss never touched sits at the bottom, ties broken by the faster attempt; attempts at different
- * difficulties are never ranked against each other. One row per attempt: rank, how much of the boss was left (KILLED
- * when none was), how long it took, the date it ended, and a column per player — the shape of the class they played, their name, then the level of that class (blank for attempts saved before levels were recorded) —
- * sized so a full team of three fits the row side by side.
- * Clicking an attempt unfolds what each of its players did with their class — damage, healing and damage taken, each
- * with a bar reading as its share of the best in the column, plus the rates and the biggest single hit and heal —
- * under the row itself, so the run it belongs to stays in sight. One attempt is unfolded at a time.
- * Rows and tabs are both list rows, and the panel wears the shared list frame, so it and the server browser are the
- * same list — see UGeoListPanelWidget.
- * Required in the BP hierarchy, on top of the base's: UHorizontalBox "TabsBox" and "DifficultyTabsBox".
+ * difficulties are never ranked against each other. Every row is some player's best attempt (UGeoLeaderboardSave keeps
+ * one per player), so a group that stayed together is one row. One row per attempt: rank, how much of the boss was left
+ * (KILLED when none was), how long it took, the date it ended, and a column per player — the shape of the class they
+ * played, their name, then the level of that class (blank for attempts saved before levels were recorded) — sized so a
+ * full team of three fits the row side by side. Clicking an attempt unfolds what each of its players did with their
+ * class — damage, healing and damage taken, each with a bar reading as its share of the best in the column, plus the
+ * rates and the biggest single hit and heal — under the row itself, so the run it belongs to stays in sight. One
+ * attempt is unfolded at a time. Rows and tabs are both list rows, and the panel wears the shared list frame, so it and
+ * the server browser are the same list — see UGeoListPanelWidget. Required in the BP hierarchy, on top of the base's:
+ * UHorizontalBox "TabsBox" and "DifficultyTabsBox".
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoLeaderboardWidget : public UGeoListPanelWidget

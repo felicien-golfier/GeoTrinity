@@ -9,6 +9,7 @@
 #include "Encounter/GeoEncounterCondition.h"
 #include "Encounter/GeoEncounterTrigger.h"
 #include "EngineUtils.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerStart.h"
@@ -28,20 +29,83 @@ AGeoEncounter::AGeoEncounter()
 void AGeoEncounter::BeginPlay()
 {
 	Super::BeginPlay();
-	AGeoEncounter const* const JumpTarget = FindJumpTarget();
-	if (JumpTarget == this)
+	if (GeoLib::IsServer(this))
 	{
-		MovePlayerToJumpStart();
-		StartAfterSkippingChain();
+		AGeoEncounter const* const JumpTarget = FindJumpTarget();
+		if (JumpTarget == this)
+		{
+			PendingStart = EPendingStart::Jump;
+		}
+		else if (!JumpTarget && bStartOnBeginPlay)
+		{
+			PendingStart = EPendingStart::Normal;
+		}
+
+		TryBeginStart();
 	}
-	else if (!JumpTarget && bStartOnBeginPlay)
+}
+
+void AGeoEncounter::TryBeginStart()
+{
+	if (PendingStart != EPendingStart::None)
 	{
-		Start();
+		APlayerController* const PlayerController = GetWorld()->GetFirstPlayerController();
+		if (PlayerController && PlayerController->GetPawn())
+		{
+			bool const bJump = PendingStart == EPendingStart::Jump;
+			StopWaitingForPlayer();
+			if (bJump)
+			{
+				MovePlayerToJumpStart();
+				StartAfterSkippingChain();
+			}
+			else
+			{
+				Start();
+			}
+		}
+		else if (PlayerController)
+		{
+			PlayerController->OnPossessedPawnChanged.AddUniqueDynamic(this, &AGeoEncounter::OnPossessedPawnChanged);
+			WaitedController = PlayerController;
+		}
+		else if (!PostLoginHandle.IsValid())
+		{
+			PostLoginHandle =
+				FGameModeEvents::OnGameModePostLoginEvent().AddUObject(this, &AGeoEncounter::OnPlayerPostLogin);
+		}
 	}
+}
+
+void AGeoEncounter::StopWaitingForPlayer()
+{
+	PendingStart = EPendingStart::None;
+	FGameModeEvents::OnGameModePostLoginEvent().Remove(PostLoginHandle);
+	PostLoginHandle.Reset();
+	if (WaitedController.IsValid())
+	{
+		WaitedController->OnPossessedPawnChanged.RemoveDynamic(this, &AGeoEncounter::OnPossessedPawnChanged);
+	}
+
+	WaitedController.Reset();
+}
+
+void AGeoEncounter::OnPlayerPostLogin(AGameModeBase* const GameMode, APlayerController* const /*NewPlayer*/)
+{
+	if (GameMode->GetWorld() == GetWorld())
+	{
+		TryBeginStart();
+	}
+}
+
+void AGeoEncounter::OnPossessedPawnChanged(APawn* const /*OldPawn*/, APawn* const /*NewPawn*/)
+{
+	TryBeginStart();
 }
 
 void AGeoEncounter::EndPlay(EEndPlayReason::Type const EndPlayReason)
 {
+	StopWaitingForPlayer();
 	Pending = FPendingChange();
 	StopCurrentStep();
 	State = EState::Idle;

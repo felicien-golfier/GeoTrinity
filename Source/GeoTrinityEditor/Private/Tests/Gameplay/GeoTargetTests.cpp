@@ -169,6 +169,41 @@ bool FGeoTargetPointTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoTargetArenaCenterTest, "GeoTrinity.Abilities.Target.ArenaCenter",
+								 GeoTargetTestFlags)
+
+bool FGeoTargetArenaCenterTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AGeoTestCasterArena* const Arena = PrepareTargetWorld(*this, *World);
+	FGeoTarget const Target = MakeTarget(EGeoTarget::ArenaCenter);
+	FGeoTargetContext Context;
+	Context.Caster = Arena->GetBoss();
+
+	TArray<FGeoTargetPick> const Picks = GeoASLib::PickTargets(Target, Context);
+	if (TestEqual(TEXT("One pick"), Picks.Num(), 1))
+	{
+		TestTrue(TEXT("At the arena's location"), Picks[0].Location.Equals(FVector2D(Arena->GetActorLocation()), 0.01));
+		TestFalse(TEXT("No actor to follow"), Picks[0].Actor.IsValid());
+	}
+
+	AddExpectedErrorPlain(TEXT("Ensure condition failed: Arena"), EAutomationExpectedErrorFlags::Contains, -1);
+	AddExpectedErrorPlain(TEXT("has no arena"), EAutomationExpectedErrorFlags::Contains, -1);
+	AddExpectedError(TEXT("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]"),
+					 EAutomationExpectedErrorFlags::Contains, -1);
+	Context.Caster = World->SpawnActor<AEnemyCharacter>();
+	TestEqual(TEXT("A boss with no arena: none"), GeoASLib::GetTargetLocations(Target, Context).Num(), 0);
+
+	UGeoTestTargetPatternAbility* const Ability = NewObject<UGeoTestTargetPatternAbility>();
+	TestFalse(TEXT("Another target needs no arena"), Ability->RequiresArena());
+	Ability->SetTarget(Target);
+	TestTrue(TEXT("A pattern ability aiming there requires one"), Ability->RequiresArena());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoTargetRandomPlayersTest, "GeoTrinity.Abilities.Target.RandomPlayers",
 								 GeoTargetTestFlags)
 

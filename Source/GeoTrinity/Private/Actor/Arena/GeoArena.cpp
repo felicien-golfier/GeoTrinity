@@ -425,6 +425,23 @@ void AGeoArena::StartFountain(FGeoGemReward const& Loot)
 	}
 }
 
+TSubclassOf<AGeoGemDrop> AGeoArena::GetGemDropClass() const
+{
+	TSubclassOf<AGeoGemDrop> DropClass = GemDropClass;
+	if (!DropClass)
+	{
+		DropClass = GetDefault<UGameDataSettings>()->GemDropClass.LoadSynchronous();
+	}
+
+	if (!ensureMsgf(DropClass, TEXT("%s: no GemDropClass here nor in Game Data Settings, drops will be silent"),
+					*GetName()))
+	{
+		DropClass = AGeoGemDrop::StaticClass();
+	}
+
+	return DropClass;
+}
+
 float AGeoArena::GetFountainThrowTime(int32 const ThrowIndex, int32 const ThrowCount) const
 {
 	float Time = 0.f;
@@ -454,7 +471,7 @@ void AGeoArena::SpawnFountainDrop()
 	FVector const Velocity(FMath::Cos(Direction) * SideSpeed, FMath::Sin(Direction) * SideSpeed, UpSpeed);
 	FTransform const Transform(FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f), LootOrigin);
 
-	AGeoGemDrop* const Drop = GetWorld()->SpawnActorDeferred<AGeoGemDrop>(GemDropClass, Transform);
+	AGeoGemDrop* const Drop = GetWorld()->SpawnActorDeferred<AGeoGemDrop>(GetGemDropClass(), Transform);
 	if (ensureMsgf(Drop, TEXT("%s: failed to spawn a gem drop"), *GetName()))
 	{
 		Drop->Init(Spec, Velocity);

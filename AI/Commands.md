@@ -18,7 +18,8 @@ Tools\Build_Package.bat      # cook + stage + pak + archive (add "Linux" for the
 Tools\Build_Server.bat       # GeoTrinityServer — source-engine machines only
 ```
 
-Every Tools script ends on a SUCCEEDED/FAILED line and waits for a key. `CI` (set by GitHub Actions) or
+`Build_Editor.bat` writes the compiler output to `AI/Output/Build/Editor.log` and prints only errors, warnings and
+the result (`Tools\Read-BuildLog.ps1`). Every Tools script ends on a SUCCEEDED/FAILED line and waits for a key. `CI` (set by GitHub Actions) or
 `GEO_NO_PAUSE=1` skips the wait — set it when running one unattended, or the run never returns. A script that
 calls others (`BuildAndUpload_Itch.bat`) sets it for them, so the chain waits once, at the very end.
 

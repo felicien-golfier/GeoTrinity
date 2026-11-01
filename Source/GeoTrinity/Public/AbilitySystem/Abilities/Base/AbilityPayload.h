@@ -72,8 +72,8 @@ struct GEOTRINITY_API FAbilityPayload
 
 /**
  * Polymorphic base for pattern-specific data carried through PatternStartMulticast alongside FAbilityPayload.
- * A pattern that needs extra replicated data defines its own FPatternData subclass with UPROPERTY fields, fills it on
- * the server in UPatternAbility::CreatePatternData(), and reads it back in InitPattern via PatternData.GetPtr<T>().
+ * A pattern that needs extra replicated data defines its own FPatternData subclass with UPROPERTY fields, given by its
+ * firer (FPatternAbilityParams::PatternData), and reads it back in InitPattern via PatternData.GetPtr<T>().
  * Empty by default — most patterns need no extra data and pass an unset TInstancedStruct.
  */
 USTRUCT(BlueprintType)

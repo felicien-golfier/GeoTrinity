@@ -9,7 +9,7 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 | `GeoGemProfileSave.h` | `UGeoGemProfileSave` SaveGame per local player: owned gems, shards, per-class level / XP / builds |
 | `GeoGemSubsystem.h` | `ULocalPlayerSubsystem` owning the profile; `CommitChanges()` saves and sends loadouts to the server |
 | `GeoGemComponent.h` | On `AGeoPlayerState`: server half, applies the current class's loadout to the ASC |
-| `GeoGemMeshes.h` | `GeoGem::GetTierMesh(Tier)` / `GetShardMesh(Variant)`: soft paths of the drop meshes ("3D gems", "Shards") |
+| `GeoGemMeshes.h` | `GeoGem::GetTierMesh(Tier)` / `GetShardMesh(Variant)`: soft paths of the drop meshes ("3D gems", "Shards"); built from strings, so `/Game/Art/Meshes/Gem` must stay in `DirectoriesToAlwaysCook` (`DefaultGame.ini`) or builds drop invisible gems |
 | `GeoGemStatsEffect.h` | Native infinite GE carrying all slotted gem stats as SetByCaller modifiers |
 
 ## Flow
@@ -58,7 +58,7 @@ A drop is a solid in 3D, never a sprite turned to the camera; every motion is a 
 - Each throw's upward speed varies by `FountainUpSpread` (fraction), so the gems peak at different heights.
 
 ### Drop sounds
-Two sounds per drop, `FGeoSoundEntry` on `AGeoGemDrop` (`SpawnSound`, `PickupSound`, set on `BP_GemDrop`; gems and shards share them). Kit `Gem` in `/Game/Art/SFX/Gem/` (`AI/SoundCreation.md`, "Reusable sounds"): crystal, glassy, chime-bright; no metal.
+Two sounds per drop, `FGeoSoundEntry` on `AGeoGemDrop` (`SpawnSound`, `PickupSound`, set on `BP_GemDrop`, the project default drop class (`Settings/CLAUDE.md`); gems and shards share them). Kit `Gem` in `/Game/Art/SFX/Gem/` (`AI/SoundCreation.md`, "Reusable sounds"): crystal, glassy, chime-bright; no metal.
 - Spawn: on every machine the moment the drop begins play at its throw location (the fountain throws them one by one over `FountainDuration`, so one sound each, a pile never repeats: one asset, pitch rolled in `DropPitchRange` by both sounds, set in the constructor).
 - Pickup: the server destroys the drop, each machine plays the sound where the drop was when its actor is destroyed (`EndPlay` reason `Destroyed`, past `PickupDelay`: a level change, PIE end, streaming-out or a destroy before it could be picked is silent). The sound lives in its own audio component, fire-and-forget at the world position, never attached to the drop: the actor is gone at once, the sound rings out its full length (`UGeoSoundRowLibrary::PlaySoundEntryAtLocation`, `AbilitySystem/Data/FX/CLAUDE.md`). A tail may be as long as the asset wants; never cut on destroy.
 - Positional, not 2D: a drop picked up across the arena is quieter. Audience stays `All`; the drop itself is the sound instigator and no player's, so `ShouldPlay` treats it as `InstigatorMachine`: full volume on every machine; no per-picker sound, the pickup is not replicated.

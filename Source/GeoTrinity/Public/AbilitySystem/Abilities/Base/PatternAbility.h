@@ -43,7 +43,7 @@ public:
 	 */
 	virtual bool ShouldPlayAbilityMontage() const override;
 
-	/** PatternToLaunch's answer (UPattern::RequiresArena). */
+	/** True when Target aims at the arena's centre, else PatternToLaunch's answer (UPattern::RequiresArena). */
 	virtual bool RequiresArena() const override;
 
 protected:
@@ -68,17 +68,16 @@ protected:
 	virtual void OnPatternEnd();
 
 	/**
-	 * Builds the pattern-specific data sent through PatternStartMulticast to every client's InitPattern.
-	 * Base returns the activation's ActivationParams.PatternData, unset when none. Override to fill your own
-	 * FPatternData subclass.
+	 * The pattern-specific data sent through PatternStartMulticast to every client's InitPattern: the activation's
+	 * ActivationParams.PatternData, unset when none.
 	 */
-	virtual TInstancedStruct<FPatternData> CreatePatternData() const;
+	TInstancedStruct<FPatternData> CreatePatternData() const;
 
 	/**
 	 * Server. Runs at activation, PreLaunchDelay seconds before the pattern launches. Picks Target once, from
 	 * LaunchSeed, and marks each pick's actor with PreLaunchCue (the caster for a pick with no actor).
 	 */
-	virtual void BeginPreLaunch();
+	void BeginPreLaunch();
 
 	/**
 	 * Marks TargetASC with PreLaunchCue until the pattern launches, at most once per ASC.

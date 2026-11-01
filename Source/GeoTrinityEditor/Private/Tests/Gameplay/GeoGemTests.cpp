@@ -1390,6 +1390,25 @@ bool FGeoGemDropTest::RunTest(FString const& /*Parameters*/)
 			 Arena->GetFountainThrowTime(1, 5) - Arena->GetFountainThrowTime(0, 5)
 				 < Arena->GetFountainThrowTime(4, 5) - Arena->GetFountainThrowTime(3, 5));
 
+	UGameDataSettings* const Settings = GetMutableDefault<UGameDataSettings>();
+	TSoftClassPtr<AGeoGemDrop> const SavedDropClass = Settings->GemDropClass;
+	Settings->GemDropClass = AGeoTestGemDrop::StaticClass();
+	TestEqual(TEXT("An arena with no drop class throws the project one"), Arena->GetGemDropClass().Get(),
+			  AGeoTestGemDrop::StaticClass());
+	AGeoArena* const OwnClassArena = NewObject<AGeoArena>(GetTransientPackage());
+	FClassProperty const* const DropClassProperty =
+		CastField<FClassProperty>(AGeoArena::StaticClass()->FindPropertyByName(TEXT("GemDropClass")));
+	if (!TestNotNull(TEXT("The arena exposes its GemDropClass property"), DropClassProperty))
+	{
+		Settings->GemDropClass = SavedDropClass;
+		DestroyTestWorld(World);
+		return false;
+	}
+	DropClassProperty->SetPropertyValue_InContainer(OwnClassArena, AGeoGemDrop::StaticClass());
+	TestEqual(TEXT("An arena's own drop class wins over the project one"), OwnClassArena->GetGemDropClass().Get(),
+			  AGeoGemDrop::StaticClass());
+	Settings->GemDropClass = SavedDropClass;
+
 	DestroyTestWorld(World);
 	return true;
 }

@@ -14,7 +14,7 @@ Flow: `UPatternAbility::ActivateAbility` → `PatternStartMulticast` → every m
 - `UPattern`: `OnCreate(AbilityTag)`, `InitPattern(Payload, PatternData)`, pure `StartPattern()`, `EndPattern(bForceStop)`.
 - Payload = the caster (origin, facing); targets apart (`Base/CLAUDE.md`, "Pattern target"). Each pattern reads what its shape needs, no flag:
   - `GetTargetLocations()`: every target location of this launch, set by `PatternStartMulticast` before `InitPattern`. Never empty: none given = `{Payload.Origin}`. A pattern that lands (zones, pillars, adds, both waves) is placed there; one with a single centre uses the first.
-  - `GetTargetYaw(Index = 0)`: from `Payload.Origin` towards that location; zero length = `Payload.Yaw`, so `Forward` 0 (and a `GetFireYaw` override, sweep beam) keeps the caster's facing. A pattern that leaves the caster (salves, sprays, beams) aims with it.
+  - `GetTargetYaw(Index = 0)`: from `Payload.Origin` towards that location; zero length = `Payload.Yaw`, so `Forward` 0 keeps the caster's facing. A pattern that leaves the caster (salves, sprays, beams) aims with it.
   - A pattern starting from its target and aiming elsewhere: a second `FGeoTarget` on its ability when a case needs it (`Lib/CLAUDE.md`, "Targeting").
 - `EndPattern(false)`: jumps montage to end section + broadcasts `OnPatternEnd`; `true`: immediate stop, no broadcast (ability's `EndAbility` path).
 - `UTickablePattern`: extend for new patterns; implement `TickPattern(ServerTime, SpentTime)`.

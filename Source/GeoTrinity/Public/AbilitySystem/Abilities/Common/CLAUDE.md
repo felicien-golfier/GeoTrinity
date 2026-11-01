@@ -7,8 +7,8 @@ Shared by every player class.
 | `GeoDashAbility.h` | Dash via `UAbilityTask_ApplyRootMotionMoveToForce` (500 cm / 0.2 s) |
 | `GeoDeployAbility.h` | Hold-to-charge deployer; base of every deploy (wall, turret, healing zone, mine) |
 | `GeoTriggeredEffectAbility.h` | Applies its effect data to its owner when a watched ability hits (`HitTriggerTags`) or activates (`ActivationTriggerTags`); data-only "on hit / on cast, gain X" |
+| `GeoZoneIndicatorCue.h` | `UGeoZoneIndicatorCue`: the cue that launches a zone-layer shape (`UGeoIndicatorComponent::SpawnIndicator`). Cue Blueprint defaults: `Shape` (`Round` / `Ray`), `Layer`, `FillMode`. Params: `RawMagnitude` radius (ray: length), `Normal.X` lifetime, `Normal.Y` already elapsed; colours from the cue; attached to `SourceObject`'s root when an actor. Any Blueprint cue draws the same through `SpawnZoneShape` |
 | `GeoDeployTargetCue.h` | Looping landing marker: follows `GetPendingDeployLocation()` while charging, then sits on the projectile |
-| `GeoZoneIndicatorCue.h` | Round zone telegraph via `UGeoIndicatorComponent::SpawnIndicator`; `RawMagnitude` = radius, `Normal.X` = lifetime, `Normal.Y` = elapsed |
 
 ## Dash
 - Direction from `StoredPayload.Yaw`; start = avatar location on each machine.

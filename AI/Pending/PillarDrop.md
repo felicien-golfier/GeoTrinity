@@ -14,7 +14,7 @@ Docs written: `Actor/Deployable/CLAUDE.md` ("Init phase"), `Actor/Deployable/Pil
 - [ ] `GeoDeployableBase.cpp` `StartInit` — `CueParams.Normal.Y = GeoLib::GetServerTime(GetWorld()) - InitStartServerTime;` (today 0: on a client the `InitCue` telegraph starts on arrival, outlives the landing by the net delay; a late joiner sees a full one).
 
 ## Editor / Blueprint (by hand)
-- [x] `BP_Pillar_Deployable` — `InitCurve` = `CF_PillarDrop` (1 → 0, ease-in), `InitCue` = `GameplayCue.Generic.ZoneIndicator` (Damage).
+- [x] `BP_Pillar_Deployable` — `InitCurve` = `CF_PillarDrop` (1 → 0, ease-in).
 - [ ] Decide with the user: `InitMontage` + `PlayInitMontage` have no asset using them (YAGNI, `AI/CodingStyle.md`): keep or remove (then `Deployable/CLAUDE.md`, `Pillar/CLAUDE.md` lose it).
 - [ ] `BP_Pillar_Deployable` — mesh = the look wanted (no bomb mesh exists); optional `InitMontage` on a skeletal mesh; `FXMap[Init]` sounds; tune `InitStartOffset`.
 

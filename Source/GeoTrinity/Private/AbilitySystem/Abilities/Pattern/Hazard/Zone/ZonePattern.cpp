@@ -21,7 +21,7 @@ void UZonePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 	Super::InitPattern(Payload, PatternData);
 
 	bool const bIsWindingUp = GetWorld()->GetTimerManager().IsTimerActive(StartSectionTimerHandle);
-	if (bIsWindingUp)
+	if (bIsWindingUp && ZoneParams.Size > 0)
 	{
 		FGeoIndicatorState State;
 		State.Size.X = ZoneParams.Size;

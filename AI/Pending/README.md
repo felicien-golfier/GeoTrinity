@@ -10,6 +10,9 @@ Goal: one line — the Why.
 Priority: 0 | 1 | 2 | 3 — 0 = before everything else, 1 = next to pick up; listed in "Order" below.
 Docs written: list of CLAUDE.md files that describe it.
 
+## Read map
+- path/File.cpp — why step 4 needs it
+
 ## Code (to implement)
 - [ ] path/File.h/.cpp — what it must do (names from the CLAUDE.md)
 
@@ -24,6 +27,7 @@ Docs written: list of CLAUDE.md files that describe it.
 ```
 
 - Concrete asset paths, property names, values; no prose.
+- Read map: the files the step 3 decisions rest on, so step 4 does not explore again. Wrong or incomplete in step 4 → fix it there.
 - A step an editor script can do becomes a script row; the rest stays here for the user.
 
 ## Order
@@ -57,6 +61,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 2 | `CatExpressions.md` |
 | 2 | `CatLineEmotions.md` |
 | 2 | `DevastatingWaveZone.md` |
+| 2 | `CueToZoneLayer.md` |
 | 3 | `CatAnimation.md` |
 | 3 | `CatClipsPick.md` |
 | 3 | `CatEvilFace.md` |
@@ -68,4 +73,5 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 3 | `MaterialFunctionDedup.md` |
 | 3 | `MenuGuide.md` |
 | 3 | `MessageLog.md` |
+| 3 | `PatternDescriptionTokens.md` |
 | 3 | `RemoveZoneGrowth.md` |

@@ -51,7 +51,8 @@ bool UPatternAbility::ShouldPlayAbilityMontage() const
 
 bool UPatternAbility::RequiresArena() const
 {
-	return PatternToLaunch && GetDefault<UPattern>(PatternToLaunch)->RequiresArena();
+	return Target.Mode == EGeoTarget::ArenaCenter
+		|| (PatternToLaunch && GetDefault<UPattern>(PatternToLaunch)->RequiresArena());
 }
 
 FPatternAbilityParams UPatternAbility::MakeActivationParams(FGameplayEventData const* TriggerEventData) const

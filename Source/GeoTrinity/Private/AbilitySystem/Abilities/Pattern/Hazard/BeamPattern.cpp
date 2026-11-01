@@ -2,7 +2,6 @@
 
 #include "AbilitySystem/Abilities/Pattern/Hazard/BeamPattern.h"
 
-#include "AbilitySystem/Abilities/Boss/GeoSweepBeamAbility.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
@@ -12,17 +11,6 @@
 static TAutoConsoleVariable CVarDrawBeamBorder(TEXT("Geo.DrawBeamBorder"), false,
 											   TEXT("When true, draws the beam pattern's hit-scan rectangle borders"));
 
-void UBeamPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
-{
-	Super::OnCreate(AbilityTag, Owner);
-
-	if (UGeoSweepBeamAbility const* SweepBeamAbility = GeoASLib::GetAbilityCDO<UGeoSweepBeamAbility>(AbilityTag))
-	{
-		SweepAngle = SweepBeamAbility->GetSweepAngle();
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 float UBeamPattern::GetBeamYaw(float const SpentTime, float const BossServerTime) const
 {
 	if (FollowBossOrientation && IsValid(StoredPayload.SourceAvatar))
@@ -32,7 +20,7 @@ float UBeamPattern::GetBeamYaw(float const SpentTime, float const BossServerTime
 
 	float const SweptFraction = FMath::Clamp(SpentTime / BeamDuration, 0.f, 1.f);
 	float const SweepSign = StoredPayload.Seed % 2 == 0 ? 1.f : -1.f;
-	return GetTargetYaw() - SweepSign * (2.f * SweepAngle * SweptFraction);
+	return GetTargetYaw() + SweepSign * SweepAngle * (1.f - 2.f * SweptFraction);
 }
 
 FVector UBeamPattern::GetBeamOrigin(float const BossServerTime) const

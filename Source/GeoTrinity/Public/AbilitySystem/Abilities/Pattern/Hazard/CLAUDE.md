@@ -5,7 +5,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 | File | Role |
 |---|---|
 | `ZoneHazardPattern.h` | `UZoneHazardPattern`: parent of every hazard drawn on the zone layer: its one shape, colours, fills, telegraph → live switch, safe spot mask |
-| `BeamPattern.h` | Static or sweeping beam; `SweepAngle` 0 = static ray, 90 = sweep |
+| `BeamPattern.h` | Static or sweeping beam; `SweepAngle` 0 = static ray |
 | `TileCarveRayPattern.h` | Beam that destroys the furthest standing hex tile it reaches (keeps hex out of `UBeamPattern`) |
 | `DevastatingWavePattern.h` | Expanding radial wave, pillars cut safe-zone shadows |
 | `LateralWavePattern.h` | `UBeamPattern` child: wide band crossing the room sideways; safe spots given at runtime (`FLateralWavePatternData`) or from living adds |
@@ -32,6 +32,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 
 ## Beam
 - Fired from `Payload.Origin` (the caster) along `GetTargetYaw()` for `BeamDuration`; hex boss ships two BP children (sweep laser, tile-carving ray).
+- Sweep: `SweepAngle` (per Blueprint, degrees either side of the aim): starts `SweepAngle` off the aim, side rolled from `Payload.Seed`, crosses it, ends `SweepAngle` off on the other side. Hex sweep: `GA_HexBoss_SweepBeam` = plain `UPatternAbility`, `Target` `ArenaCenter`, so the sweep always crosses the middle of the platform and the ground behind the boss stays safe.
 - Hits on entering (swept angle per target, `AnglesFromBeam`); per-second effects tick on everyone inside.
 - Shape `Beam`. `GetBeamOrigin()` + `MoveHazardVisual(SpentTime)` = the single aim path (wind-up and live); a child drawing something else with the same beam overrides `MoveHazardVisual` (lateral wave).
 - `OverlapMode` (`ETargetOverlapMode`, default Automatic = centre-only for Enemy source).

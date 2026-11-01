@@ -38,6 +38,7 @@ The one targeting code of every ability: projectiles, salves, beams, zones, pill
 | `RandomPlayers` | `Count`, `ExtraBelowHealth`, `MinScatterRadius`, `MaxScatterRadius` | Live players from a seeded start. Total = `Count` + one per `ExtraBelowHealth` ratio above the caster's health ratio, never the number of players; one per player, those beyond the alive count scattered around a player within the radii |
 | `Boss` | — | Live boss of `AGeoArena::GetFightingArena`; none outside a fight |
 | `TargetPoint` | `TargetPointTag` | First point tagged it in `Context.ArenaTag` (`GeoLib::GetTargetPoints`); none, with an ensure, when no room or no point |
+| `ArenaCenter` | — | The caster's arena's location (`AGeoArena::GetArenaOfBoss`), no actor to follow; none, with an ensure, when it has no arena |
 
 - `ExtraBelowHealth`: the condition (the caster's health ratio) is fixed in code; a ramp-up system owning the conditions (steps) comes later, inside this targeting.
 

@@ -41,13 +41,13 @@ Tools\Run_Tests.bat [filter]        # default filter GeoTrinity. = every test; G
 ```
 
 It runs `UnrealEditor-Win64-DebugGame-Cmd.exe` headless, wipes and refills `AI/Output/Tests` (report, HTML viewer,
-`run.log`), then `Tools\Read-TestReport.ps1` prints each failure with its errors and decides the result: SUCCEEDED
-only when at least one test ran and none failed or stayed unrun. It loads the **last built DLLs**: Live Coding
+`run.log`), then `Tools\Read-TestReport.ps1` prints each failure with its first errors and decides the result: only
+that summary reaches the console, the rest stays in `run.log`. SUCCEEDED only when at least one test ran and none failed or stayed unrun. It loads the **last built DLLs**: Live Coding
 patches are not in it, so build before testing a change. It can run beside the open editor. The raw command:
 
 ```
 UnrealEditor-Win64-DebugGame-Cmd.exe "C:\GeoTrinity\GeoTrinity.uproject"
-  -Unattended -NoSplash -NoPause -NullRHI -NoSound -stdout -FullStdOutLogOutput
+  -Unattended -NoSplash -NoPause -NullRHI -NoSound
   -ExecCmds="Automation RunTests GeoTrinity.;Quit"
   -ReportExportPath="C:\GeoTrinity\AI\Output\Tests"
   -abslog="C:\GeoTrinity\AI\Output\Tests\run.log"
@@ -68,7 +68,7 @@ UnrealEditor-Win64-DebugGame-Cmd.exe "C:\GeoTrinity\GeoTrinity.uproject"
 **Never trust the exit code.** The editor can exit 0 even when tests failed or never ran. Read either:
 - `index.json` in the `-ReportExportPath` folder (per-test state, errors and durations; an HTML viewer sits
   beside it), or
-- the stdout summary `Tests Complete. Result={Success|Failed} Total: X Passed: Y Failed: Z`, with per-test
+- the `run.log` summary `Tests Complete. Result={Success|Failed} Total: X Passed: Y Failed: Z`, with per-test
   `Result=Passed|Failed` lines and messages like `Expected <X> but got <Y>`.
 
 Also check that the expected tests **actually ran**: an empty filter match "succeeds" with zero tests.
@@ -112,11 +112,7 @@ Model: `GeoTrinity.Deployable.StartHealth` in `GeoGemTests.cpp`.
 
 ## Agent loop
 
-1. Write or extend the test next to the change (lightest layer).
-2. Build the Editor target (`Tools\Build_Editor.bat`).
-3. Run the filtered tests headless and parse `index.json`.
-4. On failure: read the messages, fix code or test, go back to 2.
-5. Report the passed/failed counts and the exact failures. Never claim green without the parsed report.
+Write or extend the test next to the change (lightest layer), then hand the build, run and fix loop to the `test-fixer` agent (`.claude/agents/test-fixer.md`): its steps, limits and report format live there.
 
 ## Next steps
 

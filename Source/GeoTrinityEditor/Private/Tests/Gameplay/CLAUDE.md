@@ -4,10 +4,11 @@ Automation tests of the `GeoTrinity` module. Fakes they spawn: `Fake/CLAUDE.md`.
 
 | File | Covers |
 |---|---|
-| `GeoPatternTests.cpp` | Safe spot maths: `Behind` / `Lane` / `Disc` shadows, mask slots; salve aim per `EGeoTarget`; zone with several locations; pillar release / expiry |
-| `GeoTargetTests.cpp` | Targeting (`Lib/CLAUDE.md`, "Targeting"): each mode's locations, seeded picks, health steps, scatter, follow / gone actor, empty = nothing fires; patterns: payload = caster, targets apart, `GetTargetYaw` |
+| `GeoPatternTests.cpp` | Safe spot maths: `Behind` / `Lane` / `Disc` shadows, mask slots; salve aim per `EGeoTarget`; beam yaw along the sweep; zone with several locations; pillar release / expiry |
+| `GeoTargetTests.cpp` | Targeting (`Lib/CLAUDE.md`, "Targeting"): each mode's locations, seeded picks, health steps, scatter, follow / gone actor, empty = nothing fires, `ArenaCenter` + `RequiresArena`; patterns: payload = caster, targets apart, `GetTargetYaw` |
 | `GeoGemTests.cpp` | Gem catalog, sockets, stats, CSV sync, deployable start health |
 | `GeoCatLineBankTests.cpp` | Cat line bank: parse, bags, file order, live reload, missing file |
+| `GeoLeaderboardTests.cpp` | Leaderboard save: one best attempt per player, group row shared, worse / equal attempt dropped, per boss and difficulty, legacy file collapse, build wipe once per stamp |
 | `GeoAbilityReadyTests.cpp` | Ability ready state |
 | `GeoIncomingDamageTests.cpp` | Incoming damage |
 | `GeoCombatStatsTests.cpp` | Combat stats subsystem |
@@ -15,6 +16,7 @@ Automation tests of the `GeoTrinity` module. Fakes they spawn: `Fake/CLAUDE.md`.
 | `GeoSoundConcurrencyTests.cpp` | Sound concurrency assets |
 | `GeoTutorialTests.cpp` | Solo-only login, listen URL, locked / unlocked abilities, tutorial Safe difficulty (game mode → game state), the miniboss's Safe vs Original `CT_Tutorial` rows |
 | `GeoCatTests.cpp` | Cat walk, stop distance, hidden walk, replace, roam, montage order |
+| `GeoEncounterStartGateTests.cpp` | Encounter start gate: a BeginPlay start waits for the login, then the possession; none after `EndPlay` |
 | `GeoEncounterTests.cpp` | Fake trigger / actions / encounter / HUD, readable zone, set-up summoned dummy |
 | `GeoVoidDeathTests.cpp` | Void death with an enemy whose body stays |
 | `GeoDeployableInitTests.cpp` | Deployable init phase: inert while arriving, live once it ends |

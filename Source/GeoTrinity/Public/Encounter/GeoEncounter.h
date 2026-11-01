@@ -8,6 +8,8 @@
 
 #include "GeoEncounter.generated.h"
 
+class AGameModeBase;
+class APlayerController;
 class APlayerStart;
 class FDataValidationContext;
 class UGeoEncounterAction;
@@ -149,7 +151,8 @@ protected:
 	TArray<FGeoEncounterStep> Steps;
 
 	/** The start of this encounter's room: a world URL portal equal to its PlayerStartTag, or to its number along
-	 * the chain, starts the game here, earlier encounters skipped. */
+	 * the chain, starts the game here, earlier encounters skipped. The start waits until the player has a pawn
+	 * (Encounter/CLAUDE.md, "Start gate"). */
 	UPROPERTY(EditInstanceOnly, Category = "GeoEncounter")
 	TObjectPtr<APlayerStart> JumpStart;
 
@@ -208,10 +211,30 @@ private:
 	AGeoEncounter* FindChainStart() const;
 	/** Moves the first local pawn onto JumpStart (none: nothing to do). */
 	void MovePlayerToJumpStart() const;
+	/** Server. Runs the start BeginPlay chose (PendingStart) once the first player controller has a pawn; else waits
+	 * for the missing part: the login, then the possession (Encounter/CLAUDE.md, "Start gate"). */
+	void TryBeginStart();
+	/** Clears PendingStart and drops the login and possession bindings. */
+	void StopWaitingForPlayer();
+	void OnPlayerPostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer);
+	UFUNCTION()
+	void OnPossessedPawnChanged(APawn* OldPawn, APawn* NewPawn);
 	/** Target of the first GeoStartEncounterAction of the steps, in any action list; null at the end of a chain. */
 	AGeoEncounter* FindNextInChain() const;
 	/** OnSkipped of every step's OnEnter then OnExit actions, in list order. Rule actions are never skipped. */
 	void SkipActions() const;
+
+	/** The start BeginPlay chose and the player gate still holds back. */
+	enum class EPendingStart : uint8
+	{
+		None,
+		Normal,
+		Jump,
+	};
+
+	EPendingStart PendingStart = EPendingStart::None;
+	FDelegateHandle PostLoginHandle;
+	TWeakObjectPtr<APlayerController> WaitedController;
 
 	EState State = EState::Idle;
 	int32 CurrentStep = INDEX_NONE;

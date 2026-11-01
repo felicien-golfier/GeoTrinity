@@ -212,6 +212,33 @@ bool FGeoZoneSeveralLocationsTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoBeamSweepTest, "GeoTrinity.Pattern.BeamSweep", GeoPatternTestFlags)
+
+bool FGeoBeamSweepTest::RunTest(FString const& /*Parameters*/)
+{
+	FVector2D const TargetLocation(0.f, 1000.f);
+	float const AimYaw = 90.f;
+	UGeoTestBeamPattern* const Pattern = NewObject<UGeoTestBeamPattern>();
+
+	Pattern->Aim(80.f, 2, TargetLocation);
+	TestEqual(TEXT("Even seed: starts past the aim"), Pattern->GetYawAtFraction(0.f), AimYaw + 80.f, 0.1f);
+	TestEqual(TEXT("Even seed: halfway on the aim"), Pattern->GetYawAtFraction(0.5f), AimYaw, 0.1f);
+	TestEqual(TEXT("Even seed: ends past the aim on the other side"), Pattern->GetYawAtFraction(1.f), AimYaw - 80.f,
+			  0.1f);
+
+	Pattern->Aim(80.f, 3, TargetLocation);
+	TestEqual(TEXT("Odd seed: starts on the other side"), Pattern->GetYawAtFraction(0.f), AimYaw - 80.f, 0.1f);
+	TestEqual(TEXT("Odd seed: halfway on the aim"), Pattern->GetYawAtFraction(0.5f), AimYaw, 0.1f);
+	TestEqual(TEXT("Odd seed: ends on the first side"), Pattern->GetYawAtFraction(1.f), AimYaw + 80.f, 0.1f);
+
+	Pattern->Aim(0.f, 2, TargetLocation);
+	TestEqual(TEXT("No sweep: on the aim at the start"), Pattern->GetYawAtFraction(0.f), AimYaw, 0.1f);
+	TestEqual(TEXT("No sweep: on the aim at the end"), Pattern->GetYawAtFraction(1.f), AimYaw, 0.1f);
+
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSpawnPillarPatternTest, "GeoTrinity.Pattern.SpawnPillar", GeoPatternTestFlags)
 
 bool FGeoSpawnPillarPatternTest::RunTest(FString const& /*Parameters*/)

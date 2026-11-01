@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
     Reads the index.json an automation run exported with -ReportExportPath, prints every failure with its
-    errors, and exits 0 only when at least one test ran and every test passed.
+    errors (capped per test), and exits 0 only when at least one test ran and every test passed.
 
 .DESCRIPTION
     The editor's own exit code cannot be trusted: it exits 0 when tests failed, and "succeeds" when the filter
@@ -12,17 +12,26 @@ param(
     [Parameter(Mandatory)] [string] $ReportDir
 )
 
+$MaxErrorsPerTest = 10
+$CrashTailLines = 25
+
 $index = Join-Path $ReportDir 'index.json'
 if (-not (Test-Path $index)) {
-    Write-Host "No report at $index - the editor crashed or never reached the tests. See run.log beside it."
+    Write-Host "No report at $index - the editor crashed or never reached the tests. End of run.log:"
+    $log = Join-Path $ReportDir 'run.log'
+    if (Test-Path $log) { Get-Content $log -Tail $CrashTailLines | ForEach-Object { Write-Host $_ } }
     exit 1
 }
 
 $report = Get-Content $index -Raw -Encoding UTF8 | ConvertFrom-Json
 foreach ($test in $report.tests | Where-Object { $_.state -ne 'Success' }) {
     Write-Host "[$($test.state)] $($test.fullTestPath)"
-    foreach ($entry in $test.entries | Where-Object { $_.event.type -eq 'Error' }) {
+    $errors = @($test.entries | Where-Object { $_.event.type -eq 'Error' })
+    foreach ($entry in $errors | Select-Object -First $MaxErrorsPerTest) {
         Write-Host "    $($entry.event.message)"
+    }
+    if ($errors.Count -gt $MaxErrorsPerTest) {
+        Write-Host "    ... $($errors.Count - $MaxErrorsPerTest) more errors in index.json."
     }
 }
 

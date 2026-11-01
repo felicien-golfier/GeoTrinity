@@ -14,6 +14,7 @@
 #include "GameDataSettings.generated.h"
 
 class AGeoEffectZone;
+class AGeoGemDrop;
 class UStatusInfo;
 class UUserWidget;
 class UWidgetComponent;
@@ -95,6 +96,11 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoSound")
 	TSoftObjectPtr<USoundConcurrency> DefaultOneShotConcurrency;
 
+	/** The drop every arena throws at a kill unless it sets its own GemDropClass: carries the drop sounds and feel
+	 * (BP_GemDrop). The native AGeoGemDrop is silent. */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoLoot")
+	TSoftClassPtr<AGeoGemDrop> GemDropClass;
+
 	/** Color every FGeoColorParam of the game resolves its slot through; EGeoColor::Override is never looked up here.
 	 * Materials read the same values through the palette texture AGeoGameCamera builds from this map. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoColors")
@@ -119,6 +125,11 @@ public:
 	 * instance of M_BackgroundLattice whose glow layer is one look. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoBackground")
 	TArray<TSoftObjectPtr<UMaterialInterface>> BackgroundLooks;
+
+	/** While true, the first launch of each new build empties the local leaderboard. See System/Stats/CLAUDE.md,
+	 * "Leaderboard". */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay")
+	bool bWipeLeaderboardOnNewBuild = false;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "GeoGameplay")
 	float GeneralChargeTime = .5f;

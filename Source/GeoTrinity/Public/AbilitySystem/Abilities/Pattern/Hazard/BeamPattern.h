@@ -9,8 +9,8 @@
 #include "BeamPattern.generated.h"
 
 /**
- * Beam fired from the payload origin along the payload yaw, staying on for BeamDuration.
- * SweepAngle turns it into a rotating sweep (0 leaves it pointing straight ahead); every hostile is hit the tick it
+ * Beam fired from the payload origin towards the ability's target (GetTargetYaw), staying on for BeamDuration.
+ * SweepAngle turns it into a rotating sweep across that aim (0 leaves it on the aim); every hostile is hit the tick it
  * enters the beam, so crossing it costs one hit no matter how slowly you walk through — and one more per re-entry.
  * Per-second effects are the exception: they keep ticking on everyone standing in the beam.
  */
@@ -20,9 +20,6 @@ class GEOTRINITY_API UBeamPattern : public UZoneHazardPattern
 	GENERATED_BODY()
 
 protected:
-	/** Reads the sweep angle of the launching ability. */
-	virtual void OnCreate(FGameplayTag AbilityTag, AActor& Owner) override;
-
 	/** Aims the beam for the elapsed sweep fraction; the server also draws the hit rectangle when debugging. */
 	virtual void TickPattern(float ServerTime, float SpentTime) override;
 	/** The beam is live for BeamDuration. */
@@ -34,7 +31,7 @@ protected:
 	/** Adds the beam length so the telegraph cue can size itself. */
 	virtual FGameplayCueParameters FillCueParam(FGeoCueParam const& Cue, FAbilityPayload const& Payload) override;
 
-	/** Beam yaw at SpentTime: the payload yaw, offset by however much of the sweep arc has been travelled; with
+	/** Beam yaw at SpentTime: the aim (GetTargetYaw), offset by where the sweep has reached (SweepAngle); with
 	 * FollowBossOrientation, the boss's yaw at BossServerTime. */
 	float GetBeamYaw(float SpentTime, float BossServerTime) const;
 
@@ -45,8 +42,10 @@ protected:
 	/** A BeamRange x 2 BeamHalfWidth beam, placed where GetBeamOrigin/GetBeamYaw put it at SpentTime. */
 	virtual void MoveHazardVisual(float SpentTime) override;
 
-	/** Full arc swept over BeamDuration, in degrees, centered on the payload yaw. 0 keeps the beam static. */
-	float SweepAngle;
+	/** Degrees either side of the aim: the beam starts that far off it, crosses it and ends as far off on the other
+	 * side, over BeamDuration, the side rolled from the payload's seed. 0 keeps the beam on the aim. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam", meta = (ClampMin = "0.0"))
+	float SweepAngle = 0.f;
 
 	/** How long the beam stays on, in seconds. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoBeam", meta = (ClampMin = "0.01"))

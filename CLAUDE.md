@@ -8,7 +8,7 @@ Applies to every session, every agent (interactive, daily, nightly, cloud). Defa
 
 1. **Why** — the user states the goal. No file written.
 2. **How** — discuss the approach, or the user dictates it. No file written.
-3. **Write it down** — the `CLAUDE.md` of every code folder and `AI/Python` folder touched, written as if the feature exists (map, intent, invariants). Then ONE temporary `AI/Pending/<Feature>.md`: its `Goal:` line is the Why, its `Priority:` line (ask the user when unsure) with its row in the README "Order" table, then everything left to do (template: `AI/Pending/README.md`). Stop; the user reviews the docs.
+3. **Write it down** — the `CLAUDE.md` of every code folder and `AI/Python` folder touched, written as if the feature exists (map, intent, invariants). Then ONE temporary `AI/Pending/<Feature>.md`: its `Goal:` line is the Why, its `Priority:` line (ask the user when unsure) with its row in the README "Order" table, its `Read map` of the files step 4 must read, then everything left to do (template: `AI/Pending/README.md`). Stop; the user reviews the docs.
    Grouping: a new feature is also a chance to regroup. Look for existing code of the same kind and fold it, with the new code, into a shared folder (own `CLAUDE.md`, ≥ 3 files rule below); list the moves in the Pending file.
    Tests: the Pending file lists them per `AI/CodingStyle.md` ("Tests").
    Sort every piece of info with one test: *still true and useful to a future task once this feature ships?* Yes (a lasting design rule, layout or behaviour choice) → the `CLAUDE.md` of the leaf folder that owns it. No (one-off steps, sources to fetch from, assets to import, values to copy) → the Pending file only, gone when it is deleted.
@@ -18,11 +18,12 @@ Applies to every session, every agent (interactive, daily, nightly, cloud). Defa
 
 Gate rules:
 - No code, script or asset change for a feature until step 3 is on disk (docs + Pending file), unless waived.
-- Step 4 from a cleared context: work from the docs and the Pending file. Not cleared: first output line is `Context not cleared — using docs + discussion.`, then use both. Either way, a design change goes back into the docs.
+- Step 4 from a cleared context: work from the docs and the Pending file; read its `Read map`, and search further only when the code does not match it. Not cleared: first output line is `Context not cleared — using docs + discussion.`, then use both. Either way, a design change goes back into the docs.
 - Exempt without waiver: typo / comment-only edits, build or test runs, answering questions, the daily JavaDoc task, reverting.
 - Autonomous agents with no user to discuss with: write step 3 only, commit it, and stop; implementation waits for the user.
 
 ## Rules
+- **Test agent.** Every build + test loop (step 4 verification, Tutorial gate) runs in the `test-fixer` agent (`.claude/agents/test-fixer.md`), one at a time, with no edits under `Source/` meanwhile. Its prompt is the dev brief its description lists, written from this conversation or, after a cleared context, from the docs and Pending file. Act on its report without re-reading logs; design decisions it returns go to the user; continue the same agent with `SendMessage`. The agent itself and a user-requested manual run are exempt.
 - Build only when the user asks, except big tasks (full feature, tricky refactor, …) which must at least be built (workflow step 4); then the matching `Tools\*.bat` with `GEO_NO_PAUSE=1`, editor closed. Commands: `AI/Commands.md` (editor/dev), `AI/BuildPackage.md` (package). Small changes: hand over unbuilt code and say so. MCP live compile only for Blueprint-touching work.
 - **Tutorial gate (mandatory, every change).** Any change to code under `Source/`, `Content/Maps/Tutorial.umap`, a tutorial script or the tutorial's content must end with `GeoTrinity.Tutorial.FullRun` (`Source/GeoTrinityEditor/Private/Tests/Tutorial/`, replays the whole tutorial on the real map, `AI/Testing.md` "Tutorial runs") built and green; a tutorial change, or one under `Source/GeoTrinity/*/Encounter/`, runs the whole `GeoTrinity.Tutorial.` set: this overrides "Build only when the user asks". Not green = not done, say so with the failure. A tutorial change (room, spawn, step, unlock, branch) updates the bot and its coverage table in the same change; never skip, loosen or delete it to get green.
 - Never test in the editor (PIE, live editor, in-editor MCP checks) unless the user asks; automated tests (headless) are the default check.
@@ -34,6 +35,7 @@ Gate rules:
 - Before writing any code: read `AI/CodingStyle.md`. Planning or answering: don't.
 - Opening a `.cpp`: read it entirely, and the `CLAUDE.md` of its Public folder.
 - Navigate by docs: this file → module `Public/CLAUDE.md` → folder `CLAUDE.md`; then Read / Grep those files. Explore agents only for undocumented areas.
+- **Reading for a decision.** Steps 1-3 happen in the main conversation, which reads the docs and every file a decision depends on, in full; no summary stands in for them. A wide question ("who calls this?", "which abilities do X?") goes to the `code-excerpts` agent (`.claude/agents/code-excerpts.md`); a decision resting on an excerpt reads that whole file.
 - Before MCP / Python editor automation: `AI/MCP/CLAUDE.md`.
 - `TroobleshootingLogs.md` (root): only hard-to-find bugs we spent time figuring out, and only when the user says so. Never add an entry on your own; when one seems worth it, ask.
 - **No memory files, ever.** Never create or update anything under `~/.claude/projects/*/memory/`. A fact worth keeping goes in the file from "Where a fact goes" below, in the same session. A rule the user states ("always…", "never…") is written there, not remembered.
@@ -74,6 +76,8 @@ Gate rules:
 | Everything under `AI/` (topic docs, MCP, scripts, audio) | `AI/CLAUDE.md` |
 | Out-of-editor data (plain files, not assets): `gems.csv`, `AbilityDescriptions.txt` | `Data/` at project root (read via `FPaths::ProjectDir()`; runtime files staged by `RuntimeDependencies` in `GeoTrinity.Build.cs`) |
 | Pending editor work of a feature | `AI/Pending/` |
+| Build + test + fix agent, its rules and brief | `.claude/agents/test-fixer.md` |
+| Wide code question, verbatim excerpts | `.claude/agents/code-excerpts.md` |
 | Past issues and fixes | `TroobleshootingLogs.md` |
 
 ## Modules

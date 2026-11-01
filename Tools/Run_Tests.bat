@@ -2,7 +2,7 @@
 REM Runs the automation tests headless in a separate DebugGame editor process (NullRHI, no window) and reads the
 REM exported report. Safe beside an open editor: it loads the last built DLLs, never live-coded patches.
 REM Usage: Run_Tests.bat [filter]   e.g. Run_Tests.bat GeoTrinity.Gems   (default: GeoTrinity. = every test)
-REM Report, HTML viewer and log go to AI\Output\Tests. See AI\Testing.md.
+REM Report, HTML viewer and log go to AI\Output\Tests; only the parsed report is printed. See AI\Testing.md.
 REM Ends on a result line and waits for a key, unless CI or GEO_NO_PAUSE is set.
 setlocal
 REM Normalize away the trailing "Tools\.." so it does not leak into logs.
@@ -23,7 +23,7 @@ echo Filter: %FILTER%
 if exist "%OUT%" rmdir /s /q "%OUT%"
 mkdir "%OUT%"
 
-"%UE%\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame-Cmd.exe" "%REPO%\GeoTrinity.uproject" -Unattended -NoSplash -NoPause -NullRHI -NoSound -stdout -FullStdOutLogOutput -ExecCmds="Automation RunTests %FILTER%;Quit" -ReportExportPath="%OUT%" -abslog="%OUT%\run.log"
+"%UE%\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame-Cmd.exe" "%REPO%\GeoTrinity.uproject" -Unattended -NoSplash -NoPause -NullRHI -NoSound -ExecCmds="Automation RunTests %FILTER%;Quit" -ReportExportPath="%OUT%" -abslog="%OUT%\run.log" >nul 2>&1
 echo Editor exit code: %errorlevel% (not trusted, the report decides)
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Read-TestReport.ps1" -ReportDir "%OUT%"
