@@ -30,7 +30,7 @@ LETHAL_EFFECT = ("/Script/GeoTrinity.LethalEffectData(OneShotCue=(CueTag=(TagNam
 # The zone room is 1400 long (X) and 2200 wide (Y): the front starts on the wave point at the near wall and crosses
 # the room along +X to the far wall; safe spots are offsets from that point (tutorial_encounters.py).
 TRAVEL = 1400.0
-HALF_WIDTH = 1200.0
+HALF_WIDTH = 1100.0
 LANE_WIDTH = 380.0
 BAND_WIDTH = 300.0
 SPEED = 1400.0

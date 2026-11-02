@@ -4,7 +4,7 @@ Goal: the tutorial Miniboss fight is reworked and balanced: readable, fair for a
 Priority: 1
 Docs written: `AI/Tutorial/Steps.md` (step 10, "Tuning"), `AI/Python/Tutorial/CLAUDE.md`, `Source/GeoTrinity/Public/AbilitySystem/Abilities/Boss/CLAUDE.md`, `.../Pattern/Hazard/CLAUDE.md` + `SafeSpot/CLAUDE.md`, `Source/GeoTrinity/Public/Characters/CLAUDE.md`, `Source/GeoTrinity/Public/Actor/Arena/CLAUDE.md`, `Source/GeoTrinity/Public/GameClasses/Match/CLAUDE.md`.
 
-Done: code (`StartDifficulty`, `AddSpotRadius`, `SafeAddSetup`, `ZoneStartSize`), scripts run, `GeoTrinity.Tutorial.` set green (34/34, FullRun included), new tests `Tutorial.SafeDifficulty` and `Tutorial.MinibossSafeRows`. Values the user can retune in `CT_Tutorial` (columns Safe/Reduced/Original): ally damage 15, lane radius 127. The summon wind-up is 2 s at every level (a plain float on the ability, not a row).
+Done: code (`StartDifficulty`, `AddSpotRadius`, the Safe add without its tree, `ZoneStartSize`), scripts run, `GeoTrinity.Tutorial.` set green (34/34, FullRun included), new tests `Tutorial.SafeDifficulty` and `Tutorial.MinibossSafeRows`. Values the user can retune in `CT_Tutorial` (columns Safe/Reduced/Original): ally damage 15, lane radius 127. The summon wind-up is 2 s at every level (a plain float on the ability, not a row).
 
 ## Left: boss walk speed ×0.5 (code written, not built: the user's editor was open with Live Coding)
 - [ ] Editor closed: `Tools\Build_Editor.bat` (`FGeoEnemySetup::WalkSpeedMultiplier`, `AEnemyCharacter::ApplySetup`).

@@ -33,8 +33,11 @@ public:
 	/** Refreshes: the profile may have changed since the menu was last open. */
 	virtual void OnPageShown() override;
 
-	/** Shows the Forge page (bForge) or the Loadout, as its tab would. */
-	void ShowPage(bool bForge);
+	/** The page's tab while another page is shown, else the shown page's answer; the base's Back when none. */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
+
+	/** Opens the Chip tier of the page Goal is about, so the player starts on the chips. */
+	virtual void PrepareForGuide(EGeoMenuGuideGoal Goal) override;
 
 protected:
 	/** Follows the pages' changes to the profile with the shard count, once for the widget's life. */
@@ -68,6 +71,13 @@ protected:
 	/** One per page of PageSwitcher, in its order. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
 	TArray<FText> PageNames = {INVTEXT("LOADOUT"), INVTEXT("FORGE")};
+
+	/** The menu guide's hints on the page tabs. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideLoadoutTabHint = INVTEXT("OPEN THE LOADOUT");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideForgeTabHint = INVTEXT("OPEN THE FORGE");
 
 	/** Space between two page tabs. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "0", ClampMax = "64"))

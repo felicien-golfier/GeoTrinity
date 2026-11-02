@@ -139,14 +139,15 @@ Shape: the room is a real boss fight (an `AGeoArena`, `BossType` MiniBoss, no le
 
 ## Step 11 — Gems
 Teaches: gems and sockets (`Gem/CLAUDE.md`). The miniboss drops one copy of each Chip (scripted, not rolled; the 7 chips of `Data/gems.csv`).
-Done when: a chip is slotted during this step (an event, not a state: chips already slotted, e.g. on a replay, do not count). The menu guide leads the player there (Esc menu → Character → Gems), the path highlighted and nothing else clickable: a guide the player must follow, never a menu opened for them (to be designed, `AI/Pending/MenuGuide.md`). Cat stays vague on stats (the gem page says them). Text: Board page 14.
+The step starts by emptying the player's Chip sockets (`GeoUnequipGemsAction`), so the chip they pick is never already slotted (a replay, or an earlier build).
+Done when: a chip is slotted during this step (an event, not a state: chips already slotted, e.g. on a replay, do not count). The page opens on the Chip tier and the guide points at the whole chip list: any chip may be picked. When the chip is in, the menu refuses every click (Hold) until the Cat has finished, then the Forge tip starts. The menu guide (`GeoMenuGuideAction`, goal EquipChip; `GeoTrinityUI/Public/HUD/Menu/Frame/CLAUDE.md`) leads the player there: it dims the whole screen but the next control to click (Esc menu → Character → Gems → a Chip → an empty Chip socket), a pulsing frame and a short hint on it, every other click refused. The player opens the menu themselves (the hint names the key); closing it mid-path just restarts the guide from the key hint. Cat stays vague on stats (the gem page says them). Text: Board page 14; the Cat says one intro line as the step starts and one when the chip is in.
 
 ## Step 12 — Forge
 Teaches: the Forge turns shards into a chip.
 Grant: exactly the shard cost of one chip, no more. Forced: the player must forge their first chip.
 Real profile, every run (`Flow.md`, "Replay and loot"): the grant is repeated on a replay.
-The menu guide leads to the Forge page (as step 11).
-Done when: a chip is forged. End of the tutorial; leads to the Training Room (step 13). Text: Board page 15.
+The step holds the menu (every click refused) while the Cat speaks, then the menu guide leads to the Forge (goal ForgeChip: Esc menu → Character → Gems → FORGE tab → the gem list, the player chooses the chip → CRAFT; the Chip tier is shown on arrival).
+Done when: a chip is forged (`GeoGemProfileTrigger` Crafted). The guide stops at once: the menu is free (the player may go back and slot the new chip) while the Cat finishes. The final exit pad opens with the Cat's last line; the player steps on it, End of the tutorial; leads to the Training Room (step 13). Text: Board page 15.
 
 ## Step 13 — Training Room
 The tutorial is over; the player is brought to the Training Room (in the shared map, `Flow.md`): not the lobby. No objective, nothing forced.

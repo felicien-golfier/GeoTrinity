@@ -10,7 +10,8 @@ DLLs, not that the code is wrong.
 
 - Implementation-only `.cpp` changes: trigger Live Coding from the editor (`Ctrl+Alt+F11`), which patches the
   running process without unloading DLLs.
-- A new `UFUNCTION`, a new type or a header change cannot be hot-patched — ask the user to close the editor,
+- Testing a change beside the open editor needs no patch and no restart: `AI/Commands.md`, "Build and test beside an open editor".
+- A new `UFUNCTION`, a new type or a header change cannot be hot-patched into the editor — to get it in there, ask the user to close the editor,
   then run the full build from `AI/Commands.md`.
 
 ## Connecting the bridge

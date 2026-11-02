@@ -41,7 +41,7 @@ Tools\Run_Tests.bat [filter]        # default filter GeoTrinity. = every test; G
 It runs `UnrealEditor-Win64-DebugGame-Cmd.exe` headless, wipes and refills `AI/Output/Tests` (report, HTML viewer,
 `run.log`), then `Tools\Read-TestReport.ps1` prints each failure with its first errors and decides the result: only
 that summary reaches the console, the rest stays in `run.log`. SUCCEEDED only when at least one test ran and none failed or stayed unrun. It loads the **last built DLLs**: Live Coding
-patches are not in it, so build before testing a change. It can run beside the open editor. The raw command:
+patches are not in it, so build before testing a change. An open editor blocks neither the build nor the tests: `Commands.md`, "Build and test beside an open editor". The raw command:
 
 ```
 UnrealEditor-Win64-DebugGame-Cmd.exe "C:\GeoTrinity\GeoTrinity.uproject"
@@ -80,7 +80,7 @@ Also check that the expected tests **actually ran**: an empty filter match "succ
 ## Tutorial runs (optional)
 
 Headless play-in-editor runs of the real `/Game/Maps/Tutorial`, a bot playing it: `Source/GeoTrinityEditor/Private/Tests/Tutorial/` (bot, branches, coverage table: its `CLAUDE.md`). `GeoTrinity.Tutorial.FullRun` plays every room in order; `GeoTrinity.Tutorial.Path.*` and `GeoTrinity.Tutorial.Jump.*` play every other branch, one session each. Mandatory when the change puts their behaviour at risk, else optional (`CLAUDE.md` "Tutorial runs at risk", "Tutorial runs"). The other `GeoTrinity.Tutorial.` tests need no map or session: quick suite.
-- Run: `Tools\Build_Editor.bat` (editor closed), then `Tools\Run_Tests.bat GeoTrinity.Tutorial.FullRun`; every test of the area, instant ones included, with `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
+- Run: `Tools\Build_Editor.bat` (editor open: `Commands.md`, "Build and test beside an open editor"), then `Tools\Run_Tests.bat GeoTrinity.Tutorial.FullRun`; every test of the area, instant ones included, with `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
 - Map loaded with `FAutomationEditorCommonUtils::LoadMap`, never `AutomationOpenMap`: in the editor that starts its own standalone play session, which the listen one then replaces under the bot. Play session: listen server, one client process (`FGeoStartListenPlayCommand`).
 - A new room, step or branch adds its stages and its coverage row in the same change.
 

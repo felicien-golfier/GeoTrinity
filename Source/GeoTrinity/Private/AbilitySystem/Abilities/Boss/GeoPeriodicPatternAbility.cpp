@@ -28,6 +28,19 @@ void UGeoPeriodicPatternAbility::ActivateAbility(FGameplayAbilitySpecHandle cons
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 
+#if WITH_EDITOR
+void UGeoPeriodicPatternAbility::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetMemberPropertyName()
+		== GET_MEMBER_NAME_CHECKED(UGeoPeriodicPatternAbility, RampupHealthThreshold))
+	{
+		RampupHealthThreshold.Sort(TGreater<float>());
+	}
+}
+#endif
+
 void UGeoPeriodicPatternAbility::SizeBurst()
 {
 	int32 RoundCount = 1;
@@ -36,17 +49,19 @@ void UGeoPeriodicPatternAbility::SizeBurst()
 	if (ensureMsgf(IsValid(AttributeSet), TEXT("GeoPeriodicFireAbility: OwnerASC has no UGeoAttributeSetBase")))
 	{
 		float const HealthRatio = AttributeSet->GetHealthRatio();
-		if (HealthRatio < .2f)
+
+		for (float const Threshold : RampupHealthThreshold)
 		{
-			RoundCount = 3;
-		}
-		else if (HealthRatio < .5f)
-		{
-			RoundCount = 2;
+			RoundCount += Threshold > HealthRatio ? 1 : 0;
 		}
 	}
 
-	int32 const SalvesPerRound = FMath::Max(1, ReferencePlayerCount - GeoLib::GetAlivePlayers(this).Num() + 1);
+	int32 SalvesPerRound = SalveNumber;
+	if (bUseAlivePlayersAsSalveNumber)
+	{
+		SalvesPerRound = FMath::Max(1, ReferencePlayerCount - GeoLib::GetAlivePlayers(this).Num() + 1);
+	}
+
 	TimeBetweenSalves = RoundDuration / SalvesPerRound;
 	RemainingSalveCount = RoundCount * SalvesPerRound;
 

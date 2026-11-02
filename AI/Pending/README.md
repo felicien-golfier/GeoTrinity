@@ -35,6 +35,8 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 
 | Priority | File |
 |---|---|
+| 1 | `MenuGuide.md` |
+| 1 | `SummonPattern.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |
 | 2 | `ArenaCenterPoint.md` |
@@ -73,7 +75,6 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 3 | `EchoUiPolish.md` |
 | 3 | `EncounterNetwork.md` |
 | 3 | `MaterialFunctionDedup.md` |
-| 3 | `MenuGuide.md` |
 | 3 | `MessageLog.md` |
 | 3 | `PatternDescriptionTokens.md` |
 | 3 | `RemoveZoneGrowth.md` |

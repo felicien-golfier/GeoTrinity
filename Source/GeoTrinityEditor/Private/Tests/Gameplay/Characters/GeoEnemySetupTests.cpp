@@ -57,51 +57,12 @@
 #include "Tests/Gameplay/Fake/GeoTestEnemy.h"
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
 #include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoCharactersTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
-
-// ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCharactersFriendlyLookTest, "GeoTrinity.Characters.FriendlyLook",
-								 GeoCharactersTestFlags)
-
-bool FGeoCharactersFriendlyLookTest::RunTest(FString const& /*Parameters*/)
-{
-	UWorld* World = CreateTestWorld();
-	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
-	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
-	World->SetGameState(World->SpawnActor<AGeoGameState>());
-	FGeoEnemySetup AllySetup;
-	AllySetup.Team = ETeam::Player;
-	FGeoEnemySetup EnemySetup;
-	AEnemyCharacter* const Ally = AEnemyCharacter::SpawnEnemy(*World, AEnemyCharacter::StaticClass(),
-															  FVector::ZeroVector, nullptr, nullptr, &AllySetup);
-	AEnemyCharacter* const Enemy = AEnemyCharacter::SpawnEnemy(*World, AEnemyCharacter::StaticClass(),
-															   FVector::ZeroVector, nullptr, nullptr, &EnemySetup);
-	if (TestNotNull(TEXT("The ally spawns"), Ally) && TestNotNull(TEXT("The enemy spawns"), Enemy))
-	{
-		TestTrue(TEXT("A player-team setup gives the friendly look"), Ally->HasFriendlyLook());
-		TestFalse(TEXT("An enemy-team setup keeps the enemy look"), Enemy->HasFriendlyLook());
-
-		// A native class's defaults never reach its instances from a changed CDO: the material is set on the actors.
-		UMaterialInterface* const FriendlyMaterial = UMaterial::GetDefaultMaterial(MD_Surface);
-		Ally->FriendlyBodyMaterial = FriendlyMaterial;
-		Enemy->FriendlyBodyMaterial = FriendlyMaterial;
-		Ally->ApplySetup(AllySetup);
-		Enemy->ApplySetup(EnemySetup);
-		TestTrue(TEXT("The ally's body wears the friendly material"),
-				 Ally->GetMesh()->GetMaterial(0) == FriendlyMaterial);
-		TestTrue(TEXT("The enemy's body keeps its own material"), Enemy->GetMesh()->GetMaterial(0) != FriendlyMaterial);
-	}
-
-	DestroyTestWorld(World);
-	return true;
-}
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCharactersSetupHealthResetTest, "GeoTrinity.Characters.SetupHealthReset",

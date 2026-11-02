@@ -92,6 +92,20 @@ right-click entry runs:
 ## Packaging
 See [`BuildPackage.md`](BuildPackage.md).
 
-## Compile check beside an open editor
+## Build and test beside an open editor
+- An open DebugGame editor blocks `Tools\Build_Editor.bat` only: UBT stops on its Live Coding mutex (`Unable to build while Live Coding is active`, keyed on the exe path), and the editor locks those DLLs anyway. Never close the editor for this; use Development.
+- No code change since the last DebugGame build: `Tools\Run_Tests.bat` as usual, its own process, no window, no focus.
+- Code changed: Development build (~8 min from an old tree, ~1 min incremental: `run_in_background`), then the tests on `UnrealEditor-Cmd.exe`, which loads those DLLs (`Run_Tests.bat` would load the stale DebugGame ones):
+```powershell
+$ue = & Tools\Resolve-Engine.ps1; $out = 'C:\GeoTrinity\AI\Output\Tests'
+& "$ue\Engine\Build\BatchFiles\Build.bat" GeoTrinityEditor Win64 Development -Project="C:\GeoTrinity\GeoTrinity.uproject" -WaitMutex > AI\Output\Build\EditorDevelopment.log
+& Tools\Read-BuildLog.ps1 -Log AI\Output\Build\EditorDevelopment.log -BuildExitCode $LASTEXITCODE
+Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory $out | Out-Null
+& "$ue\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\GeoTrinity\GeoTrinity.uproject" -Unattended -NoSplash -NoPause -NullRHI -NoSound "-ExecCmds=Automation RunTests <filter>;Quit" "-ReportExportPath=$out" "-abslog=$out\run.log" | Out-Null
+& Tools\Read-TestReport.ps1 -ReportDir $out
+```
+- The open editor keeps its old code until it is closed and rebuilt in DebugGame.
+- Tests only read assets, from disk, each when first loaded: unsaved editor work is not in the run; work saved mid-run can land in it or not, so a surprising failure gets a rerun with nothing being saved.
+- Scripts that save assets (headless `-run=pythonscript`) never run beside the open editor: they overwrite the file under it. Use the bridge (`AI/MCP/MCP_LiveCodingAndConnect.md`).
 - The editor Rider launches is DebugGame (`UnrealEditor-GeoTrinity-Win64-DebugGame.dll`); a Development editor build writes `UnrealEditor-GeoTrinity.dll`, so it builds alongside the open editor (~1 min incremental) without touching it.
 - It still regenerates the shared UHT headers: never Live Code a reflection change into the open editor afterwards.

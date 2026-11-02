@@ -3,7 +3,7 @@ Tutorial rooms 0-7 for GeoTrinity (Steps.md steps 0-10; the Landing room holds s
 the Miniboss room step 10): the placed content of each room (void line and far platform, spawn points, the zone room's
 zone spots and wave start, the miniboss arena and its points) and one AGeoEncounter per room, chained: a
 room's last step opens its exit pad; the next room's encounter starts when the player lands in it. Cat lines are the
-Tutorial Board text; the player keys come through {Key:...}. Gems and Forge steps are built later (AI/Pending/Tutorial.md).
+Tutorial Board text; the player keys come through {Key:...}. The Miniboss room ends on the Gems and Forge steps (a menu guide each, AI/Tutorial/Steps.md steps 11-12).
 Run after tutorial_map.py, tutorial_assets.py, tutorial_waves.py and tutorial_miniboss.py. Idempotent: actors keyed by label, the encounters' steps rewritten.
 Report: AI/Output/tutorial_encounters_report.txt. Usage: headless (AI/Commands.md), editor closed.
 """
@@ -19,6 +19,7 @@ REPORT_PATH = "C:/GeoTrinity/AI/Output/tutorial_encounters_report.txt"
 TUTORIAL_MAP = "/Game/Maps/Tutorial"
 TARGET_POINT_BP = "/Game/Actors/GeoTargetPoint"
 DUMMY_BP = "/Game/Characters/Enemies/Training/BP_Dummy"
+ALLY_BP = "/Game/Characters/Enemies/Training/BP_DummyAlly"  # BP_Dummy with the friendly body: every player-team spawn
 CURVE_TABLE = "/Game/AbilitySystem/Data/CurveTables/CT_Tutorial"
 SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
 CHASER_TREE = "/Game/AI/Dummy/ST_Dummy_Chaser"
@@ -65,7 +66,7 @@ PAGE_LINE = "An ability page is about to pop up. Read it. Or don't, I'm a cat, n
 ZONE_X = 150.0  # from the room's centre
 ZONE_SPOTS = {"Damage": (0.0, 0.0), "Shield": (ZONE_X, -200.0), "Heal": (ZONE_X, 200.0)}  # from the room's centre: Damage always there, the others where a missing point is created
 ZONE_RADIUS = 300.0  # more than half the Shield-Heal distance: the two zones overlap
-DAMAGE_ZONE_START_SIZE = 100.0
+DAMAGE_ZONE_START_SIZE = 10.0
 ZONE_BOX_HALF_Z = 80.0  # a standing capsule is inside it
 PAD_BOX_HALF = 50.0  # the exit pad's footprint
 WAVE_START_INSET = 650.0  # the Miniboss room's wave point, from the room's centre
@@ -73,7 +74,7 @@ ZONES_WAVE_START_INSET = ROOM_HALF_X  # tutorial_waves.py: the Zones front start
 MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py: its spells, in BP_Dummy's base tree
 MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
 MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
-MINIBOSS_POINTS = [(150.0, -650.0), (350.0, 0.0), (150.0, 650.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius -1)
+MINIBOSS_POINTS = [(150.0, -890.0), (350.0, 0.0), (150.0, 790.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius -1)
 MINIBOSS_WALK_SPEED_MULTIPLIER = 0.5  # the boss walks between its points at half BP_Dummy's speed
 MINIBOSS_ALLY_TAG ="TutorialMinibossAlly"  # BP_TutorialSummonedDummy's AllySetup.Tag
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
@@ -146,10 +147,11 @@ def place(label, actor_class, location, rotation=None):
     return actor
 
 
-def point(label, location, purpose, room):
+def point(label, location, purpose, room, *extra_tags):
     actor = place(label, unreal.load_asset(TARGET_POINT_BP).generated_class(), location)
     tags = unreal.GameplayTagContainer()
-    tags.import_text('(GameplayTags=((TagName="%s"),(TagName="Arena.Tutorial.%s")))' % (purpose, room))
+    tags.import_text("(GameplayTags=(%s))" % ",".join('(TagName="%s")' % name
+                                                      for name in (purpose, "Arena.Tutorial." + room) + extra_tags))
     actor.set_editor_property("GameplayTags", tags)
     return actor
 
@@ -238,7 +240,7 @@ def build_miniboss_points():
     x, y = MINIBOSS_POINTS[1]
     point("Tut_Miniboss_BossSpawn", (cx + x, y, 0.0), "TargetPoint.BossSpawn", "Miniboss")
     point("Tut_Miniboss_WaveStart", (cx - WAVE_START_INSET, 0.0, 0.0), "TargetPoint.Tutorial.WaveStart", "Miniboss")
-    point("Tut_Miniboss_FightLocation", (cx, 0.0, 0.0), "TargetPoint.FightLocation", "Miniboss")  # AGeoArena::CommitFight teleports to it; none = ensure
+    point("Tut_Miniboss_FightLocation", (cx, 0.0, 0.0), "TargetPoint.FightLocation", "Miniboss", "TargetPoint.FightCenter")  # AGeoArena::CommitFight teleports to it; none = ensure
 
 
 def build_miniboss_room():
@@ -310,6 +312,14 @@ class Builder:
             duration.set_editor_property("Value", seconds)
         return self.make(unreal.GeoDelayAction, Duration=duration, Condition=condition)
 
+    def guide(self, goal):
+        """The menu guide towards `goal`, running until the step is left."""
+        return self.make(unreal.GeoMenuGuideAction, Goal=goal)
+
+    def unequip_chips(self):
+        """Empties the player's Chip sockets (copies back to free): the chip they pick is never already slotted."""
+        return self.make(unreal.GeoUnequipGemsAction, Tier=unreal.GeoGemTier.CHIP)
+
     def lock(self, locked):
         return self.make(unreal.GeoSetMovementLockedAction, bLocked=locked)
 
@@ -362,8 +372,9 @@ class Builder:
         return setup
 
     def spawn(self, setup, amount, purpose, room, respawn=0.0, kill_on_step_exit=False):
+        enemy_bp = ALLY_BP if setup.get_editor_property("Team") == unreal.Team.PLAYER else DUMMY_BP
         return self.make(unreal.GeoSpawnEnemiesAction,
-                         EnemyClass=unreal.load_asset(DUMMY_BP).generated_class(), Setup=setup, Count=amount,
+                         EnemyClass=unreal.load_asset(enemy_bp).generated_class(), Setup=setup, Count=amount,
                          RespawnDelay=respawn, PurposeTag=tag(purpose), ArenaTag=tag("Arena.Tutorial." + room),
                          bKillOnStepExit=kill_on_step_exit)
 
@@ -418,6 +429,9 @@ class Builder:
 
     def ability_used(self, ability_tag):
         return self.make(unreal.GeoAbilityActivatedTrigger, AbilityTag=tag(ability_tag))
+
+    def gem_event(self, event):
+        return self.make(unreal.GeoGemProfileTrigger, Event=event)
 
     def dummy_health(self, watched_tag, side, ratio):
         return self.make(unreal.GeoHealthThresholdTrigger,
@@ -757,12 +771,31 @@ def miniboss_steps(b):
     rules = []
     for count, line in enumerate(deaths, start=1):
         rules.append(b.rule(b.player_died(), [b.say(line, True)], condition=b.payload_count(EQUAL, count), repeat=True))
-    rules.append(b.rule(b.dummy_died(MINIBOSS_TAG), open_with_last_line(b, "Miniboss", [
+    rules.append(b.rule(b.dummy_died(MINIBOSS_TAG), [
         b.say("It's dead. You've got it: time to come back to the real world. Your snacks are cold and someone has to "
-              "roll initiative. But first: loot.")]), completes=True))
-    return [b.step("Fight", rules, on_enter=[
+              "roll initiative. But first: loot.")], completes=True))
+    fight = b.step("Fight", rules, on_enter=[
         b.say("Meet the Miniboss. Large, angry, and on a budget: it only owns three places to stand. Good luck. I'll be "
-              "quiet. Mostly.")])]
+              "quiet. Mostly.")])
+    hold = unreal.GeoMenuGuideGoal.HOLD
+    gems = b.step("Gems", [b.rule(b.gem_event(unreal.GeoGemProfileEvent.EQUIPPED), [
+        b.guide(hold),  # nothing answers a click while the Cat finishes
+        b.say("Slotted. Look at you, accessorizing. In the trade, that's called a build.")], completes=True)],
+        on_enter=[b.unequip_chips(), b.guide(unreal.GeoMenuGuideGoal.EQUIP_CHIP),
+                  b.say("Seven Chips, one of each, courtesy of the thing that tried to kill you. Chips go in sockets, "
+                        "sockets make you stronger. Open your menu and follow the glow. I'll hold your hand. Don't get "
+                        "used to it.")])
+    forge = b.step("Forge", [b.rule(b.gem_event(unreal.GeoGemProfileEvent.CRAFTED), open_with_last_line(b, "Miniboss", [
+        b.guide(unreal.GeoMenuGuideGoal.NONE),  # done: the menu is free while the Cat finishes
+        b.say("Chip made. You are now a craftspurrson. Your parents must be proud."),
+        b.say("Crafted. You've mastered consumerism."),
+        b.say("The exit is open. Training Room next: nothing at stake, and everyone pretending.")]), completes=True)],
+        on_enter=[b.guide(hold),  # the lines first, the next tip after them
+                  b.say("Look, just enough shards for one chip. Total coincidence. Absolutely not planned."),
+                  b.say("Open the Forge and make your first chip. I'll wait. It's mandatory. I'm a cat of many "
+                        "mandatory things."),
+                  b.guide(unreal.GeoMenuGuideGoal.FORGE_CHIP)])
+    return [fight, gems, forge]
 
 
 def zones_steps(b):

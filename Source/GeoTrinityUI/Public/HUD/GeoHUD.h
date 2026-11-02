@@ -22,6 +22,7 @@ class APlayerState;
 class UGenericCombattantWidget;
 class UGeoDamageNumberWidget;
 class UGeoCatLineWidget;
+class UGeoMenuGuideWidget;
 class UGeoQuestCardWidget;
 class AEnemyCharacter;
 class APlayableCharacter;
@@ -147,6 +148,9 @@ class GEOTRINITYUI_API AGeoHUD
 	GENERATED_BODY()
 
 public:
+	/** Defaults the menu guide to its native class. */
+	AGeoHUD();
+
 	/** Creates and adds the OverlayWidget, then binds all attribute-change callbacks. Call once from AGeoPlayerState.
 	 */
 	virtual void InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC,
@@ -235,7 +239,8 @@ public:
 	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) override;
 	virtual void SetQuestCount(int32 Count) override;
 	virtual void HideQuestCard() override;
-	virtual void OpenGemsPage(bool bForge) override;
+	virtual void StartMenuGuide(EGeoMenuGuideGoal Goal) override;
+	virtual void StopMenuGuide() override;
 
 	/** Binds Health and Shield attribute delegates on ASC so deltas feed OwnerActor's floating-number buffer. */
 	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
@@ -320,6 +325,17 @@ private:
 	/** Quest card layer: above the overlay, under the boss bar and the menus. */
 	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
 	int32 TutorialWidgetZOrder = 8;
+
+	/** The menu guide's overlay class (the native one needs no Blueprint). */
+	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
+	TSubclassOf<UGeoMenuGuideWidget> MenuGuideWidgetClass;
+
+	/** Menu guide layer: above the pause menu (AGeoPlayerController::PauseMenuZOrder), under the Cat line. */
+	UPROPERTY(EditAnywhere, Category = "GeoTutorial")
+	int32 MenuGuideZOrder = 105;
+
+	UPROPERTY()
+	TObjectPtr<UGeoMenuGuideWidget> MenuGuideWidget;
 
 	/** Cat line layer: above the pause menu (AGeoPlayerController::PauseMenuZOrder), so a line said over an ability
 	 * page shows. */

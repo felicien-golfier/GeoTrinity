@@ -29,7 +29,7 @@
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Interface/GeoDamageNumberHost.h"
 #include "HUD/Menu/Character/GeoCharacterSheetWidget.h"
-#include "HUD/Menu/Gems/GeoGemsWidget.h"
+#include "HUD/Menu/Frame/GeoMenuGuideWidget.h"
 #include "HUD/Menu/GeoPauseMenuWidget.h"
 #include "HUD/Tutorial/GeoCatLineWidget.h"
 #include "HUD/Tutorial/GeoQuestCardWidget.h"
@@ -389,13 +389,26 @@ void AGeoHUD::HideQuestCard()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void AGeoHUD::OpenGemsPage(bool const bForge)
+AGeoHUD::AGeoHUD()
 {
-	UGeoGemsWidget* const Gems = Cast<UGeoGemsWidget>(
-		UGeoPauseMenuWidget::OpenOnPage(GetOwningPlayerController(), UGeoGemsWidget::StaticClass()));
-	if (Gems)
+	MenuGuideWidgetClass = UGeoMenuGuideWidget::StaticClass();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::StartMenuGuide(EGeoMenuGuideGoal const Goal)
+{
+	if (UGeoMenuGuideWidget* const Widget = GetTutorialWidget(MenuGuideWidgetClass, MenuGuideWidget, MenuGuideZOrder))
 	{
-		Gems->ShowPage(bForge);
+		Widget->StartGuide(Goal);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void AGeoHUD::StopMenuGuide()
+{
+	if (MenuGuideWidget)
+	{
+		MenuGuideWidget->StopGuide();
 	}
 }
 

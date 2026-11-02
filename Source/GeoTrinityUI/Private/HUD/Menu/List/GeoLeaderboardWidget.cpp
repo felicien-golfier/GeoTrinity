@@ -83,7 +83,8 @@ void UGeoLeaderboardWidget::BuildTabs()
 
 	DifficultyTabsBox->ClearChildren();
 	DifficultyTabRows.Empty();
-	for (EGeoDifficulty const Difficulty : {EGeoDifficulty::Original, EGeoDifficulty::Reduced, EGeoDifficulty::Safe})
+	for (EGeoDifficulty const Difficulty :
+		 {EGeoDifficulty::Nightmare, EGeoDifficulty::Original, EGeoDifficulty::Reduced, EGeoDifficulty::Safe})
 	{
 		UGeoListRowWidget* const Tab = MakeRow();
 		if (!Tab)
@@ -169,8 +170,8 @@ void UGeoLeaderboardWidget::PopulateEntries()
 
 		// Ceil so a boss left with a sliver never reads as the kill it survived.
 		FString const BossLeft = Entry.BossHealthRatio > 0.f
-									 ? FString::Printf(TEXT("%d%%"), FMath::CeilToInt32(Entry.BossHealthRatio * 100.f))
-									 : FString(TEXT("KILLED"));
+			? FString::Printf(TEXT("%d%%"), FMath::CeilToInt32(Entry.BossHealthRatio * 100.f))
+			: FString(TEXT("KILLED"));
 
 		UGeoListRowWidget* const Row = MakeRow();
 		if (!Row)
@@ -329,7 +330,8 @@ void UGeoLeaderboardWidget::AddPlayerColumn(UGeoListRowWidget* Row, FGeoLeaderbo
 
 	if (Player.Level > 0)
 	{
-		Column->AddChildToHorizontalBox(Row->MakeColumnText(FText::FromString(FString::Printf(TEXT("Lv %d"), Player.Level))));
+		Column->AddChildToHorizontalBox(
+			Row->MakeColumnText(FText::FromString(FString::Printf(TEXT("Lv %d"), Player.Level))));
 	}
 
 	Row->AddColumn(Column, PlayerColumnWeight);

@@ -85,10 +85,23 @@ void UGeoGemsWidget::ShowHeaderTabs()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemsWidget::ShowPage(bool const bForge)
+FGeoMenuGuideTarget UGeoGemsWidget::GetGuideTarget(EGeoMenuGuideGoal const Goal) const
 {
-	UWidget* const Page = bForge ? static_cast<UWidget*>(ForgePage) : static_cast<UWidget*>(LoadoutPage);
-	SelectPage(PageSwitcher->GetChildIndex(Page));
+	bool const bForge = Goal == EGeoMenuGuideGoal::ForgeChip;
+	UGeoGemPageWidget* const Wanted = bForge ? static_cast<UGeoGemPageWidget*>(ForgePage)
+											 : static_cast<UGeoGemPageWidget*>(LoadoutPage);
+	FGeoMenuGuideTarget Target = PageSwitcher->GetActiveWidget() != Wanted
+		? FGeoMenuGuideTarget(PageTabBox ? PageTabBox->GetChildAt(PageSwitcher->GetChildIndex(Wanted)) : nullptr,
+							  bForge ? GuideForgeTabHint : GuideLoadoutTabHint)
+		: Wanted->GetGuideTarget(Goal);
+	return Target.Widget.IsValid() ? Target : Super::GetGuideTarget(Goal);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemsWidget::PrepareForGuide(EGeoMenuGuideGoal const Goal)
+{
+	LoadoutPage->PrepareForGuide(Goal);
+	ForgePage->PrepareForGuide(Goal);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

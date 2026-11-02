@@ -2,9 +2,12 @@
 
 #include "HUD/Menu/Frame/GeoMenuPanelWidget.h"
 
+#include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/PlayerController.h"
+#include "HUD/Menu/Frame/GeoButton.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoMenuPanelWidget::NativeConstruct()
@@ -78,6 +81,24 @@ FReply UGeoMenuPanelWidget::NativeOnMouseMove(FGeometry const& InGeometry, FPoin
 		return FReply::Handled().SetUserFocus(TakeWidget(), EFocusCause::Mouse);
 	}
 	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+UWidget* UGeoMenuPanelWidget::GetInitialFocusWidget() const
+{
+	TArray<UWidget*> Widgets;
+	if (WidgetTree)
+	{
+		WidgetTree->GetAllWidgets(Widgets);
+	}
+
+	UWidget* const* const Found = Widgets.FindByPredicate(
+		[](UWidget const* const Widget)
+		{
+			return (Widget->IsA<UGeoMenuButton>() || Widget->IsA<UGeoButton>()) && Widget->IsVisible()
+				&& Widget->GetIsEnabled();
+		});
+	return Found ? *Found : nullptr;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

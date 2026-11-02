@@ -77,6 +77,14 @@ namespace GeoTutorialStages
 	void AddMinibossWipeStages(FGeoTutorialBot& Bot);
 	/** The wave kills out of a living dummy's lane and in every lane once no dummy lives. */
 	void AddMinibossWaveLaneStages(FGeoTutorialBot& Bot);
+	/** After the Miniboss's death: the Gems step (the guide leads Character, Gems, a Chip, a socket) and the Forge step
+	 * (FORGE tab, CRAFT), the clicks fired on the guide's targets; the last line opens the final exit. */
+	void AddGemsForgeStages(FGeoTutorialBot& Bot);
+	/** A Power chip slotted, the Miniboss killed: the Gems step empties every Chip socket, then the Gems and Forge
+	 * stages. */
+	void AddGemsForgePathStages(FGeoTutorialBot& Bot);
+	/** The guide after a stray step (a page off the way points at Back) and after the menu was closed mid-path. */
+	void AddGuideStrayStages(FGeoTutorialBot& Bot);
 	/** The Miniboss killed, the final exit stepped on: the Training Room. */
 	void AddFinalExitStages(FGeoTutorialBot& Bot);
 

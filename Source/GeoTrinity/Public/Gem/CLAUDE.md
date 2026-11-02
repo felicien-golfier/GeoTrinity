@@ -74,7 +74,7 @@ The Forge currency, drawn as a raw crystal fragment: irregular, angular, faceted
 
 ## Boss loot
 `FGeoBossLoot`, one per boss on its `AGeoArena` (`Actor/Arena/CLAUDE.md`). Kill loot = random part + fixed part, added together; built by `UGeoGemCatalog::MakeKillLoot`.
-- Random part: `bOverrideDropTable` + `DropTable` (count range, tier chances) for this boss; off = the catalog's `DropTables[BossType]`. Scaled by difficulty (`DifficultyLootScale`).
+- Random part: `bOverrideDropTable` + `DropTable` (count range, tier chances) for this boss; off = the catalog's `DropTables[BossType]`. Scaled by difficulty (`DifficultyLootScale`: Safe 0.5, Reduced 0.75, Original 1, Nightmare 1.5; XP the same in `DifficultyXpScale`).
 - Fixed part: `FixedGems` (gem + count, every kill) and `FixedShards`. Never scaled. A tutorial kill = count 0 + its fixed list; a themed boss = its roll + guaranteed gems.
 - A failed attempt gets neither part (XP only).
 - Fixed gems are picked from a dropdown of the catalog's ids (`GetOptions` = `UGeoGemCatalog::GetGemIdOptions`); the stored key is still `Id`, so a renamed gem leaves the entry invalid, flagged by the arena's `IsDataValid`.

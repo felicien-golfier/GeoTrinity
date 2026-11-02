@@ -56,6 +56,13 @@ void UGeoPauseMenuWidget::CloseMenu()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+FGeoMenuGuideTarget UGeoPauseMenuWidget::GetGuideTarget(EGeoMenuGuideGoal const Goal) const
+{
+	return Goal == EGeoMenuGuideGoal::None ? FGeoMenuGuideTarget()
+										   : FGeoMenuGuideTarget(CharacterButton, GuideCharacterHint);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UGeoMenuPageWidget* UGeoPauseMenuWidget::OpenOnPage(APlayerController* const Controller,
 													TSubclassOf<UGeoMenuPageWidget> const PageClass)
 {

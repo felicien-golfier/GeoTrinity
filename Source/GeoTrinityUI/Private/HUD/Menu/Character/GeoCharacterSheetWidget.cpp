@@ -119,6 +119,12 @@ void UGeoCharacterSheetWidget::NativeDestruct()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+FGeoMenuGuideTarget UGeoCharacterSheetWidget::GetGuideTarget(EGeoMenuGuideGoal const Goal) const
+{
+	return GemLoadoutButton ? FGeoMenuGuideTarget(GemLoadoutButton, GuideGemsHint) : Super::GetGuideTarget(Goal);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::OnPageShown()
 {
 	AGeoPlayerState const* PlayerState = GetOwningPlayerState<AGeoPlayerState>();

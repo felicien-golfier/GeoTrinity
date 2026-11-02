@@ -17,11 +17,11 @@ Your prompt is the dev brief; it replaces the discussion you did not see.
 
 ## Loop
 1. **Check.** List Unreal processes (`Get-Process UnrealEditor*`, `UnrealBuildTool`, `dotnet`).
-   - Open editor (not `-Cmd`) → `BLOCKED: close the editor`. With "full autonomy" in Limits you may close it.
+   - Open editor (not `-Cmd`) → never a blocker, the user is working in it: leave it alone and use the open-editor commands in `AI/Commands.md`, "Build and test beside an open editor", for steps 2, 3 and 5. Say so in the report: the editor keeps its old code until restarted on a DebugGame build.
    - Another `-Cmd` run or a build → `BLOCKED`: `Run_Tests.bat` wipes the shared report folder, and a build would collide with another session's.
 2. **Build:** from the repo root in PowerShell, `$env:GEO_NO_PAUSE='1'; & Tools\Build_Editor.bat`. Timeout 600000 ms; for a full rebuild, use `run_in_background` and wait for the notification.
-   - Only `Tools\Build_Editor.bat` (DebugGame). The tests load the last built DLLs: a test run after an edit without a build proves nothing.
-   - Live Coding failure → `BLOCKED: close the editor`.
+   - Only `Tools\Build_Editor.bat` (DebugGame), or the Development build when an editor is open. The tests load the last built DLLs of their own config: a test run after an edit without a build proves nothing.
+   - `Unable to build while Live Coding is active` → an editor opened since step 1: switch to the open-editor commands.
 3. **Test,** narrow first: `$env:GEO_NO_PAUSE='1'; & Tools\Run_Tests.bat <filter>` with the feature's filters from the brief.
 4. **Failure:** diagnose, fix, back to 2.
 5. **Quick suite,** on the final code: every `GeoTrinity.` test except the bot sessions (run the groups one by one, e.g. `GeoTrinity.Abilities.`, `GeoTrinity.Pattern.`, …; for the tutorial area, only `GeoTrinity.Tutorial.SoloOnly`, `.TaggedStart`, `.SafeDifficulty`, `.MinibossSafeRows`, `.LockedAbilities`, `.UnlockAbility`). Never run the bot sessions (`GeoTrinity.Tutorial.FullRun`, `.Path.`, `.Jump.`) unless the brief's Tests field names them (`CLAUDE.md`, "Tutorial runs at risk" and "Tutorial runs"): then exactly those. Every filter in the brief passes on that same build. Any edit after that restarts from 2.

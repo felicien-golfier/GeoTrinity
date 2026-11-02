@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "HUD/Interface/GeoMenuGuideGoal.h"
 #include "UObject/Interface.h"
 
 #include "GeoHUDInterface.generated.h"
@@ -54,6 +55,9 @@ public:
 	virtual void ShowQuestCard(FText const& Title, int32 Max, float TimeLimitSeconds) = 0;
 	virtual void SetQuestCount(int32 Count) = 0;
 	virtual void HideQuestCard() = 0;
-	/** Opens the pause menu on the Gems menu, on its Forge page (bForge) or its loadout. */
-	virtual void OpenGemsPage(bool bForge) = 0;
+	/** Tutorial: leads the player along the pause menu to Goal: all dimmed and unclickable but the next control. The
+	 * menu is never opened for the player. A guide already running is replaced. */
+	virtual void StartMenuGuide(EGeoMenuGuideGoal Goal) = 0;
+	/** Tutorial: ends the menu guide. None running: nothing. */
+	virtual void StopMenuGuide() = 0;
 };

@@ -263,6 +263,9 @@ A test set `GetMutableDefault<AEnemyCharacter>()->FriendlyBodyMaterial` and spaw
 ## Force-stopping a montage-less pattern logged an error (2026-10-27)
 `UPattern::EndPattern(true)` read the avatar's anim instance whatever the pattern: the Training Room's hidden caster (no mesh) logged `Please set an anim instance` for each zone pattern cut by the map's teardown. It goes through `GetMontageAnimInstance()` (null when the pattern has no montage), like every other montage path.
 
+## Redefinition error in an unrelated test file after an edit: unity blobs (2026-11-02)
+Editing one test file broke the Editor build with a redefinition of `Geo<Area>TestFlags` in a file nobody touched. Each test `.cpp` declared its own file-scope `constexpr EAutomationTestFlags Geo<Area>TestFlags`, the same name in every file of an area. A unity build concatenates files into blobs, so those names only coexisted while the files landed in different blobs; an edit reshuffles the blobs and two of them met. Fix: one `inline constexpr` per area in `Tests/Gameplay/GeoTestFlags.h`, included by the files of that area. Any other file-scope name shared between test files (helpers, constants) has the same trap: a name used by several files goes in a shared header, never repeated per file.
+
 # Rendering
 
 ## Hex tiles blink when the camera zooms (2026-11-02)

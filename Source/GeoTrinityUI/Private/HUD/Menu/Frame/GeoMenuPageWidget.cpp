@@ -52,6 +52,12 @@ bool UGeoMenuPageWidget::IsInMenu() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+FGeoMenuGuideTarget UGeoMenuPageWidget::GetGuideTarget(EGeoMenuGuideGoal const /*Goal*/) const
+{
+	return {GetBackButton(), GuideBackHint};
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 UGeoMenuButton* UGeoMenuPageWidget::GetBackButton() const
 {
 	return PageFrame ? PageFrame->GetBackButton() : nullptr;

@@ -32,6 +32,7 @@ ACTOR_DIR = "/Game/Actors/Tutorial"
 TREE_DIR = "/Game/AI/Tutorial"
 CURVE_TABLE = "/Game/AbilitySystem/Data/CurveTables/CT_Tutorial"
 BP_DUMMY = "/Game/Characters/Enemies/Training/BP_Dummy"
+BP_DUMMY_ALLY = "/Game/Characters/Enemies/Training/BP_DummyAlly"  # BP_Dummy with the friendly body (AI/Pending/SummonPattern.md)
 SALVE_ABILITY_SRC = "/Game/AbilitySystem/Abilities/Enemy/ProjectileToAll/GA_FireProjectileToAllPlayers"
 SALVE_PATTERN_SRC = "/Game/AbilitySystem/Abilities/Enemy/ProjectileToAll/BP_ProjectileToAll_Pattern"
 SUMMON_PATTERN = "/Game/AbilitySystem/Abilities/Enemy/Training/BP_ZonePattern_BurstDamage"
@@ -122,16 +123,14 @@ def damage_effect(row, per_second=False):
 
 
 def enemy_setup(team, health_row, salve_tag, actor_tag=""):
-    """A summon or an ally: the salve shooter tree and its salve (none for an empty salve_tag: the dummy then keeps
-    BP_Dummy's tree and does not shoot), dies at zero, health from a CT_Tutorial row."""
+    """A summon or an ally: the salve shooter tree and its salve, dies at zero, health from a CT_Tutorial row."""
     setup = unreal.GeoEnemySetup()
     setup.set_editor_property("Team", team)
     setup.set_editor_property("bResetToFullLife", False)
     setup.set_editor_property("AggroRadius", 100.0)
     setup.set_editor_property("MaxHealth", scalable_row(health_row))
-    if salve_tag:
-        setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
-        setup.set_editor_property("AbilityTags", [waves.tag(salve_tag)])
+    setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
+    setup.set_editor_property("AbilityTags", [waves.tag(salve_tag)])
     setup.set_editor_property("Tag", actor_tag)
     return setup
 
@@ -216,8 +215,7 @@ def build_summon_pattern(add_class):
     cdo.set_editor_property("AnimMontage", unreal.load_asset(SUMMON_MONTAGE))
     cdo.set_editor_property("AddClass", add_class)
     cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", SALVE_TAG))
-    cdo.set_editor_property("bUseSafeAddSetup", True)
-    cdo.set_editor_property("SafeAddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", ""))
+    cdo.set_editor_property("bSafeDropsStateTree", True)
     waves.commit_bp(pattern_bp)
     return pattern_bp
 
@@ -261,7 +259,7 @@ def build_summoned_dummy():
     cdo.set_editor_property("ZoneEffects", [damage_effect("DummyZoneDamage", per_second=True)])
     cdo.set_editor_property("ZoneParams", zone_params)
     cdo.set_editor_property("ZoneStartSize", scalable_row("DummyZoneStartRadius"))
-    cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY).generated_class())
+    cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY_ALLY).generated_class())
     cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_SALVE_TAG, ALLY_ACTOR_TAG))
     dummy = unreal.get_default_object(unreal.load_asset(BP_DUMMY).generated_class())
     for name in ("StateTree", "ResetToFullLifeWhenReachingZero"):

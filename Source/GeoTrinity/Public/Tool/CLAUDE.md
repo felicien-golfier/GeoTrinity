@@ -5,10 +5,16 @@
 | `UGeoGameplayLibrary.h` | `GeoLib` Blueprint-callable helpers |
 | `GeoAssetManager.h` | Custom asset manager (configured in `DefaultEngine.ini`) |
 | `Team.h` | `ETeam` for `IGenericTeamAgentInterface` |
-| `GeoDifficulty.h` | Run difficulty enum |
+| `GeoDifficulty.h` | Run difficulty enum (Safe, Reduced, Original, Nightmare) |
 | `Visual/` | `GeoColor`, `GeoIcon`, `GeoNiagaraParams` |
 | `Net/` | `GeoHazardJudge`, `GeoNetcodeDebug` |
 | `CatLine/` | The Cat's random lines read from `Data/CatLines.txt` → `CatLine/CLAUDE.md` |
+
+## Difficulty
+- Bit value = ability level: Safe 1, Reduced 2, Original 4, Nightmare 8. `GeoDifficultyMask::All` = every bit, Nightmare included.
+- Tuning lives in the boss curve tables (`CT_BossStar`, `CT_BossHex`), one key per level. Nightmare key (8) = 1.5 × the Original key on every row (today only damage and health; speeds, sizes, counts and timings are pattern Blueprint properties that never scale; Hex mine / bomb health are flat defaults). A curve with no key at 8 clamps to its last key (Original); an `FScalableFloat` with no curve is constant on all four.
+- `FEffectData::Difficulties` is a stored mask: an entry gated to "Reduced + Original" or "All" must carry the Nightmare bit too, or it drops out at level 8.
+- Rewards: `UGeoGemCatalog` `DifficultyLootScale` / `DifficultyXpScale` hold Nightmare = 1.5. Pads (`AGeoDifficultyButton`) and leaderboard tabs list one entry per value.
 
 ## GeoLib
 - `IsServer(...)`: dedicated and listen; use over `HasAuthority()`.

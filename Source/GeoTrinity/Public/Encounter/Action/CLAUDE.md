@@ -17,7 +17,8 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 | `GeoSpawnEnemiesAction.h` | Keeps `Count` of `EnemyClass` + `Setup` alive on the points tagged `PurposeTag` + `ArenaTag`: spawns them, replaces each dead one `RespawnDelay` s after its own death, where it died (0: never); `bKillOnStepExit` kills the living when the step is left | no (held until the step is left) |
 | `GeoSpawnZoneAction.h` | Spawns one effect zone (inline effects, size, colours, attitude, team) on the point tagged `PurposeTag` + `ArenaTag`; expires it when the step is left | no (held until the step is left) |
 | `GeoQuestCardAction.h` | Quest card on the local HUD: `Show` (title, max, `TimeLimitSeconds`: decorative countdown), `Count` (payload `Count`, or `Max` with `bShowMax`), `Hide` | no |
-| `GeoOpenGemsPageAction.h` | Opens the Gems menu on the local HUD, on its Forge page (`bForge`) or its loadout | no |
+| `GeoMenuGuideAction.h` | `StartMenuGuide(Goal)` on the local HUD; the guide runs until the step is left (held like the spawn actions: `OnCancel` = `StopMenuGuide`). Never opens a menu: the player does, the guide points. Goal `Hold` = dim and refuse every click (the Cat is finishing); `None` = stop the guide | no (held until the step is left) |
+| `GeoUnequipGemsAction.h` | `Tier` (Chip): empties every socket of that tier in the first local player's current build (`UnequipTier`, echo included) and saves (`CommitChanges`); the Gems step opens with it so the chip the player picks is never one already slotted. Lasting: nothing on cancel or skip | no |
 | `GeoSetMovementLockedAction.h` | `bLocked`: locks / unlocks the first local player's movement (walk input; the dash is not granted yet in that room, `Tutorial/Steps.md`); same solo-host rule as `GetLocalHUD()`. Whoever locks unlocks: leaving the step does not. One lock, not a count (`UGeoEncounterSubsystem::bMovementLocked`): a lock while locked or an unlock while free does nothing, so a restarted step never stacks a lock. `OnSkipped` = `Execute` (a skipped lock then unlock leaves movement free) | no |
 | `Cat/` | Orders to the placed `AGeoCat`: walk, roam, play a montage -> `Cat/CLAUDE.md` | yes (`bWaitForEnd`) |
 | `GeoSetActorHiddenAction.h` | `SetActorHiddenInGame(bHidden)` on the referenced level actor (the Cat before its first montage, after its last) | no |
@@ -83,4 +84,5 @@ What `OnCancel` leaves behind on abort (`../CLAUDE.md`, "Arrival reset"); an act
 | Set actor hidden | a show hides the actor again (actors are placed hidden); a hide has nothing to undo |
 | `Cat/` orders | on abort, drops the cat's order (`Cat/CLAUDE.md`) |
 | Movement lock | nothing: the skip replay of the next start nets the lock (`../CLAUDE.md`) |
-| Unlock ability, pads, counters, Gems page, start, leave | nothing: lasting by design, or owned by the next room's `OnEnter` |
+| Menu guide | `StopMenuGuide()` |
+| Unlock ability, unequip gems, pads, counters, start, leave | nothing: lasting by design, or owned by the next room's `OnEnter` |

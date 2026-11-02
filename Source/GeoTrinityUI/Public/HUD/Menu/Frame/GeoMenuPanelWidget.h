@@ -23,29 +23,26 @@ class GEOTRINITYUI_API UGeoMenuPanelWidget : public UUserWidget
 protected:
 	/** Marks the panel focusable so it can hold focus between selections. */
 	virtual void NativeConstruct() override;
-	/** Routes gamepad B / BackSpace to HandleBackAction and Escape to HandleEscapeAction; on any navigation input while the panel itself is focused, advances focus to GetInitialFocusWidget(). */
+	/** Routes gamepad B / BackSpace to HandleBackAction and Escape to HandleEscapeAction; on any navigation input while
+	 * the panel itself is focused, advances focus to GetInitialFocusWidget(). */
 	virtual FReply NativeOnKeyDown(FGeometry const& InGeometry, FKeyEvent const& InKeyEvent) override;
 	/** Advances focus to GetInitialFocusWidget() on the first d-pad/stick input while the panel itself is focused. */
 	virtual FReply NativeOnAnalogValueChanged(FGeometry const& InGeometry,
 											  FAnalogInputEvent const& InAnalogEvent) override;
-	/** Returns focus to the panel when the mouse moves while an SGeoButton is focused, clearing the gamepad highlight. */
+	/** Returns focus to the panel when the mouse moves while an SGeoButton is focused, clearing the gamepad highlight.
+	 */
 	virtual FReply NativeOnMouseMove(FGeometry const& InGeometry, FPointerEvent const& InMouseEvent) override;
 
-	/** Widget that receives focus on the first navigation input while the panel itself is focused. */
-	virtual UWidget* GetInitialFocusWidget() const
-		PURE_VIRTUAL(UGeoMenuPanelWidget::GetInitialFocusWidget, return nullptr;);
+	/** Widget that receives focus on the first navigation input while the panel itself is focused. Default: the first
+	 * visible, enabled menu button or button of the panel's tree, so a new screen is pad-navigable with no override;
+	 * override to pick a better entry. */
+	virtual UWidget* GetInitialFocusWidget() const;
 
 	/** Back/cancel input (gamepad B, BackSpace). Return true if consumed; default leaves the key unhandled. */
-	virtual bool HandleBackAction()
-	{
-		return false;
-	}
+	virtual bool HandleBackAction() { return false; }
 
 	/** Escape input. Return true if consumed; default leaves it unhandled so it bubbles up to the root menu. */
-	virtual bool HandleEscapeAction()
-	{
-		return false;
-	}
+	virtual bool HandleEscapeAction() { return false; }
 
 private:
 	/**

@@ -92,6 +92,12 @@ public:
 	 * totals. */
 	virtual void Refresh() override;
 
+	/** EquipChip: a free Chip stack, then an open Chip socket for the picked one (`Gems/CLAUDE.md`, "Guide targets"). */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
+
+	/** EquipChip: the Chip tier filter, so the stacks shown are the chips. */
+	virtual void PrepareForGuide(EGeoMenuGuideGoal Goal) override;
+
 	/** The box the class tabs are built in, which lives outside the page, in the Gems menu's header. */
 	void SetClassTabBox(UHorizontalBox* InClassTabBox) { ClassTabBox = InClassTabBox; }
 
@@ -326,6 +332,20 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Builds", meta = (ClampMin = "8", ClampMax = "128"))
 	float AddBuildIconSize = 36.f;
+
+	/** The menu guide's hints: the stack to pick, the socket to fill, the tier filter hiding the Chips, the button
+	 * freeing a copy when none is free. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideStackHint = INVTEXT("PICK A CHIP");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideSocketHint = INVTEXT("NOW CLICK AN EMPTY CHIP SOCKET");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideAllTierHint = INVTEXT("SHOW ALL GEMS");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideFreeChipHint = INVTEXT("FREE A CHIP FIRST");
 
 	/** {0} is the class's level, on its tab. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -641,6 +661,9 @@ private:
 	/** Sets what the cursor is over, a stack (GemId) or a socket (SocketIndex), and shows its detail. */
 	void Hover(FName GemId, int32 SocketIndex);
 
+	/** The first Chip of the catalog the shown class has a free copy of and an open socket for; NAME_None when none. */
+	FName FindFreeChip(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const;
+
 	/** The open sockets (empty or not) the picked stack's gem may go into now, for the board's glow, EQUIP and FILL. */
 	TArray<int32> GetTargetSockets(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const;
 
@@ -673,6 +696,9 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UGeoGemSocketButton>> SocketButtons;
+
+	/** The stack rows ShowStacks built, by gem: what the menu guide points at. */
+	TMap<FName, TWeakObjectPtr<UGeoListRowWidget>> StackRows;
 
 	/** Behind the echo socket's button; built with the board. */
 	UPROPERTY(Transient)

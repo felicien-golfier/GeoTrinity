@@ -58,14 +58,12 @@
 #include "Tests/Gameplay/Fake/GeoTestEnemy.h"
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
 #include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoCharactersTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSummonedDummyTest, "GeoTrinity.Characters.SummonedDummy", GeoCharactersTestFlags)
@@ -115,6 +113,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSummonAddSetupTest, "GeoTrinity.Abilities.S
 bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
+	AddExpectedError(TEXT("The State Tree schema is not ready to run"), EAutomationExpectedErrorFlags::Contains, 0);
 	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
 	AEnemyCharacter* const Boss = Arena->GetBoss();
 	UPattern* const Pattern = GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(
@@ -154,8 +153,17 @@ bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
 
 	LaunchTestPattern(*Pattern, Boss, {FVector2D(0.f, 400.f)}, GeoDifficultyMask::Safe);
 	Pattern->EndPattern();
-	TestEqual(TEXT("Safe level: SafeAddSetup"), FindAdds(TEXT("SafeSummoned")).Num(), 1);
-	TestEqual(TEXT("Safe level: not AddSetup"), FindAdds(TEXT("Summoned")).Num(), 2);
+	TArray<AEnemyCharacter*> const AllAdds = FindAdds(TEXT("Summoned"));
+	if (TestEqual(TEXT("Safe level: the add is still AddSetup's"), AllAdds.Num(), 3))
+	{
+		int32 AddsWithTree = 0;
+		for (AEnemyCharacter const* const Add : AllAdds)
+		{
+			AddsWithTree += Add->StateTree != nullptr ? 1 : 0;
+		}
+
+		TestEqual(TEXT("Safe level: only that add loses AddSetup's StateTree"), AddsWithTree, 2);
+	}
 
 	DestroyTestWorld(World);
 	return true;

@@ -279,11 +279,14 @@ public:
 	virtual void SetQuestCount(int32 /*Count*/) override {}
 	/** Clears the quest-card visibility flag. */
 	virtual void HideQuestCard() override { bQuestCardShown = false; }
-	/** No-op stub. */
-	virtual void OpenGemsPage(bool /*bForge*/) override {}
+	/** Records the goal. */
+	virtual void StartMenuGuide(EGeoMenuGuideGoal Goal) override { GuideGoal = Goal; }
+	/** Clears the goal. */
+	virtual void StopMenuGuide() override { GuideGoal = EGeoMenuGuideGoal::None; }
 
 	int32 HiddenLines = 0;
 	bool bQuestCardShown = false;
+	EGeoMenuGuideGoal GuideGoal = EGeoMenuGuideGoal::None;
 	TArray<FString> Lines;
 	/** The Seconds each shown line asked for (0: untimed). */
 	TArray<float> LineSeconds;

@@ -157,7 +157,7 @@ struct GEOTRINITY_API FEffectData
 	FGeoCueParam OneShotCue;
 
 	/**
-	 * Difficulties this entry applies at, all three by default. Unticking Safe keeps a lethal hit out of the easy
+	 * Difficulties this entry applies at, all four by default. Unticking Safe keeps a lethal hit out of the easy
 	 * tuning without a second copy of the ability.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Bitmask, BitmaskEnum = "/Script/GeoTrinity.EGeoDifficulty"))

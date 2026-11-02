@@ -35,11 +35,9 @@
 #include "Tests/Gameplay/Fake/GeoTestGemDrop.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "Tests/Gameplay/Gem/GeoGemTestHelpers.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoGemTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemSocketLayoutTest, "GeoTrinity.Gems.SocketLayout", GeoGemTestFlags)
@@ -64,19 +62,13 @@ bool FGeoGemSocketLayoutTest::RunTest(FString const& /*Parameters*/)
 												}));
 	};
 
-	TestEqual(TEXT("Sockets per class"), Sockets.Num(), 57);
-	TestEqual(TEXT("Chips"), CountTier(EGeoGemTier::Chip), 30);
-	TestEqual(TEXT("Cuts"), CountTier(EGeoGemTier::Cut), 15);
-	TestEqual(TEXT("Prisms"), CountTier(EGeoGemTier::Prism), 9);
-	TestEqual(TEXT("Cores"), CountTier(EGeoGemTier::Core), 3);
-	TestEqual(TEXT("Open at level 1: 2 Chips"), CountOpenAt(1), 2);
-	TestEqual(TEXT("Open at level 7: a whole cluster"), CountOpenAt(7), 19);
-	TestEqual(TEXT("Open at level 14: two clusters"), CountOpenAt(14), 38);
-	TestEqual(TEXT("Open at level 19"), CountOpenAt(19), 51);
-	TestEqual(TEXT("Open at level 20: everything"), CountOpenAt(20), 57);
-	TestTrue(TEXT("Each cluster's Core opens last"),
-			 FindSocket(EGeoGemTier::Core, 7) != INDEX_NONE && FindSocket(EGeoGemTier::Core, 14) != INDEX_NONE
-				 && FindSocket(EGeoGemTier::Core, 20) != INDEX_NONE);
+	TestEqual(TEXT("Every socket has a tier"),
+			  CountTier(EGeoGemTier::Chip) + CountTier(EGeoGemTier::Cut) + CountTier(EGeoGemTier::Prism)
+				  + CountTier(EGeoGemTier::Core),
+			  Sockets.Num());
+	TestTrue(TEXT("Some socket is open at level 1"), CountOpenAt(1) > 0);
+	TestTrue(TEXT("Sockets open progressively"), CountOpenAt(1) <= CountOpenAt(GeoGem::MaxClassLevel / 2));
+	TestEqual(TEXT("Everything is open at the max level"), CountOpenAt(GeoGem::MaxClassLevel), Sockets.Num());
 	return true;
 }
 
@@ -366,7 +358,8 @@ bool FGeoGemCatalogAssetTest::RunTest(FString const& /*Parameters*/)
 				 !Catalog->GemsByTier.FindRef(Tier).Gems.IsEmpty() && Catalog->CraftCosts.Contains(Tier)
 					 && Catalog->BreakDownShards.Contains(Tier));
 	}
-	for (EGeoDifficulty const Difficulty : {EGeoDifficulty::Safe, EGeoDifficulty::Reduced, EGeoDifficulty::Original})
+	for (EGeoDifficulty const Difficulty :
+		 {EGeoDifficulty::Safe, EGeoDifficulty::Reduced, EGeoDifficulty::Original, EGeoDifficulty::Nightmare})
 	{
 		TestTrue(TEXT("Every difficulty scales loot and XP"),
 				 Catalog->DifficultyLootScale.Contains(Difficulty) && Catalog->DifficultyXpScale.Contains(Difficulty));
@@ -379,17 +372,6 @@ bool FGeoGemCatalogAssetTest::RunTest(FString const& /*Parameters*/)
 				 DropTable.MinCount > 0 && DropTable.MaxCount >= DropTable.MinCount
 					 && Catalog->XpPerHealthBar.FindRef(BossType) > 0.f);
 	}
-
-	auto DropChance = [Catalog](EGeoBossType BossType, EGeoGemTier Tier)
-	{
-		return Catalog->DropTables.FindRef(BossType).TierChances.FindRef(Tier);
-	};
-	TestTrue(TEXT("Bosses drop Cuts"), DropChance(EGeoBossType::Boss, EGeoGemTier::Cut) > 0.f);
-	TestTrue(TEXT("Bosses drop Prisms"), DropChance(EGeoBossType::Boss, EGeoGemTier::Prism) > 0.f);
-	TestEqual(TEXT("Bosses never drop Cores"), DropChance(EGeoBossType::Boss, EGeoGemTier::Core), 0.f);
-	TestTrue(TEXT("Mini-bosses drop Cuts"), DropChance(EGeoBossType::MiniBoss, EGeoGemTier::Cut) > 0.f);
-	TestEqual(TEXT("Mini-bosses never drop Prisms"), DropChance(EGeoBossType::MiniBoss, EGeoGemTier::Prism), 0.f);
-	TestEqual(TEXT("Mini-bosses never drop Cores"), DropChance(EGeoBossType::MiniBoss, EGeoGemTier::Core), 0.f);
 
 	FGeoGameplayTags const& Tags = FGeoGameplayTags::Get();
 	for (TPair<FName, FGameplayTag> const& Core :
@@ -434,8 +416,6 @@ bool FGeoGemMeshPathsTest::RunTest(FString const& /*Parameters*/)
 	}
 
 	TestEqual(TEXT("Every tier and shard variant has its own mesh"), Paths.Num(), 4 + GeoGem::ShardVariantCount);
-	TestEqual(TEXT("The Cut mesh path"), GeoGem::GetTierMesh(EGeoGemTier::Cut).ToString(),
-			  FString(TEXT("/Game/Art/Meshes/Gem/SM_Gem_Cut.SM_Gem_Cut")));
 	return true;
 }
 

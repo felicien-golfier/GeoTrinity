@@ -14,14 +14,25 @@
 #include "Characters/GeoSummonedDummy.h"
 #include "Characters/HiddenCasterCharacter.h"
 #include "Characters/PlayableCharacter.h"
+#include "Components/Button.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PanelWidget.h"
 #include "Encounter/GeoEncounterSubsystem.h"
 #include "EngineUtils.h"
 #include "GameClasses/GeoGameInstance.h"
+#include "GameClasses/Match/GeoPlayerState.h"
 #include "GameClasses/Player/GeoPlayerController.h"
 #include "GameFramework/PlayerStart.h"
+#include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemSubsystem.h"
+#include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMenuGuideWidget.h"
+#include "HUD/Menu/Frame/GeoMenuPageWidget.h"
+#include "HUD/Menu/Frame/GeoMenuRootWidget.h"
+#include "HUD/Menu/Gems/GeoGemSocketButton.h"
+#include "HUD/Menu/List/GeoListRowWidget.h"
+#include "HUD/Menu/Settings/GeoSettingsWidget.h"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
@@ -99,6 +110,10 @@ namespace GeoTutorialStages
 	constexpr TCHAR const* MinibossTips[] = {TEXT("those Dummies land hard"), TEXT("A dead Dummy switches sides"),
 											 TEXT("Every third Dummy")};
 	constexpr TCHAR const* MinibossKillLine = TEXT("come back to the real world");
+	constexpr TCHAR const* GemsIntroLine = TEXT("follow the glow");
+	constexpr TCHAR const* GemsDoneLine = TEXT("accessorizing");
+	constexpr TCHAR const* ForgeIntroLine = TEXT("make your first chip");
+	constexpr TCHAR const* ForgeLastLine = TEXT("everyone pretending");
 
 	constexpr TCHAR const* FirstRoomLines[] = {TEXT(""),		DashArrivalLine,  ZonesIntroLine,	ShootIntroLine,
 											   DeployIntroLine, SpecialIntroLine, DummiesIntroLine, MinibossIntroLine};
@@ -310,10 +325,10 @@ namespace GeoTutorialStages
 		};
 		// Landing's is Path.EarlyPortal's: its pad may open in the run before the FullRun restart, with no HUD.
 		static FClosingLine const ClosingLines[] = {
-			{GeoTutorial::Dash, DashUselessLine},	  {GeoTutorial::Shoot, ShootNextToyLine},
-			{GeoTutorial::Deploy, DeployFullLine},	  {GeoTutorial::Special, SpecialDoneLine},
-			{GeoTutorial::Dummies, DummiesDoneLine},  {GeoTutorial::Zones, ZonesSurvivedLine},
-			{GeoTutorial::Miniboss, MinibossKillLine}};
+			{GeoTutorial::Dash, DashUselessLine},	 {GeoTutorial::Shoot, ShootNextToyLine},
+			{GeoTutorial::Deploy, DeployFullLine},	 {GeoTutorial::Special, SpecialDoneLine},
+			{GeoTutorial::Dummies, DummiesDoneLine}, {GeoTutorial::Zones, ZonesSurvivedLine},
+			{GeoTutorial::Miniboss, ForgeLastLine}};
 		TSharedRef<TSet<int32>> Opened = MakeShared<TSet<int32>>();
 		Bot.Observers.Add(
 			[&Bot, Opened]()
@@ -1465,7 +1480,7 @@ namespace GeoTutorialStages
 					 {
 						 return PointsReached->Num() >= 2;
 					 });
-		Bot.AddStage(TEXT("Miniboss: its last hit opens the final exit"),
+		Bot.AddStage(TEXT("Miniboss: its last hit kills it"),
 					 [&Bot](bool const bFirstTick)
 					 {
 						 if (bFirstTick)
@@ -1473,7 +1488,7 @@ namespace GeoTutorialStages
 							 FGeoTutorialBot::SetHealthRatio(FindMiniboss(Bot), 0.f);
 						 }
 
-						 return Bot.IsPadOpen(ExitPad(GeoTutorial::Miniboss));
+						 return Bot.SawLine(MinibossKillLine);
 					 });
 		Bot.AddLineStage(TEXT("Miniboss: the kill line"), MinibossKillLine);
 		Bot.AddStage(TEXT("Miniboss: the kill grants one of each chip"),
@@ -1503,6 +1518,7 @@ namespace GeoTutorialStages
 
 						 return Shards > 0 && *DropsThrown == Expected;
 					 });
+		AddGemsForgeStages(Bot);
 	}
 
 	void AddMinibossWipeStages(FGeoTutorialBot& Bot)
@@ -1760,10 +1776,156 @@ namespace GeoTutorialStages
 			120.);
 	}
 
-	void AddFinalExitStages(FGeoTutorialBot& Bot)
+	/** The pause menu the player opened. */
+	UGeoMenuRootWidget* GetPauseMenu(FGeoTutorialBot& Bot)
+	{
+		return Cast<UGeoMenuRootWidget>(Bot.GetController()->GetPauseMenuWidget());
+	}
+
+	FGeoMenuGuideTarget FindGuideTarget(FGeoTutorialBot& Bot, EGeoMenuGuideGoal const Goal)
+	{
+		return GetDefault<UGeoMenuGuideWidget>()->FindTarget(Bot.GetController(), Goal);
+	}
+
+	/** What a click on Widget does: its click delegate, the way the widget fires it from input. */
+	void ClickWidget(UWidget* const Widget)
+	{
+		if (UGeoMenuButton* const MenuButton = Cast<UGeoMenuButton>(Widget))
+		{
+			MenuButton->OnClicked.Broadcast();
+		}
+		else if (UGeoListRowWidget* const Row = Cast<UGeoListRowWidget>(Widget))
+		{
+			Row->OnClicked.Broadcast();
+		}
+		else if (UButton* const Button = Cast<UButton>(Widget))
+		{
+			Button->OnClicked.Broadcast();
+		}
+		else if (UPanelWidget const* const Panel = Cast<UPanelWidget>(Widget); Panel && Panel->GetChildrenCount() > 0)
+		{
+			// A list the player picks from (the guide holes the whole list): the bot picks its first row.
+			ClickWidget(Panel->GetChildAt(0));
+		}
+	}
+
+	/** Waits until the guide for Goal points at a widget IsExpected accepts, words it, and clicks it. */
+	void AddGuideClickStage(FGeoTutorialBot& Bot, FString Name, EGeoMenuGuideGoal const Goal,
+							TFunction<bool(UWidget*)> IsExpected)
+	{
+		Bot.AddStage(MoveTemp(Name),
+					 [&Bot, Goal, IsExpected = MoveTemp(IsExpected)](bool)
+					 {
+						 FGeoMenuGuideTarget const Target = FindGuideTarget(Bot, Goal);
+						 UWidget* const Widget = Target.Widget.Get();
+						 bool const bExpected = Widget && IsExpected(Widget);
+						 if (bExpected)
+						 {
+							 Bot.Test.TestFalse(TEXT("The guide words its target"), Target.Hint.IsEmpty());
+							 ClickWidget(Widget);
+						 }
+
+						 return bExpected;
+					 });
+	}
+
+	TFunction<bool(UWidget*)> IsNamed(FName const Name)
+	{
+		return [Name](UWidget* const Widget)
+		{
+			return Widget->GetFName() == Name;
+		};
+	}
+
+	template <typename WidgetType>
+	TFunction<bool(UWidget*)> IsOfClass()
+	{
+		return [](UWidget* const Widget)
+		{
+			return Widget->IsA<WidgetType>();
+		};
+	}
+
+	/** What the live guide does once when a page comes on top (`UGeoMenuPageWidget::PrepareForGuide`); the bot reads
+	 * the guide statelessly, so it asks the page itself. */
+	void AddPrepareStage(FGeoTutorialBot& Bot, FString Name, EGeoMenuGuideGoal const Goal)
+	{
+		Bot.AddStage(MoveTemp(Name),
+					 [&Bot, Goal](bool)
+					 {
+						 UGeoMenuRootWidget* const Menu = GetPauseMenu(Bot);
+						 UGeoMenuPageWidget* const Page = Menu ? Menu->GetShownPage() : nullptr;
+						 if (Bot.Test.TestNotNull(TEXT("A page is shown"), Page))
+						 {
+							 Page->PrepareForGuide(Goal);
+						 }
+						 return true;
+					 });
+	}
+
+	/** The menu closed: the guide names the key and points at nothing; then the menu opened by the player. */
+	void AddOpenMenuStages(FGeoTutorialBot& Bot, FString Name, EGeoMenuGuideGoal const Goal)
+	{
+		Bot.AddStage(MoveTemp(Name),
+					 [&Bot, Goal](bool)
+					 {
+						 FGeoMenuGuideTarget const Target = FindGuideTarget(Bot, Goal);
+						 Bot.Test.TestFalse(TEXT("The guide points at no control while the menu is closed"),
+											Target.Widget.IsValid());
+						 Bot.Test.TestFalse(TEXT("It names the key that opens the menu"), Target.Hint.IsEmpty());
+						 Bot.bHoldPauseMenu = true;
+						 Bot.GetController()->OpenPauseMenu();
+						 return true;
+					 });
+	}
+
+	EPlayerClass GetPlayerClass(FGeoTutorialBot& Bot)
+	{
+		return Bot.GetController()->GetPlayerState<AGeoPlayerState>()->GetPlayerClass();
+	}
+
+	void AddGemsForgeStages(FGeoTutorialBot& Bot)
+	{
+		Bot.AddLineStage(TEXT("Gems: the intro line"), GemsIntroLine);
+		AddOpenMenuStages(Bot, TEXT("Gems: closed menu, the guide shows the key; the player opens it"),
+						  EGeoMenuGuideGoal::EquipChip);
+		AddGuideClickStage(Bot, TEXT("Gems: the guide points at the Character button"), EGeoMenuGuideGoal::EquipChip,
+						   IsNamed("CharacterButton"));
+		AddGuideClickStage(Bot, TEXT("Gems: then at the Gems button"), EGeoMenuGuideGoal::EquipChip,
+						   IsNamed("GemLoadoutButton"));
+		AddPrepareStage(Bot, TEXT("Gems: the page opens on the Chip tier"), EGeoMenuGuideGoal::EquipChip);
+		AddGuideClickStage(Bot, TEXT("Gems: then at the whole stack list (any chip may be picked)"),
+						   EGeoMenuGuideGoal::EquipChip, IsNamed("StackGrid"));
+		AddGuideClickStage(Bot, TEXT("Gems: then at a Chip socket"), EGeoMenuGuideGoal::EquipChip,
+						   IsOfClass<UGeoGemSocketButton>());
+		Bot.AddLineStage(TEXT("Gems: the slotted chip ends the step"), GemsDoneLine);
+		Bot.AddLineStage(TEXT("Forge: the intro line"), ForgeIntroLine);
+		AddGuideClickStage(Bot, TEXT("Forge: the guide points at the FORGE tab"), EGeoMenuGuideGoal::ForgeChip,
+						   IsOfClass<UGeoListRowWidget>());
+		AddPrepareStage(Bot, TEXT("Forge: the page opens on the Chip tier"), EGeoMenuGuideGoal::ForgeChip);
+		AddGuideClickStage(Bot, TEXT("Forge: then at the gem list (the player chooses the chip)"),
+						   EGeoMenuGuideGoal::ForgeChip, IsNamed("GemListBox"));
+		AddGuideClickStage(Bot, TEXT("Forge: then at CRAFT"), EGeoMenuGuideGoal::ForgeChip, IsNamed("CraftButton"));
+		Bot.AddStage(TEXT("Forge: the crafted chip opens the final exit"),
+					 [&Bot](bool)
+					 {
+						 return Bot.IsPadOpen(ExitPad(GeoTutorial::Miniboss));
+					 });
+		Bot.AddLineStage(TEXT("Forge: the last line"), ForgeLastLine);
+		Bot.AddStage(TEXT("Forge: the menu is closed again"),
+					 [&Bot](bool)
+					 {
+						 // Closed here, not by the per-frame sweep: that one would log it as an ability page.
+						 Bot.GetController()->ClosePauseMenu();
+						 Bot.bHoldPauseMenu = false;
+						 return true;
+					 });
+	}
+
+	void AddGuideStrayStages(FGeoTutorialBot& Bot)
 	{
 		AddMinibossFightStages(Bot);
-		Bot.AddStage(TEXT("Miniboss: its death opens the final exit"),
+		Bot.AddStage(TEXT("Guide: the Miniboss dies, the Gems step starts"),
 					 [&Bot](bool const bFirstTick)
 					 {
 						 if (bFirstTick)
@@ -1771,8 +1933,114 @@ namespace GeoTutorialStages
 							 FindMiniboss(Bot)->Death();
 						 }
 
-						 return Bot.IsPadOpen(ExitPad(GeoTutorial::Miniboss));
+						 return Bot.SawLine(GemsIntroLine);
 					 });
+		AddOpenMenuStages(Bot, TEXT("Guide: the menu opened"), EGeoMenuGuideGoal::EquipChip);
+		AddGuideClickStage(Bot, TEXT("Guide: Character button"), EGeoMenuGuideGoal::EquipChip,
+						   IsNamed("CharacterButton"));
+		Bot.AddStage(TEXT("Guide: a stray step into Settings points back"),
+					 [&Bot](bool const bFirstTick)
+					 {
+						 if (bFirstTick)
+						 {
+							 GetPauseMenu(Bot)->OpenPage(UGeoSettingsWidget::StaticClass());
+							 return false;
+						 }
+
+						 FGeoMenuGuideTarget const Target = FindGuideTarget(Bot, EGeoMenuGuideGoal::EquipChip);
+						 bool const bBack = Target.Widget.IsValid() && Target.Hint.ToString().Contains(TEXT("BACK"));
+						 if (bBack)
+						 {
+							 ClickWidget(Target.Widget.Get());
+						 }
+
+						 return bBack;
+					 });
+		AddGuideClickStage(Bot, TEXT("Guide: back on the sheet, the Gems button again"), EGeoMenuGuideGoal::EquipChip,
+						   IsNamed("GemLoadoutButton"));
+		Bot.AddStage(TEXT("Guide: closing the menu mid-path leaves only the key hint"),
+					 [&Bot](bool)
+					 {
+						 Bot.bHoldPauseMenu = false;
+						 Bot.GetController()->ClosePauseMenu();
+						 FGeoMenuGuideTarget const Target = FindGuideTarget(Bot, EGeoMenuGuideGoal::EquipChip);
+						 Bot.Test.TestFalse(TEXT("Nothing to point at with the menu closed"), Target.Widget.IsValid());
+						 return !Target.Hint.IsEmpty();
+					 });
+		AddOpenMenuStages(Bot, TEXT("Guide: reopened"), EGeoMenuGuideGoal::EquipChip);
+		AddGuideClickStage(Bot, TEXT("Guide: the path restarts at the Character button"), EGeoMenuGuideGoal::EquipChip,
+						   IsNamed("CharacterButton"));
+		Bot.AddStage(TEXT("Guide: menu closed"),
+					 [&Bot](bool)
+					 {
+						 Bot.GetController()->ClosePauseMenu();
+						 Bot.bHoldPauseMenu = false;
+						 return true;
+					 });
+	}
+
+	void AddGemsForgePathStages(FGeoTutorialBot& Bot)
+	{
+		AddMinibossFightStages(Bot);
+		Bot.AddStage(TEXT("Gems path: a Power chip is slotted before the kill"),
+					 [&Bot](bool)
+					 {
+						 UGeoGemProfileSave* const Profile = UGeoGemSubsystem::GetFirstLocalProfile(Bot.GetWorld());
+						 UGeoGemCatalog const* const Catalog = UGeoGemCatalog::Get();
+						 if (Bot.Test.TestNotNull(TEXT("The local gem profile"), Profile)
+							 && Bot.Test.TestNotNull(TEXT("The gem catalog"), Catalog))
+						 {
+							 Profile->AddGems(TEXT("Power"), 1);
+							 Bot.Test.TestTrue(TEXT("The Power chip is slotted"),
+											   Profile->FillSockets(*Catalog, GetPlayerClass(Bot), TEXT("Power")) > 0);
+						 }
+
+						 return true;
+					 });
+		Bot.AddStage(TEXT("Gems path: the Miniboss dies, the Gems step starts"),
+					 [&Bot](bool const bFirstTick)
+					 {
+						 if (bFirstTick)
+						 {
+							 FindMiniboss(Bot)->Death();
+						 }
+
+						 return Bot.SawLine(GemsIntroLine);
+					 });
+		Bot.AddStage(TEXT("Gems path: the step emptied every Chip socket"),
+					 [&Bot](bool)
+					 {
+						 FGeoGemLoadout const Loadout =
+							 UGeoGemSubsystem::GetFirstLocalProfile(Bot.GetWorld())->GetLoadout(GetPlayerClass(Bot));
+						 TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
+						 for (int32 SocketIndex = 0; SocketIndex < Sockets.Num(); ++SocketIndex)
+						 {
+							 if (Sockets[SocketIndex].Tier == EGeoGemTier::Chip)
+							 {
+								 Bot.Test.TestEqual(TEXT("A Chip socket is empty"), Loadout.Sockets[SocketIndex],
+													FName(NAME_None));
+							 }
+						 }
+
+						 return true;
+					 });
+		AddGemsForgeStages(Bot);
+	}
+
+	void AddFinalExitStages(FGeoTutorialBot& Bot)
+	{
+		AddMinibossFightStages(Bot);
+		Bot.AddStage(TEXT("Miniboss: its death starts the Gems step"),
+					 [&Bot](bool const bFirstTick)
+					 {
+						 if (bFirstTick)
+						 {
+							 FindMiniboss(Bot)->Death();
+						 }
+
+						 return Bot.SawLine(MinibossKillLine);
+					 });
+		AddGemsForgeStages(Bot);
 		AddTravelStage(
 			Bot, TEXT("Miniboss: the final exit leads to the Training Room"), TEXT("DraftMap"), "TrainingRoom",
 			[&Bot](UWorld*)

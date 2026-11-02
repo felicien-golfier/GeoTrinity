@@ -145,6 +145,10 @@ local-player-only bindings before `AddDynamic`. Exception: a binding made in `On
 - A bug fix asks: can it come back silently? Yes (logic, ordering, replication, data wiring, tutorial flow) → a
   regression test that fails on the old code, added to the existing test of that area when one fits, else a new one;
   a `TroobleshootingLogs.md` entry only if the user asks for one (root `CLAUDE.md`). No (typo, one-off asset, cannot be automated) → say why.
+- Test behaviour, never tunable data. No test pins a value a designer retunes (curve table rows, drop chances, socket
+  counts, costs, asset paths, a Blueprint's configured default). A test that needs a number builds its own fixture
+  (test catalog, fake curve) or derives its expectation from the same data (first CT value → result of the empowerment).
+  Reading a real asset is for structure only (loads, ids unique, wiring resolves), never for its numbers.
 - Never `Sleep()`; wait on an observable condition. Layers, paths and flags: `AI/Testing.md`.
 
 ## Grouping

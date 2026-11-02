@@ -3,7 +3,7 @@ Generates SKM_SoftStar, the friendly dummy's body: the star's eight points round
 
 Same footprint as SKM_Star (tips at 70.71, height 100) and the same rig: a copy of SKM_Star rebuilt in place on SK_Star,
 every vertex on the waist bone, so BP_Dummy's animation Blueprint drives it as it drives the sharp star. Slot Color =
-the body (replaced by BP_Dummy's FriendlyBodyMaterial), slot Core = the pale disc, MI_SoftStar_Core, kept as is.
+the body (replaced by BP_DummyAlly's material 0), slot Core = the pale disc, MI_SoftStar_Core, kept as is.
 
 Also makes MI_SoftStar_Body (ally green) and MI_SoftStar_Core (pale), instances of the enemy star's MAT_EnemyMat.
 Re-runnable. Run via mcp-unreal execute_script or headless (AI/Commands.md). Report: AI/Output/soft_star.json.

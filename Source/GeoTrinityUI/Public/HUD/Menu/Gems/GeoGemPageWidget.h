@@ -5,6 +5,8 @@
 #include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
 #include "Gem/GeoGemTypes.h"
+#include "HUD/Interface/GeoMenuGuideGoal.h"
+#include "HUD/Menu/Frame/GeoMenuGuide.h"
 #include "HUD/Menu/List/GeoListRowWidget.h"
 
 #include "GeoGemPageWidget.generated.h"
@@ -30,6 +32,12 @@ class GEOTRINITYUI_API UGeoGemPageWidget : public UUserWidget
 public:
 	/** Shows the profile as it is now. */
 	virtual void Refresh() PURE_VIRTUAL(UGeoGemPageWidget::Refresh, );
+
+	/** The control the menu guide points at on this page for Goal; none when the goal is not for this page. */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal /*Goal*/) const { return FGeoMenuGuideTarget(); }
+
+	/** Opens the tab the path of Goal starts on (`UGeoMenuPageWidget::PrepareForGuide`). */
+	virtual void PrepareForGuide(EGeoMenuGuideGoal /*Goal*/) {}
 
 	/** After every change this page made to the profile. */
 	FGeoGemProfileChangedSignature OnProfileChanged;

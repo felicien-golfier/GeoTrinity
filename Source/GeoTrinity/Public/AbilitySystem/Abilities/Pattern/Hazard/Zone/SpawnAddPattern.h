@@ -37,10 +37,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoSummon")
 	FGeoEnemySetup AddSetup;
 
-	/** True: a pattern launched at Safe level spawns the add with SafeAddSetup instead of AddSetup. */
+	/** True: a pattern launched at Safe level spawns the add with AddSetup's StateTree cleared, so it keeps its
+	 * class's. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoSummon")
-	bool bUseSafeAddSetup = false;
-
-	UPROPERTY(EditDefaultsOnly, Category = "GeoSummon", meta = (EditCondition = "bUseSafeAddSetup"))
-	FGeoEnemySetup SafeAddSetup;
+	bool bSafeDropsStateTree = false;
 };

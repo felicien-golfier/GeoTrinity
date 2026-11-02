@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HUD/Interface/GeoMenuGuideGoal.h"
+#include "HUD/Menu/Frame/GeoMenuGuide.h"
 #include "HUD/Menu/Frame/GeoMenuPanelWidget.h"
 
 #include "GeoMenuPageWidget.generated.h"
@@ -29,6 +31,15 @@ public:
 	/** Runs each time the page comes on top of its menu, opened or uncovered by Back: refresh what may have changed. */
 	virtual void OnPageShown() {}
 
+	/** The control the menu guide points at on this page for Goal. A page off the guide's way, or with no answer, points
+	 * at its Back button: following the guide undoes the stray step. A page on the way overrides and falls back to
+	 * this when it has no answer. */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const;
+
+	/** Called by the guide once each time this page comes on top of the menu with Goal running: set the page to where
+	 * the path starts (a tab) so the player has nothing to click first. The player stays free to change it. */
+	virtual void PrepareForGuide(EGeoMenuGuideGoal /*Goal*/) {}
+
 protected:
 	/** Wires PageFrame's Back and Close, or hides them outside a menu. */
 	virtual void NativeConstruct() override;
@@ -48,6 +59,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuPageFrameWidget> PageFrame;
+
+	/** The hint on Back when the guide sends the player back. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoMenuGuide")
+	FText GuideBackHint = INVTEXT("WRONG WAY: GO BACK");
 
 private:
 	UFUNCTION()

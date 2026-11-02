@@ -16,6 +16,7 @@
 #include "Animation/AnimMontage.h"
 #include "Characters/EnemyCharacter.h"
 #include "CoreMinimal.h"
+#include "StateTree.h"
 #include "Tests/Gameplay/Fake/GeoTestDeployable.h"
 #include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -318,8 +319,8 @@ public:
 	}
 };
 
-/** Add pattern of a test: brings a plain enemy, tagged "Summoned" with 300 max health by AddSetup, "SafeSummoned" by
- * SafeAddSetup, with a 10 s wind-up the test never waits for. */
+/** Add pattern of a test: brings a plain enemy, tagged "Summoned" with 300 max health and a StateTree by AddSetup (none
+ * at Safe level), with a 10 s wind-up the test never waits for. */
 UCLASS(NotPlaceable, Transient)
 class UGeoTestSpawnAddPattern : public USpawnAddPattern
 {
@@ -331,8 +332,8 @@ public:
 		AddClass = AEnemyCharacter::StaticClass();
 		AddSetup.Tag = TEXT("Summoned");
 		AddSetup.MaxHealth = FScalableFloat(300.f);
-		bUseSafeAddSetup = true;
-		SafeAddSetup.Tag = TEXT("SafeSummoned");
+		AddSetup.StateTree = CreateDefaultSubobject<UStateTree>(TEXT("AddStateTree"));
+		bSafeDropsStateTree = true;
 	}
 
 	virtual void OnCreate(FGameplayTag, AActor&) override

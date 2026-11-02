@@ -23,6 +23,7 @@
 #include "Encounter/Action/GeoCatLineAction.h"
 #include "Encounter/Action/GeoCatLineFromFileAction.h"
 #include "Encounter/Action/GeoDelayAction.h"
+#include "Encounter/Action/GeoMenuGuideAction.h"
 #include "Encounter/Action/GeoQuestCardAction.h"
 #include "Encounter/Action/GeoSetActorHiddenAction.h"
 #include "Encounter/Action/GeoSetMovementLockedAction.h"
@@ -58,14 +59,12 @@
 #include "Tests/Gameplay/Fake/GeoTestEnemy.h"
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
 #include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoEncounterTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityTest, "GeoTrinity.Encounter.ActivateAbility",
@@ -311,6 +310,34 @@ bool FGeoEncounterAbilityPageTest::RunTest(FString const& /*Parameters*/)
 
 	HUD->PageClosed.ExecuteIfBound();
 	TestEqual(TEXT("The run goes on once the player closes the page"), After->Runs, 1);
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterMenuGuideTest, "GeoTrinity.Encounter.MenuGuide", GeoEncounterTestFlags)
+
+bool FGeoEncounterMenuGuideTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	APlayerController* const PlayerController = World->SpawnActor<APlayerController>();
+	AGeoTestHUD* const HUD = World->SpawnActor<AGeoTestHUD>();
+	PlayerController->MyHUD = HUD;
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(2);
+	UGeoMenuGuideAction* const Guide = NewObject<UGeoMenuGuideAction>(Encounter);
+	Guide->Goal = EGeoMenuGuideGoal::ForgeChip;
+	UGeoTestTrigger* const Trigger = Encounter->AddRule(0, {Guide}, false);
+	UGeoTestTrigger* const Leave = Encounter->AddRule(0, {}, false, true);
+	Encounter->Start();
+
+	Trigger->FireNow();
+	TestEqual(TEXT("The guide starts towards its goal"), HUD->GuideGoal, EGeoMenuGuideGoal::ForgeChip);
+
+	Leave->FireNow();
+	TestEqual(TEXT("Leaving the step stops the guide"), HUD->GuideGoal, EGeoMenuGuideGoal::None);
 
 	DestroyTestWorld(World);
 	return true;

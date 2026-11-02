@@ -607,6 +607,76 @@ void UGeoGemLoadoutWidget::ShowLevel(UGeoGemProfileSave const& Profile)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+FName UGeoGemLoadoutWidget::FindFreeChip(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog) const
+{
+	FGeoGemList const* const Chips = Catalog.GemsByTier.Find(EGeoGemTier::Chip);
+	FName Found = NAME_None;
+	for (int32 Index = 0; Chips && Found.IsNone() && Index < Chips->Gems.Num(); ++Index)
+	{
+		FName const GemId = Chips->Gems[Index].Id;
+		for (int32 SocketIndex = 0;
+			 Profile.GetOwnedCount(GemId) > 0 && Found.IsNone() && SocketIndex < GeoGem::GetSockets().Num();
+			 ++SocketIndex)
+		{
+			Found = Profile.CanEquip(Catalog, ShownClass, SocketIndex, GemId) ? GemId : NAME_None;
+		}
+	}
+
+	return Found;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+FGeoMenuGuideTarget UGeoGemLoadoutWidget::GetGuideTarget(EGeoMenuGuideGoal const Goal) const
+{
+	UGeoGemProfileSave const* const Profile = GetProfile();
+	UGeoGemCatalog const* const Catalog = UGeoGemCatalog::Get();
+	FGeoMenuGuideTarget Target;
+	if (Goal == EGeoMenuGuideGoal::EquipChip && Profile && Catalog)
+	{
+		FGeoGemLoadout const Loadout = Profile->GetLoadout(ShownClass);
+		FName const FreeChip = FindFreeChip(*Profile, *Catalog);
+		TArray<int32> const Sockets = GetTargetSockets(*Profile, *Catalog);
+		if (PickedSocket == INDEX_NONE && Catalog->FindTier(PickedGem).Get(EGeoGemTier::Core) == EGeoGemTier::Chip
+			&& !Sockets.IsEmpty())
+		{
+			int32 const* const Empty = Sockets.FindByPredicate(
+				[&Loadout](int32 const Index)
+				{
+					return GetSlottedGem(Loadout, Index).IsNone();
+				});
+			int32 const Chosen = Empty ? *Empty : Sockets[0];
+			Target = SocketButtons.IsValidIndex(Chosen) ? FGeoMenuGuideTarget(SocketButtons[Chosen], GuideSocketHint)
+														: FGeoMenuGuideTarget();
+		}
+		else if (TierFilter.IsSet() && TierFilter.GetValue() != EGeoGemTier::Chip)
+		{
+			Target = FGeoMenuGuideTarget(TierFilterBox ? TierFilterBox->GetChildAt(0) : nullptr, GuideAllTierHint);
+		}
+		else if (FreeChip.IsNone())
+		{
+			Target = FGeoMenuGuideTarget(UnequipTierButton, GuideFreeChipHint);
+		}
+		else
+		{
+			// The whole stack list: the player picks the chip, any of them.
+			Target = FGeoMenuGuideTarget(StackGrid, GuideStackHint);
+		}
+	}
+
+	return Target;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::PrepareForGuide(EGeoMenuGuideGoal const Goal)
+{
+	if (Goal == EGeoMenuGuideGoal::EquipChip)
+	{
+		TierFilter = EGeoGemTier::Chip;
+		Refresh();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 TArray<int32> UGeoGemLoadoutWidget::GetTargetSockets(UGeoGemProfileSave const& Profile,
 													 UGeoGemCatalog const& Catalog) const
 {
@@ -749,6 +819,7 @@ void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGem
 	UGeoListRowWidget* PickedRow = nullptr;
 	HoveredGem = NAME_None;
 	StackGrid->ClearChildren();
+	StackRows.Reset();
 
 	int32 StackIndex = 0;
 	for (int32 TierIndex = GetTiers().Num() - 1; TierIndex >= 0; --TierIndex)
@@ -795,6 +866,7 @@ void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGem
 					Row->AddColumn(Mark, 0.f);
 				}
 				StackGrid->AddChildToUniformGrid(Row, StackIndex / StackColumns, StackIndex % StackColumns);
+				StackRows.Add(GemId, Row);
 				PickedRow = GemId == PickedGem ? Row : PickedRow;
 				++StackIndex;
 			}

@@ -66,6 +66,8 @@ namespace GeoTutorialPaths
 			{TEXT("ZonesCamp"), GeoTutorial::Zones, &AddZonesCampStages},
 			{TEXT("MinibossWipe"), GeoTutorial::Miniboss, &AddMinibossWipeStages},
 			{TEXT("MinibossWaveLanes"), GeoTutorial::Miniboss, &AddMinibossWaveLaneStages},
+			{TEXT("GemsForge"), GeoTutorial::Miniboss, &AddGemsForgePathStages},
+			{TEXT("GuideStray"), GeoTutorial::Miniboss, &AddGuideStrayStages},
 			{TEXT("FinalExit"), GeoTutorial::Miniboss, &AddFinalExitStages},
 			{TEXT("LeaveFromMenu"), GeoTutorial::Dash, &AddLeaveFromMenuStages},
 			{TEXT("JumpByNumber"), INDEX_NONE,

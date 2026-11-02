@@ -27,6 +27,11 @@ public:
 								 FGameplayAbilityActivationInfo ActivationInfo,
 								 FGameplayEventData const* TriggerEventData) override;
 
+#if WITH_EDITOR
+	/** Keeps RampupHealthThreshold sorted, highest first. */
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 protected:
 	/** Fires one salve, sizing a new burst first when the previous one is spent, then schedules what comes next: the
 	 * next salve of the burst, or the first salve of the next burst. */
@@ -53,6 +58,18 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0.1"))
 	float FireIntervalMax = 5.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0"))
+	bool bUseAlivePlayersAsSalveNumber = true;
+
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility",
+			  meta = (ClampMin = "0", EditCondition = "!bUseAlivePlayersAsSalveNumber", EditConditionHides))
+	int SalveNumber = 1;
+
+	/** Health ratios, highest first (sorted on edit). Each one the boss has fallen below adds one round to the burst.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoAbility", meta = (ClampMin = "0", ClampMax = 1))
+	TArray<float> RampupHealthThreshold = {.5f, .2f};
 
 private:
 	int32 RemainingSalveCount = 0;

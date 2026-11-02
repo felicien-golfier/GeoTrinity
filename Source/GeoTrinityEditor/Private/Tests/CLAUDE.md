@@ -6,7 +6,7 @@ Every automation test of the project. Editor module (`Type=Editor`), so no test 
 |---|---|
 | `Gameplay/` | Tests of `GeoTrinity`, one subfolder per area (`Encounter/`, `Gem/`, `Pattern/`, `Characters/`, `Deployable/`, `Abilities/`) → `Gameplay/CLAUDE.md` |
 | `Gameplay/Fake/` | Fake transient actors / worlds the tests spawn → `Gameplay/Fake/CLAUDE.md` |
-| `UI/` | Tests of `GeoTrinityUI`: `GeoMessageLogTests.cpp` (message log layout), `GeoCatLineTests.cpp` (Cat line markup, Cat face motion, Cat expressions), `GeoLoadingScreenTests.cpp` (loading timeline, tip pool) |
+| `UI/` | Tests of `GeoTrinityUI`: `GeoMessageLogTests.cpp` (message log layout), `GeoCatLineTests.cpp` (Cat line markup, Cat face motion, Cat expressions), `GeoLoadingScreenTests.cpp` (loading timeline, tip pool), `GeoMenuGuideTests.cpp` (menu guide scrim and hint placement), `GeoSkipInputTests.cpp` (the F skip and menu actions trigger while paused) |
 | `Tool/` | Tests of `GeoTrinityEditor/Tool` builders: `GeoAnimBuilderUtilTests.cpp` |
 | `Tutorial/` | Play-in-editor bot, every tutorial branch → `Tutorial/CLAUDE.md` |
 

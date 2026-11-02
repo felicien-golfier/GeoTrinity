@@ -30,6 +30,7 @@
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Settings/GameDataSettings.h"
 #include "Tests/Gameplay/Fake/GeoTestDeployable.h"
 #include "Tests/Gameplay/Fake/GeoTestGemDrop.h"
@@ -37,9 +38,6 @@
 #include "Tests/Gameplay/Gem/GeoGemTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoGemTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemLootTest, "GeoTrinity.Gems.Loot", GeoGemTestFlags)
@@ -101,6 +99,7 @@ bool FGeoGemLootTest::RunTest(FString const& /*Parameters*/)
 
 	bool bMiniBossInRange = true;
 	bool bSafeInRange = true;
+	bool bNightmareInRange = true;
 	for (int32 Roll = 0; Roll < RollCount; ++Roll)
 	{
 		TMap<EGeoGemTier, int32> const MiniBoss = CountTiers(
@@ -111,9 +110,14 @@ bool FGeoGemLootTest::RunTest(FString const& /*Parameters*/)
 		int32 const SafeCount = CountAll(CountTiers(
 			Catalog.RollLoot(Catalog.DropTables.FindChecked(EGeoBossType::Boss), EGeoDifficulty::Safe, Stream)));
 		bSafeInRange &= SafeCount >= 19 && SafeCount <= 25;
+
+		int32 const NightmareCount = CountAll(CountTiers(
+			Catalog.RollLoot(Catalog.DropTables.FindChecked(EGeoBossType::Boss), EGeoDifficulty::Nightmare, Stream)));
+		bNightmareInRange &= NightmareCount >= 57 && NightmareCount <= 75;
 	}
 	TestTrue(TEXT("Mini-boss kill: 38-50 gems, no Prism, no Core"), bMiniBossInRange);
 	TestTrue(TEXT("Safe halves the count: 19-25 gems"), bSafeInRange);
+	TestTrue(TEXT("Nightmare is half as many again: 57-75 gems"), bNightmareInRange);
 	return true;
 }
 

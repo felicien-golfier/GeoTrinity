@@ -104,7 +104,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Loot")
 	TMap<EGeoDifficulty, float> DifficultyLootScale = {{EGeoDifficulty::Safe, 0.5f},
 													   {EGeoDifficulty::Reduced, 0.75f},
-													   {EGeoDifficulty::Original, 1.f}};
+													   {EGeoDifficulty::Original, 1.f},
+													   {EGeoDifficulty::Nightmare, 1.5f}};
 
 	/** Class XP between two levels. The same for every level, so leveling is linear. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|ClassXp")
@@ -121,7 +122,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|ClassXp")
 	TMap<EGeoDifficulty, float> DifficultyXpScale = {{EGeoDifficulty::Safe, 0.5f},
 													 {EGeoDifficulty::Reduced, 0.75f},
-													 {EGeoDifficulty::Original, 1.f}};
+													 {EGeoDifficulty::Original, 1.f},
+													 {EGeoDifficulty::Nightmare, 1.5f}};
 
 	/** Share of its tier's max per class each echo level adds to the one tier whose turn it is: 0.01 is 1%. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Echo", meta = (ClampMin = 0, ClampMax = 1))

@@ -52,6 +52,7 @@ ST_DIR = "/Game/AI/Training"
 DUMMY_SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
 BP_DIR = "/Game/Characters/Enemies/Training"
 BP_DUMMY = BP_DIR + "/BP_Dummy"
+BP_DUMMY_ALLY = BP_DIR + "/BP_DummyAlly"  # BP_Dummy with the friendly body: the Ally station
 CASTER_CLASS = "/Script/GeoTrinity.HiddenCasterCharacter"
 PATTERN_DIR = "/Game/AbilitySystem/Abilities/Enemy/Training"
 SHOOTER_ABILITY_TAG = "Ability.Spell.ProjectileToAllPlayers"
@@ -301,13 +302,13 @@ def build_stations():
          "BULLET TOTEM\ndodge the shots"),
         ("Target", -400.0, station_setup(), "TRAINING DUMMY\nshoot it"),
     ]
-    dummy_class = unreal.load_asset(BP_DUMMY).generated_class()
     start_adds = []
     for key, offset, setup, text in stations:
+        dummy_bp = BP_DUMMY_ALLY if setup.get_editor_property("Team") == unreal.Team.PLAYER else BP_DUMMY
         target_point("Tuto_AddSpawn_" + key, (ROW_STATION, offset, 0.0), ADD_SPAWN_TAG)
         sign("Tuto_Sign_" + key, (ROW_STATION_SIGN, offset, 0.0), text)
         start_add = unreal.GeoArenaAdd()
-        start_add.set_editor_property("Class", dummy_class)
+        start_add.set_editor_property("Class", unreal.load_asset(dummy_bp).generated_class())
         start_add.set_editor_property("Setup", setup)
         start_adds.append(start_add)
         log("  ", key, "->", setup.export_text())

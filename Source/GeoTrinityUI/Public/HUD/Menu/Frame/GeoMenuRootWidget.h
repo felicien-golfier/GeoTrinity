@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HUD/Interface/GeoMenuGuideGoal.h"
+#include "HUD/Menu/Frame/GeoMenuGuide.h"
 #include "HUD/Menu/Frame/GeoMenuPanelWidget.h"
 
 #include "GeoMenuRootWidget.generated.h"
@@ -27,6 +29,10 @@ public:
 	UGeoMenuPageWidget* OpenPage(TSubclassOf<UGeoMenuPageWidget> PageClass);
 	/** Shows again what showed before the top page: the page that opened it, or TopLevel. */
 	void GoBack();
+	/** The page on top of the path; null at the top level. */
+	UGeoMenuPageWidget* GetShownPage() const { return PageStack.IsEmpty() ? nullptr : PageStack.Last().Get(); }
+	/** The control the menu guide points at on the top level for Goal; none by default (Frame/CLAUDE.md, "Menu guide"). */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal /*Goal*/) const { return FGeoMenuGuideTarget(); }
 	/** Leaves every page for TopLevel; a menu that closes itself (the pause menu) closes instead. */
 	UFUNCTION()
 	virtual void CloseMenu();

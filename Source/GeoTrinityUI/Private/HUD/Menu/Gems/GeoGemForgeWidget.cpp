@@ -19,6 +19,33 @@
 #include "Tool/Visual/GeoColor.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
+FGeoMenuGuideTarget UGeoGemForgeWidget::GetGuideTarget(EGeoMenuGuideGoal const Goal) const
+{
+	FGeoMenuGuideTarget Target;
+	if (Goal == EGeoMenuGuideGoal::ForgeChip)
+	{
+		Target = ShownTier != EGeoGemTier::Chip
+			? FGeoMenuGuideTarget(TierTabBox ? TierTabBox->GetChildAt(GetTiers().Find(EGeoGemTier::Chip)) : nullptr,
+								  GuideChipTierHint)
+			: bGemChosen ? FGeoMenuGuideTarget(CraftButton, GuideCraftHint)
+						 : FGeoMenuGuideTarget(GemListBox, GuidePickGemHint);
+	}
+
+	return Target;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemForgeWidget::PrepareForGuide(EGeoMenuGuideGoal const Goal)
+{
+	if (Goal == EGeoMenuGuideGoal::ForgeChip)
+	{
+		ShownTier = EGeoGemTier::Chip;
+		bGemChosen = false;
+		Refresh();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -210,6 +237,7 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 				[this, Tier]
 				{
 					ShownTier = Tier;
+					bGemChosen = false;
 					BreakQuantity = 1;
 					CraftQuantity = 1;
 					Refresh();
@@ -234,6 +262,7 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 										 [this, GemId]
 										 {
 											 PickedGem = GemId;
+											 bGemChosen = true;
 											 BreakQuantity = 1;
 											 CraftQuantity = 1;
 											 Refresh();

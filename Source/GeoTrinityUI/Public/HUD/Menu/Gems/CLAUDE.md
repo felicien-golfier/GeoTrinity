@@ -41,3 +41,12 @@ Every refusal and every side effect the player did not ask for shows in the mess
 - Success (`Heal`): ALL filled n sockets; unequip emptied n; build created / deleted; build limit and last-build refusals (`Damage`).
 - Forge: broken / crafted lines (`Heal`).
 - Key bindings page: a rejected key (wrong device, or a conflict) says so. Server browser: a failed search says so.
+
+## Guide targets
+The menu guide (`Frame/CLAUDE.md`, "Menu guide") asks the pages for the next control; they only answer, they never draw or block. Hint texts are `FText` tunables (`GeoGem|Guide` on the Gems pages, `GeoMenuGuide` on the character sheet, pause menu and page base).
+- Character sheet: `GemLoadoutButton` for both Gems goals.
+- `UGeoGemsWidget`: the wrong page shown -> the page's tab (`PageTabBox` child 0 Loadout, 1 Forge); otherwise the shown page's answer.
+- `PrepareForGuide` (once per page shown under a goal): EquipChip sets the Loadout's tier filter to Chip; ForgeChip sets the Forge's shown tier to Chip with no gem chosen.
+- **EquipChip** (Loadout): a Chip stack picked -> the first target socket of the Chip tier (an empty one first); else the whole stack list (`StackGrid`): the player picks any chip (a stack of another tier, or a socket picked first, points at the list again). No such chip -> `UnequipTierButton` (frees copies; never a dead end). The tier filter hiding Chips -> its ALL tab. Stack rows are kept per gem id when `ShowStacks` builds them.
+- **ForgeChip** (Forge): shown tier not Chip -> the Chip tier tab; no gem clicked yet (`bGemChosen`; the default pick is not a choice) -> the whole gem list (`GemListBox`); else `CraftButton`.
+- Done is never decided here: the encounter's `GeoGemProfileTrigger` (equipped / crafted) ends the step, which stops the guide.

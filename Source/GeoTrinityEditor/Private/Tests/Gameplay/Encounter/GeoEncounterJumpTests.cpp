@@ -47,6 +47,7 @@
 #include "HAL/FileManager.h"
 #include "Materials/Material.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Misc/DataValidation.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -62,9 +63,6 @@
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoEncounterTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSetTeleporterOpenTest, "GeoTrinity.Encounter.SetTeleporterOpen",

@@ -94,9 +94,12 @@ bool FGeoLeaderboardSeparateTest::RunTest(FString const& /*Parameters*/)
 	FGeoAttemptEntry const Safe = MakeAttempt(200.f, {"A"}, EGeoDifficulty::Safe);
 	FGeoAttemptEntry const Elsewhere = MakeAttempt(300.f, {"A"}, EGeoDifficulty::Original, OtherArena);
 	Leaderboard->AddAttempt(Original);
+	FGeoAttemptEntry const Nightmare = MakeAttempt(250.f, {"A"}, EGeoDifficulty::Nightmare);
 	Leaderboard->AddAttempt(Safe);
+	Leaderboard->AddAttempt(Nightmare);
 	Leaderboard->AddAttempt(Elsewhere);
 	TestTrue("original kept", IsListed(Leaderboard, Original));
+	TestTrue("nightmare never compared with original", IsListed(Leaderboard, Nightmare));
 	TestTrue("other difficulty never compared", IsListed(Leaderboard, Safe));
 	if (OtherArena.IsValid())
 	{

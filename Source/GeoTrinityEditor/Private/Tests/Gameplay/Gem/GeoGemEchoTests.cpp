@@ -30,6 +30,7 @@
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemStatsEffect.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Settings/GameDataSettings.h"
 #include "Tests/Gameplay/Fake/GeoTestDeployable.h"
 #include "Tests/Gameplay/Fake/GeoTestGemDrop.h"
@@ -37,9 +38,6 @@
 #include "Tests/Gameplay/Gem/GeoGemTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoGemTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemEchoTest, "GeoTrinity.Gems.Echo", GeoGemTestFlags)

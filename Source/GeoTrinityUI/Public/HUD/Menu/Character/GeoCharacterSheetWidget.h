@@ -78,6 +78,9 @@ public:
 	 * have changed the gems. */
 	virtual void OnPageShown() override;
 
+	/** Both Gems goals: GemLoadoutButton; the base's Back when the sheet has none. */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
+
 	/** Opens the details of the ability with AbilityTag, as a click on its row would (tutorial unlocks). */
 	void OpenAbilityDetail(FGameplayTag AbilityTag);
 
@@ -103,6 +106,10 @@ protected:
 	/** Opens the Gems menu. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> GemLoadoutButton;
+
+	/** The menu guide's hint on GemLoadoutButton. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoMenuGuide")
+	FText GuideGemsHint = INVTEXT("OPEN YOUR GEMS");
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoShape> ClassShape;

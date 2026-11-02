@@ -65,11 +65,8 @@ AGeoCharacter            ASC interface + team agent
 - Health: `MaxHealth` and `StartHealthRatio` set after `DefaultAttributes` in `InitGAS`. The `MaxHealth` override is kept on the enemy and re-applied after every `InitializeDefaultAttributes` (reset at zero, `ResetForNewAttempt`), always at full; `StartHealthRatio` is the spawn only.
 - Callers of `SpawnEnemy`: `AGeoArena::ResetBoss` (`BossSetup`), `GeoSpawnEnemiesAction` (`Encounter/Action/CLAUDE.md`), `AGeoArena::SpawnAdd` (`Actor/Arena/CLAUDE.md`, owner and `Arena` = the arena; registers the add after; `Arena` goes in before `FinishSpawning` because the StateTree starts on possession and `STTask_SelectNextFiringPoint` reads it), so `AGeoSummonedDummy`'s ally too.
 
-## Friendly look
-- Purpose: a dummy on the player team (hurt ally, summoned dummy's ally, shooting ally) looks different from an enemy one; the look follows the team, never a Blueprint per variant (`BP_Dummy` stays one Blueprint).
-- `AEnemyCharacter::FriendlyBodyMesh` / `FriendlyBodyMaterial` (`USkeletalMesh` / material set on `BP_Dummy`: `SKM_SoftStar` + `MI_SoftStar_Body`; the mesh's own Core slot keeps the pale disc; `AI/ArtDirection.md` "Dummies"): applied to `GetMesh()` when `bFriendlyLook`, the enemy look otherwise. Empty = no change.
-- `TeamId` does not replicate, so the look needs its own replicated flag `bFriendlyLook` (`OnRep_FriendlyLook`): set on the server by `ApplySetup`, the one place an enemy's team is set; the OnRep applies the look on clients. Server and clients run the same `ApplyFriendlyLook()`.
-- `SetSkeletalMesh` + `SetMaterial(0)`, never a per-instance asset; death / reset-at-zero keep the look (the team does not change).
+## Friendly dummy
+- A dummy on the player team (hurt ally, summoned dummy's ally, shooting ally) looks different from an enemy one by being another Blueprint: `BP_DummyAlly`, child of `BP_Dummy` (mesh `SKM_SoftStar`, material 0 `MI_SoftStar_Body`; the mesh's own Core slot keeps the pale disc; `AI/ArtDirection.md` "Dummies"). No code: the spawner picks the class, the team stays the setup's.
 
 ## HiddenCasterCharacter
 - Purpose: hazard patterns and waves are abilities and need an ASC; this lends one to the encounters. One per world, spawned and owned by `UGeoEncounterSubsystem` (`Encounter/CLAUDE.md`, "Shared caster"), fired by `GeoActivateAbilityAction`.
@@ -82,7 +79,7 @@ AGeoCharacter            ASC interface + team agent
 ## GeoSummonedDummy
 - Server BeginPlay: spawns `UGameDataSettings::DefaultZoneClass` at its feet with `ZoneEffects` (damage per second) and `ZoneParams` (start `Size`, growth `GrowToSize` / `GrowSeconds`, `Actor/Deployable/CLAUDE.md`), owned by the dummy (enemy team, so it hurts players).
 - The zone dies with the dummy: spawned with the dummy as instigator, it sits in the dummy's `UGeoDeployableManagerComponent`, which `StopAllSpawnedElements` empties on death and on `EndPlay` (a wipe or the boss's death destroys the dummy).
-- Death (server): `Arena->SpawnAdd(AllyClass, its transform, AllySetup)`: the ally is an add of the same arena, so the next wipe removes it too. Destroyed without dying: no ally. Tutorial: `AllyClass` = `BP_Dummy`, `AllySetup` = player team, shooting StateTree + projectile ability, `Tag` the encounter watches.
+- Death (server): `Arena->SpawnAdd(AllyClass, its transform, AllySetup)`: the ally is an add of the same arena, so the next wipe removes it too. Destroyed without dying: no ally. Tutorial: `AllyClass` = `BP_DummyAlly`, `AllySetup` = player team, shooting StateTree + projectile ability, `Tag` the encounter watches.
 - One Blueprint (`BP_TutorialSummonedDummy`, the dummy's look) holds its zone and ally params; values (`ZoneEffects` amounts, the zone's growth, `ZoneStartSize` = the zone's start `Size` read at the dummy's combat level) read `CT_Tutorial` rows through `FScalableFloat`, so a difficulty column changes them (Safe: zone starts at 10). Its health, tree and salve are the summon pattern's `AddSetup` (`Abilities/Pattern/Hazard/Zone/CLAUDE.md`).
 
 ## Enemy Blueprint defaults

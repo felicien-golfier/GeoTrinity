@@ -14,9 +14,10 @@ Automation tests of the `GeoTrinity` module, one subfolder per area (mirrors the
 | `GeoCatTests.cpp` | Cat walk, stop distance, hidden walk, replace, roam, montage order, idle variants |
 | `GeoCatLineBankTests.cpp` | Cat line bank: parse, bags, file order, live reload, missing file |
 | `GeoLeaderboardTests.cpp` | Leaderboard save: one best attempt per player, group row shared, worse / equal attempt dropped, per boss and difficulty, legacy file collapse, build wipe once per stamp |
+| `GeoDifficultyTests.cpp` | Nightmare: effect mask gate at level 8 |
 | `GeoSoundConcurrencyTests.cpp` | Sound concurrency assets |
-| `GeoTutorialTests.cpp` | Solo-only login, listen URL, locked / unlocked abilities, tutorial Safe difficulty (game mode → game state), the miniboss's Safe vs Original `CT_Tutorial` rows |
+| `GeoTutorialTests.cpp` | Solo-only login, listen URL, locked / unlocked abilities, game mode's StartDifficulty → game state |
 
 - Each test builds its own world with `CreateTestWorld` / `DestroyTestWorld` (`Fake/GeoTestWorld.h`); none touches a map asset.
-- Every file carries its own `constexpr EAutomationTestFlags Geo<Area>TestFlags` (application contexts + `ProductFilter`).
+- Every file carries its own `constexpr EAutomationTestFlags Geo<Area>TestFlags` (application contexts + `ProductFilter`); an area of several files shares one in `GeoTestFlags.h` (unity builds put them in one blob).
 - A helper several files of one folder need lives in that folder's `Geo<Area>TestHelpers.h` (inline / `static`, no `UCLASS`); a fake `UCLASS` goes to `Fake/`.

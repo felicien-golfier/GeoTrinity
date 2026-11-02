@@ -14,7 +14,7 @@ SCENE_REPORT = "C:/GeoTrinity/AI/Output/encounters_scene.txt"  # every room's st
 PROPS = ["Line", "bWaitForRespawn", "CounterName", "Delta", "AbilityTag", "bLocked", "Teleporter", "bOpen",
          "EnemyClass", "Setup", "Count", "RespawnDelay", "PurposeTag", "ArenaTag", "bKillOnStepExit", "Operation",
          "Title", "Max", "TimeLimitSeconds", "bShowMax", "Target", "Duration", "Volume", "Watched", "Delay",
-         "bLooping", "Side", "Ratio", "Source", "Comparison", "Operand", "bForge", "Cat", "Path", "Speed",
+         "bLooping", "Side", "Ratio", "Source", "Comparison", "Operand", "Goal", "Event", "Cat", "Path", "Speed",
          "StopDistance", "Settings", "Montage", "Actor", "bHidden", "bWaitForEnd", "AbilityClass", "EffectDataArray", "Params",
          "Team", "PatternData", "bTimed", "Seconds", "Categories", "bRandom"]  # add a new action's properties here
 
@@ -86,9 +86,10 @@ def scene_points(labels):
 def script_points():
     expected = {}
 
-    def record(label, location, purpose, room):
+    def record(label, location, purpose, room, *extra_tags):
         tags = unreal.GameplayTagContainer()
-        tags.import_text('(GameplayTags=((TagName="%s"),(TagName="Arena.Tutorial.%s")))' % (purpose, room))
+        tags.import_text("(GameplayTags=(%s))" % ",".join('(TagName="%s")' % name
+                                                          for name in (purpose, "Arena.Tutorial." + room) + extra_tags))
         expected[label] = point_line(label, location, tags.export_text())
 
     ns["point"] = record

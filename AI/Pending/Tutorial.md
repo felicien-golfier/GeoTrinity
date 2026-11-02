@@ -159,8 +159,8 @@ Needs `BossLoot.md` done. Docs first: `Actor/Arena/CLAUDE.md` (`SpawnAdd`, `bRec
 Docs first: `Gem/CLAUDE.md` (profile events), `Encounter/Trigger/CLAUDE.md` (two rows), `Encounter/Action/CLAUDE.md` (`GeoOpenGemsPageAction`).
 - [x] `Gem/GeoGemProfileSave.h/.cpp` — native multicast `OnGemEquipped(EPlayerClass, int32 SocketIndex, FName GemId)` broadcast by a successful `Equip`; `OnGemCrafted(FName GemId, int32 Quantity)` by a successful `Craft`
 - [x] `Encounter/Trigger/GeoGemEquippedTrigger`, `GeoGemCraftedTrigger` — bind the first local player's `UGeoGemSubsystem::GetProfile()` events in `OnArm`; event triggers (never fire for what was slotted before)
-- [x] `Encounter/Action/GeoOpenGemsPageAction` — opens the Gems menu (loadout or Forge page) through a `GeoHUDInterface` call
-- [ ] Editor: step 11 = the menu guide to the loadout (`AI/Pending/MenuGuide.md`, later; until then `GeoOpenGemsPageAction`), done on `GeoGemEquippedTrigger`; step 12 = the guide to the Forge, done on `GeoGemCraftedTrigger`, then `HostListen(TrainingRoomMap, "TrainingRoom")` (a `GeoLeaveTutorialAction`, or the pause-menu path reused)
+- [x] `Encounter/Action/GeoOpenGemsPageAction` — replaced by `GeoMenuGuideAction` (`AI/Pending/MenuGuide.md`)
+- [x] Steps 11-12 = the Gems and Forge steps of the Miniboss room, a menu guide each (`AI/Pending/MenuGuide.md`; `GeoMenuGuideAction`, done on `GeoGemProfileTrigger` Equipped / Crafted); the final exit opens with the Forge step's last line
 - [x] Tests `GeoTrinity.Gems.ProfileEvents`. `GeoTrinity.Encounter.GemEquipped` not written: the trigger reads the first local player's `UGeoGemSubsystem`, which loads the real profile from disk; event-only by construction (binds in `OnArm`)
 - [x] Run: build, then `Tools\Run_Tests.bat GeoTrinity.Gems` and `GeoTrinity.Encounter`
 - [x] `Encounter/Action/GeoLeaveTutorialAction` → `UGeoGameInstance::LeaveTutorial()` (the pause menu's path)

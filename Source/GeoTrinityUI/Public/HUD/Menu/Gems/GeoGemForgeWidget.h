@@ -34,6 +34,12 @@ public:
 	 */
 	virtual void Refresh() override;
 
+	/** ForgeChip: the Chip tier tab while another tier shows, else CraftButton. */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
+
+	/** ForgeChip: the Chip tier, no gem chosen yet. */
+	virtual void PrepareForGuide(EGeoMenuGuideGoal Goal) override;
+
 protected:
 	/** Wires the buttons. */
 	virtual void NativeConstruct() override;
@@ -112,6 +118,17 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> CraftButton;
+
+	/** The menu guide's hints on the Chip tier tab and on CraftButton. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideChipTierHint = INVTEXT("PICK THE CHIP TIER");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuideCraftHint = INVTEXT("CRAFT A CHIP");
+
+	/** On the gem list while the player has not chosen the chip to craft. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")
+	FText GuidePickGemHint = INVTEXT("CHOOSE THE CHIP TO CRAFT");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem", meta = (ClampMin = "8", ClampMax = "128"))
 	float TierGlyphSize = 34.f;
@@ -257,6 +274,9 @@ private:
 
 	/** Defaults to the shown tier's first gem. */
 	FName PickedGem;
+
+	/** True once the player clicked a gem row (the default pick is not a choice); the guide waits for it. */
+	bool bGemChosen = false;
 
 	int32 BreakQuantity = 1;
 	int32 CraftQuantity = 1;

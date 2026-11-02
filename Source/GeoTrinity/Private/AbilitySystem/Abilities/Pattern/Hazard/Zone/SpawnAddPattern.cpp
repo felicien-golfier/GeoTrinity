@@ -21,11 +21,15 @@ void USpawnAddPattern::EndPattern(bool const bForceStop)
 		if (ensureMsgf(Arena, TEXT("%s: the caster has no arena to summon into"), *GetName())
 			&& ensureMsgf(AddClass, TEXT("%s: no AddClass set"), *GetName()))
 		{
-			bool const bSafeLevel = StoredPayload.AbilityLevel == GeoDifficultyMask::Safe;
+			FGeoEnemySetup Setup = AddSetup;
+			if (bSafeDropsStateTree && StoredPayload.AbilityLevel == GeoDifficultyMask::Safe)
+			{
+				Setup.StateTree = nullptr;
+			}
+
 			for (FVector2D const& Location : GetTargetLocations())
 			{
-				Arena->SpawnAdd(AddClass, FTransform(FVector(Location, ArbitraryCharacterZ)),
-								bUseSafeAddSetup && bSafeLevel ? &SafeAddSetup : &AddSetup);
+				Arena->SpawnAdd(AddClass, FTransform(FVector(Location, ArbitraryCharacterZ)), &Setup);
 			}
 		}
 	}

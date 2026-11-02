@@ -35,11 +35,9 @@
 #include "Tests/Gameplay/Fake/GeoTestGemDrop.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "Tests/Gameplay/Gem/GeoGemTestHelpers.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-constexpr EAutomationTestFlags GeoGemTestFlags =
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoGemClassXpTest, "GeoTrinity.Gems.ClassXp", GeoGemTestFlags)
@@ -55,6 +53,7 @@ bool FGeoGemClassXpTest::RunTest(FString const& /*Parameters*/)
 			  200);
 	TestEqual(TEXT("Reduced scales XP"), Catalog.GetXp(EGeoBossType::Boss, 1.f, EGeoDifficulty::Reduced), 300);
 	TestEqual(TEXT("Safe scales XP"), Catalog.GetXp(EGeoBossType::Boss, 1.f, EGeoDifficulty::Safe), 200);
+	TestEqual(TEXT("Nightmare scales XP"), Catalog.GetXp(EGeoBossType::Boss, 1.f, EGeoDifficulty::Nightmare), 600);
 	TestEqual(TEXT("No more than one health bar"), Catalog.GetXp(EGeoBossType::Boss, 1.5f, EGeoDifficulty::Original),
 			  400);
 	TestEqual(TEXT("No boss health taken, no XP"), Catalog.GetXp(EGeoBossType::Boss, 0.f, EGeoDifficulty::Original), 0);

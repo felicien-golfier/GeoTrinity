@@ -30,6 +30,9 @@ public:
 	/** Closes the pause menu. */
 	virtual void CloseMenu() override;
 
+	/** Both Gems goals start at the character sheet: CharacterButton. */
+	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
+
 	/** Opens Controller's pause menu on its page of PageClass, from outside the menu (the Tab sheet, the tutorial's
 	 * ability page). Returns that page, null when it could not open. */
 	static UGeoMenuPageWidget* OpenOnPage(APlayerController* Controller, TSubclassOf<UGeoMenuPageWidget> PageClass);
@@ -62,6 +65,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> CharacterButton;
+
+	/** The menu guide's hint on CharacterButton. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoMenuGuide")
+	FText GuideCharacterHint = INVTEXT("OPEN YOUR CHARACTER");
 
 private:
 	UFUNCTION()
