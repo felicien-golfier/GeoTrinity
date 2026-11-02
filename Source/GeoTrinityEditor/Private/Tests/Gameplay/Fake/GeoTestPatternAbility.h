@@ -234,7 +234,8 @@ public:
 
 /** Launches Pattern from Caster at Locations as PatternStartMulticast would, its wind-up just started. */
 inline void LaunchTestPattern(UPattern& Pattern, AActor* const Caster, TArray<FVector2D> const& Locations,
-							  int32 const Level = GeoDifficultyMask::Original)
+							  int32 const Level = GeoDifficultyMask::Original,
+							  TInstancedStruct<FPatternData> const& PatternData = TInstancedStruct<FPatternData>())
 {
 	FAbilityPayload Payload;
 	Payload.Origin = FVector2D(Caster->GetActorLocation());
@@ -243,7 +244,7 @@ inline void LaunchTestPattern(UPattern& Pattern, AActor* const Caster, TArray<FV
 	Payload.SourceOwner = Caster;
 	Payload.SourceAvatar = Caster;
 	Pattern.SetTargetLocations(Locations, Payload.Origin);
-	Pattern.InitPattern(Payload, TInstancedStruct<FPatternData>());
+	Pattern.InitPattern(Payload, PatternData);
 }
 
 /** Beam of a test, never launched: reads its yaw along the sweep, from the world origin. */

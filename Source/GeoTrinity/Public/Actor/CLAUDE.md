@@ -20,7 +20,7 @@ World actors.
 
 ## Target points
 - Found with `GeoLib::GetTargetPoints(World, PurposeTag, ArenaTag)` — needs both tags.
-- A new arena only needs its own `Arena.*` tag.
+- A new arena only needs its own `Arena.*` tag, and one point tagged `TargetPoint.FightCenter` (its center, `Arena/CLAUDE.md`).
 
 ## GeoCat
 The Cat's 3D body (`AI/Tutorial/CatAnimation.md` for clips and rig, `Cat.md` for the character); `BP_Cat` sets mesh and AnimBP. Captain / navigator: the cat knows *how* to walk, roam and play a montage; *what, where and when* (points, speed, roam area, which montage, hiding) come from the encounter's Cat actions (`Encounter/Action/Cat/CLAUDE.md`). It knows no clip, no portal, no room.

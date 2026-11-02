@@ -22,6 +22,13 @@ inline UWorld* CreateTestWorld()
 	return World;
 }
 
+/** Makes World answer as another machine: NM_Client is a client of the match World was set up as. Actors spawned before
+ *  keep what the server gave them (an arena's add list included, which a real client never gets). */
+inline void SetTestNetMode(UWorld& World, ENetMode const NetMode)
+{
+	World.SetPlayInEditorInitialNetMode(NetMode);
+}
+
 /** Ends play on every actor, as a play session does, then destroys World: an actor that registered with an engine
  *  system in BeginPlay (the Water plugin's buoyancy manager, on the physics solver) unregisters before its world goes.
  */

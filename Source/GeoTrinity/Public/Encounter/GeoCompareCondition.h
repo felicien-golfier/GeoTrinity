@@ -7,7 +7,7 @@
 
 #include "GeoCompareCondition.generated.h"
 
-/** Passes when the payload Count, the payload Value or a step counter, compared with Operand, holds. */
+/** Passes when the payload Count, the payload Value, a step counter or the step visit, compared with Operand, holds. */
 UCLASS()
 class GEOTRINITY_API UGeoCompareCondition : public UGeoEncounterCondition
 {

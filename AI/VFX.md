@@ -32,7 +32,7 @@ Slot 0 is the deployable duration wipe: `AGeoDeployableBase::Tick` writes `1 - G
 visual mesh. Zones have no mesh: their fill reaches the zone layer through `UGeoZoneVisualComponent::Fill`
 (`World/ZoneLayer/CLAUDE.md`).
 
-Slots 1–2 are the arena centre: `AGeoArena` writes its XY onto each of its `Floors`, and the floor looks centred on
+Slots 1–2 are the arena centre: `AGeoArena` writes its `GetCenter()` XY (the `FightCenter` point) onto each of its `Floors`, and the floor looks centred on
 an arena read it through their `ArenaCenter` vector parameter (see the background lattice in `AI/Materials.md`).
 
 The value is the fraction **spent**, never remaining: custom primitive data nobody writes reads 0, so

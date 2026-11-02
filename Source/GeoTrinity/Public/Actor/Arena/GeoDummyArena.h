@@ -15,6 +15,7 @@
  * by reviving on the spot — so IsBoss is the only override needed. The dummy still receives its StateTree aggro event
  * and fights back, and like every arena it ends its fight when a match ends anywhere: that is what puts a dummy which
  * chased the players into someone else's fight back on its spot, un-aggroed.
+ * It has no floor and no fight, so no FightCenter point either (RequiresCenter false).
  */
 UCLASS()
 class GEOTRINITY_API AGeoDummyArena : public AGeoArena
@@ -24,4 +25,6 @@ class GEOTRINITY_API AGeoDummyArena : public AGeoArena
 public:
 	/** Always returns false — the dummy's enemy never triggers a boss fight via TriggerAggro. */
 	virtual bool IsBoss(AActor const* Enemy) const override { return false; }
+	/** False: a dummy room has no fight area to center. */
+	virtual bool RequiresCenter() const override { return false; }
 };

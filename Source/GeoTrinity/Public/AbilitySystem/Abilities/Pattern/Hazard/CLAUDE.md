@@ -32,7 +32,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 
 ## Beam
 - Fired from `Payload.Origin` (the caster) along `GetTargetYaw()` for `BeamDuration`; hex boss ships two BP children (sweep laser, tile-carving ray).
-- Sweep: `SweepAngle` (per Blueprint, degrees either side of the aim): starts `SweepAngle` off the aim, side rolled from `Payload.Seed`, crosses it, ends `SweepAngle` off on the other side. Hex sweep: `GA_HexBoss_SweepBeam` = plain `UPatternAbility`, `Target` `ArenaCenter`, so the sweep always crosses the middle of the platform and the ground behind the boss stays safe.
+- Sweep: `SweepAngle` (per Blueprint, degrees either side of the aim): starts `SweepAngle` off the aim, side rolled from `Payload.Seed`, crosses it, ends `SweepAngle` off on the other side. Hex sweep: `GA_HexBoss_SweepBeam` = plain `UPatternAbility`, `Target` `TargetPoint` tag `FightCenter`, so the sweep always crosses the middle of the platform and the ground behind the boss stays safe.
 - Hits on entering (swept angle per target, `AnglesFromBeam`); per-second effects tick on everyone inside.
 - Shape `Beam`. `GetBeamOrigin()` + `MoveHazardVisual(SpentTime)` = the single aim path (wind-up and live); a child drawing something else with the same beam overrides `MoveHazardVisual` (lateral wave).
 - `OverlapMode` (`ETargetOverlapMode`, default Automatic = centre-only for Enemy source).
@@ -64,7 +64,7 @@ Ticking patterns whose damage is a server-judged volume. All lag-compensated (ru
 - Spots: `FSafeSpot` (`ESafeSpotShadow::Lane`, direction = the travel) gathered every tick from `SafeSpotSources` (default `Fixed` + `Adds`; `SafeSpot/CLAUDE.md`), radius `SpotRadius` for `Fixed`, `AddSpotRadius` (`FScalableFloat`, default 150, read at the payload's level: a difficulty column can narrow a dummy's lane) for `Adds`.
   - Lanes always run parallel to the travel: they turn with the wave, a rolled one included.
   - `Fixed` = `FLateralWavePatternData::SafeSpotOffsets` (X along / Y across the travel, from the origin; turned with the wave), given by whoever fires the wave (`GeoActivateAbilityAction::PatternData`, `Base/CLAUDE.md` "PatternAbility"); replicated with the pattern start, so every machine draws them. Fired with no data (state tree) = no fixed spot.
-  - `Adds` = living adds of the caster's arena; server only (the tutorial is solo). None in a room without adds.
+  - `Adds` = living enemies in the caster's arena, boss excepted, gathered on every machine like `Fixed`: a client draws the lanes too, a dead add's lane closes on each machine as it sees the death. None in a room without any.
 - Visual = the base beam, one component, the `Lane` spots cut by the zone layer: wind-up = the full rectangle (`TravelDistance` x `2 * HalfWidth`) at once with its lanes cut, fill `AlongBeam` (start edge → far edge over `StartDelay`, rule in "ZoneHazard"), live = the band, filling `AlongBeam` across the room. `MoveHazardVisual` lays the rectangle and calls `SetSafeSpots(GetSafeSpots(), travel direction, FiringOrigin)` every tick, so a dead add's lane closes at once (`SafeSpot/CLAUDE.md` "Mask"; `AI/Materials.md` "Safe spots").
 - Mask: the parent's (`UZoneHazardPattern`), cleared by it before the first placement and at `EndPattern`.
 - Base hooks: the child overrides `MoveHazardVisual` (rectangle + spots), `IsInHazard` (band + spots), `GetHazardDuration`, `InitPattern` (firing travel, set before `Super::InitPattern` reads the duration and places the beam).

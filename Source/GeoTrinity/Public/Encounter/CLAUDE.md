@@ -4,13 +4,13 @@ Scripted sequences of steps driven by triggers and actions, authored in the leve
 
 | File / folder | Role |
 |---|---|
-| `GeoEncounter.h` | `AGeoEncounter`: placed actor holding `Steps`; runs the current step, arms its rules, moves between steps, holds the step counters; `GetCurrentStepName()` (what a test reports on a stall) |
+| `GeoEncounter.h` | `AGeoEncounter`: placed actor holding `Steps`; runs the current step, arms its rules, moves between steps, holds the step counters and step visits; `GetCurrentStepName()` (what a test reports on a stall) |
 | `GeoEncounterTypes.h` | `FGeoEncounterPayload`, `FGeoEncounterRule`, `FGeoEncounterStep`, `EGeoCompareSource`, `EGeoCompareOperator` |
 | `GeoEncounterObject.h` | `UGeoEncounterObject`: abstract base of trigger, condition, action; `GetWorld()` (null on the CDO), `GetEncounter()` (typed outer) |
 | `GeoEncounterTrigger.h` | `UGeoEncounterTrigger`: base of every trigger; binds in `OnArm`, unbinds in `OnDisarm`, calls `Fire(Payload)` |
-| `GeoEncounterCondition.h` | `UGeoEncounterCondition`: `Evaluate(Payload) → bool` filter on a rule |
-| `GeoCompareCondition.h` | The stock condition: payload `Count`, payload `Value` or a step counter, compared with an operand |
-| `GeoEncounterAction.h` | `UGeoEncounterAction`: base of every action; `Execute(Payload)`, `Finish()`, `OnCancel()`, `bLatent` |
+| `GeoEncounterCondition.h` | `UGeoEncounterCondition`: `Evaluate(Payload) → bool` filter on a rule or an action |
+| `GeoCompareCondition.h` | The stock condition: payload `Count`, payload `Value`, a step counter or the step visit, compared with an operand |
+| `GeoEncounterAction.h` | `UGeoEncounterAction`: base of every action; `Execute(Payload)`, `Finish()`, `OnCancel()`, `bLatent`, optional `Condition` |
 | `GeoEncounterSubsystem.h` | World subsystem: tag event bus (`Raise(Tag, Payload)`, Blueprint-callable); `bMovementLocked`, the encounters' one movement lock; `OnCatLine` (native): every Cat line as it shows, tokens replaced (the tutorial bot's line log); aborts every encounter of its world when the session ends (below); `GetSharedCaster()` / `GrantSharedAbility(Class)`: the encounters' one ability caster (below) |
 | `Trigger/` | Stock triggers → `Trigger/CLAUDE.md` |
 | `Action/` | Stock actions → `Action/CLAUDE.md` |
@@ -19,26 +19,31 @@ Scripted sequences of steps driven by triggers and actions, authored in the leve
 ```
 AGeoEncounter
  ├─ Counters : TMap<FName, int32>   (step-scoped, cleared on step entry)
+ ├─ Step visits : one int32 per step (cleared on Start / Restart)
  └─ Steps[]   (ordered)
      ├─ Name
      ├─ OnEnter : Actions[]
      ├─ Rules[] : { Trigger, Condition?, Actions[], bRepeat, bCompletesStep, StepAfter }
      └─ OnExit  : Actions[]
+Action : { Condition?, ... }
 ```
 - Trigger, Condition, Action derive from `UGeoEncounterObject`: `Blueprintable`, `EditInlineNew`, `DefaultToInstanced`. The Details panel picks a class, the class is code (C++ or Blueprint). No enum of trigger types anywhere.
 - Instances live on the placed encounter, so properties hold direct level references (pad, volume, arena); characters are never referenced, they are spawned and watched by filter (`Trigger/CLAUDE.md`). A reusable encounter is a Blueprint child of `AGeoEncounter`.
 - `FGeoEncounterPayload`: `Actor` (the actor the event is about: who entered, who died), `Count`, `Value`, `Tag`. The trigger fills it; conditions and actions read it. A trigger keeps its own running number (deaths since arm) and sends it as `Count`.
 - Counters: what one rule needs to know about another (falls before the reach, colors visited, "enemy dead AND ally full"). Written by `GeoAddToCounterAction`, read by `GeoCompareCondition` (source `Counter`), watched by `GeoCounterTrigger`. `AddToEncounterCounter` / `GetCounter` are Blueprint-callable on the encounter.
-- `GeoCompareCondition`: source (`PayloadCount`, `PayloadValue`, `Counter` + name), operator (`==`, `!=`, `<`, `<=`, `>`, `>=`, `MultipleOf`), operand. Other filters are Blueprint children of `UGeoEncounterCondition`.
+- Step visit (`GetStepVisit()`): how many times the current step was entered since the encounter's `Start` / `Restart`, 1 on the first entry, 0 while `Idle`. What a step needs to know about its earlier visits (a retry says another line, an extra spell from the 3rd try). A rewind on death makes it deaths + 1 in that step (the 3rd death = visit 4).
+- `GeoCompareCondition`: source (`PayloadCount`, `PayloadValue`, `Counter` + name, `StepVisit`), operator (`==`, `!=`, `<`, `<=`, `>`, `>=`, `MultipleOf`), operand. Other filters are Blueprint children of `UGeoEncounterCondition`.
+- Action `Condition`: same class as a rule's, for any action of any list. Failed = that action is skipped, the list goes on. It sees the run's payload: the trigger's in a rule's list, empty in `OnEnter` / `OnExit` (there, read a counter or the visit).
 
 ## Flow
 - `Start()` (or `bStartOnBeginPlay`): enter step 0 when not running. `Restart()`: cancel everything (no `OnExit`), back to step 0, in any state. `GeoStartEncounterAction` calls `StartAfterSkippingChain()` (Arrival reset).
-- Enter step: clear counters, arm every rule's trigger (`OnArm`), then run `OnEnter`: in order, each action awaited, alongside the armed rules; cancelled if the step exits first.
+- Enter step: clear counters, add 1 to its visit, arm every rule's trigger (`OnArm`), then run `OnEnter`: in order, each action whose `Condition` passes awaited, alongside the armed rules; cancelled if the step exits first.
 - Trigger `Fire(Payload)` → rule's `Condition` (none = pass) → rule's `Actions` in order, each awaited (`Finish()`) → if `bCompletesStep`, complete the step.
 - Complete step: disarm all triggers (`OnDisarm`), cancel running actions (`OnCancel`), run `OnExit` awaited, then enter `StepAfter` (None = next in the list). After the last step: `OnCompleted`, encounter finished.
 - `EndPlay` (destroyed, streamed out): pending change dropped, triggers disarmed, running actions cancelled, no `OnExit`; every later step change refused.
 - Leaving a step (any way) disarms before it cancels: what a cancel causes (`bKillOnStepExit` deaths) never fires a rule of the step being left.
 - `GoToStep(Name)` (only while a step runs) is Blueprint-callable for an action that picks the destination itself; the current step's name re-enters it (fresh triggers, counters at 0).
+- Rewind: a rule whose `StepAfter` names its own step, the same re-entry: held zones and spawns stopped, `OnEnter` from its first action, visit + 1. A retry that differs is one step with conditioned actions, never a copy of the step.
 - `bRepeat` false: the rule fires once per visit of the step, then its trigger is disarmed. True: every passing firing runs the actions.
 - A rule ignores firings while its own actions are still running; no queue, no overlapping runs of one instance.
 - A `bCompletesStep` rule that fired owns the step until its actions end: every other rule ignores firings meanwhile (a long completing list, e.g. a line that waits for the respawn, never lets a sibling complete the step first, `SafeSpots`: a death must not let the remaining waves open the exit). The step's `OnEnter` keeps running until the completion cancels it.
@@ -74,6 +79,7 @@ Start a chain of encounters at a later one, as if the earlier ones had been play
 - Chain: from the `bStartOnBeginPlay` encounter (`FindChainStart()`), next = the `Target` of the first `GeoStartEncounterAction` in its steps (any action list), until the target. Target not on the chain → log, start it with nothing skipped. The walk lives on the encounter: it reads other encounters' steps.
 - Skip replay, strict order: encounter by encounter along the chain; per encounter, steps in list order; per step, `OnEnter` actions then `OnExit` actions, each in list order → `OnSkipped()`. All in one call, before the target's `Start()`. Pairs that must cancel out (movement lock / unlock) therefore net to zero.
 - Rule actions are never replayed: reactions to events (quips, fail paths). Anything that must hold after a skip (an unlock, a lock / unlock pair) sits in `OnEnter` / `OnExit`.
+- An action with a `Condition` is never replayed either, whatever the condition: it is optional, so a skipped part owes it to nobody (an extra spell from the 3rd try is not given by a jump). Anything that must hold after a skip carries no `Condition`.
 - `OnSkipped()` (`UGeoEncounterAction`, `BlueprintNativeEvent`): no-op by default; an action overrides it only for a lasting effect on the player (`Action/CLAUDE.md`). Never latent, no `Finish()`.
 
 ## Start gate
@@ -100,7 +106,7 @@ The two starts of `BeginPlay` (the jump target's `StartAfterSkippingChain`, the 
 - An action that waits (`bLatent`) must call `Finish()` and release its timers/bindings in `OnCancel`. Non-latent: `Finish()` is called by the base after `Execute` returns.
 - Events a trigger waits for come from the event that happens (a delegate on its hub), never from a call planted in someone else's code (`AI/CodingStyle.md`, "GAS conventions"). No dedicated delegate to bind → raise a tag event.
 - Event tags `Encounter.Event.*` are authored in `Config/Tags/GeoGameplayTags.ini`; no C++ names them, only the emitter and the `GeoEventTrigger` that listens.
-- `IsDataValid` (editor) on the encounter: unique non-empty step names, `StepAfter` exists, no null trigger or action, no rule without actions and without `bCompletesStep`, a counter compare with no name, an action after a `GeoStartEncounterAction` in its list (the start aborts the encounter it sits in, so what follows never runs: Arrival reset).
+- `IsDataValid` (editor) on the encounter: unique non-empty step names, `StepAfter` exists, no null trigger or action, no rule without actions and without `bCompletesStep`, a counter compare with no name (on a rule or an action), an action after a `GeoStartEncounterAction` in its list (the start aborts the encounter it sits in, so what follows never runs: Arrival reset).
 - Runtime misses (nothing to teleport to, a watched actor gone) log to `LogGeoEncounter`; step entries and firings log at `Verbose`.
 
 ## Arena

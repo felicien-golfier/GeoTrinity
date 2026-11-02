@@ -11,12 +11,13 @@ bool UGeoCompareCondition::Evaluate_Implementation(FGeoEncounterPayload const& P
 	{
 		Left = Payload.Value;
 	}
-	else if (Source == EGeoCompareSource::Counter)
+	else if (Source == EGeoCompareSource::Counter || Source == EGeoCompareSource::StepVisit)
 	{
 		AGeoEncounter const* const Encounter = GetEncounter();
 		if (ensureMsgf(Encounter, TEXT("Condition %s used outside an encounter"), *GetName()))
 		{
-			Left = Encounter->GetCounter(CounterName);
+			Left =
+				Source == EGeoCompareSource::Counter ? Encounter->GetCounter(CounterName) : Encounter->GetStepVisit();
 		}
 	}
 

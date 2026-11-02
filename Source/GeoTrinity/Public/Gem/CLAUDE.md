@@ -32,7 +32,7 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 - Drop roll goes high tier down: Core chance, else Prism, else Cut, else Chip.
 - New gem stat = attribute in `UGeoGemAttributeSet` + catalog row.
 - Crits belong to everyone, no Core needed: `RollCritMultiplier` rolls `CritChance` (base 0%, raised by Precision) for `CritDamage` (base x1.2, raised by Edge). The Critical Core adds +30% `CritDamage` (its catalog row) and +10% `CritChance` (`UGeoGemStatsEffect`, constant next to the `Gem.Core.Critical` grant); the tag stays for the menus.
-- Editor sync: `GeoGemCsvSync` (`GeoTrinityEditor/Gem`) keeps catalog gems and the CSV equal, both ways; tests in `GeoTrinityEditor/Private/Tests/Gameplay/GeoGemTests.cpp`.
+- Editor sync: `GeoGemCsvSync` (`GeoTrinityEditor/Gem`) keeps catalog gems and the CSV equal, both ways; tests in `GeoTrinityEditor/Private/Tests/Gameplay/Gem/`.
 
 ## 3D gems
 One cut-stone solid per tier, richer and bigger as the tier rises; at rest, seen from above (orthographic camera), it shows its menu glyph's number of corners in the menus (the drop in the world stops in whatever pose its tumble reaches).

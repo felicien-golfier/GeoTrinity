@@ -276,16 +276,17 @@ class Builder:
         return obj
 
     # actions
-    def say(self, line, wait_for_respawn=False, seconds=""):
-        """`seconds` = a CT_Tutorial row: a timed, unskippable line of that length."""
-        return self.make(unreal.GeoCatLineAction, Line=line, bWaitForRespawn=wait_for_respawn, **self.timing(seconds))
+    def say(self, line, wait_for_respawn=False, seconds="", condition=None):
+        """`seconds` = a CT_Tutorial row: a timed, unskippable line of that length. `condition`: the action runs only if it passes."""
+        return self.make(unreal.GeoCatLineAction, Line=line, bWaitForRespawn=wait_for_respawn, Condition=condition,
+                         **self.timing(seconds))
 
-    def say_from_file(self, category, random=True, wait_for_respawn=False, seconds=""):
+    def say_from_file(self, category, random=True, wait_for_respawn=False, seconds="", condition=None):
         """A line of one Data/CatLines.txt category: random, no repeat until the category is spent, or in file order."""
         categories = unreal.GeoCatLineCategories()
         categories.set_editor_property("Names", [unreal.Name(category)])
         return self.make(unreal.GeoCatLineFromFileAction, Categories=categories, bRandom=random,
-                         bWaitForRespawn=wait_for_respawn, **self.timing(seconds))
+                         bWaitForRespawn=wait_for_respawn, Condition=condition, **self.timing(seconds))
 
     def timing(self, seconds_row):
         return {"bTimed": True, "Seconds": self.scalable(seconds_row)} if seconds_row else {}
@@ -300,14 +301,14 @@ class Builder:
         return actions + [self.make(unreal.GeoUnlockAbilityAction, AbilityTag=tag(ability_tag)),
                           self.make(unreal.GeoShowAbilityPageAction, AbilityTag=tag(ability_tag))]
 
-    def delay(self, seconds):
+    def delay(self, seconds, condition=None):
         """A wait inside a rule or a list: delays are actions, never a trigger. A number, or a CT_Tutorial row name."""
         if isinstance(seconds, str):
             duration = self.scalable(seconds)
         else:
             duration = unreal.ScalableFloat()
             duration.set_editor_property("Value", seconds)
-        return self.make(unreal.GeoDelayAction, Duration=duration)
+        return self.make(unreal.GeoDelayAction, Duration=duration, Condition=condition)
 
     def lock(self, locked):
         return self.make(unreal.GeoSetMovementLockedAction, bLocked=locked)
@@ -432,6 +433,10 @@ class Builder:
         return self.make(unreal.GeoCompareCondition, Source=unreal.GeoCompareSource.COUNTER, CounterName=name,
                          Comparison=comparison, Operand=float(operand))
 
+    def visit_is(self, comparison, operand):
+        return self.make(unreal.GeoCompareCondition, Source=unreal.GeoCompareSource.STEP_VISIT,
+                         Comparison=comparison, Operand=float(operand))
+
     # structure
     def rule(self, trigger, actions, condition=None, repeat=False, completes=False, step_after=""):
         rule = unreal.GeoEncounterRule()
@@ -485,6 +490,7 @@ def exit_steps(builder, room):
 
 GREATER_OR_EQUAL = unreal.GeoCompareOperator.GREATER_OR_EQUAL
 EQUAL = unreal.GeoCompareOperator.EQUAL
+GREATER = unreal.GeoCompareOperator.GREATER
 
 
 WALK_LINE_INDEX = 5  # the "Hold W, A, S or D" line of landing_steps
@@ -761,35 +767,30 @@ def miniboss_steps(b):
 
 def zones_steps(b):
     """Steps 7-9. The colours: a timed script (every line a CT_Tutorial row, unskippable) where the Damage zone grows,
-    Shield and Heal come in with their lines and only their overlap survives; a death never leaves the colour steps: after
-    DeathTime ZoneColorsRetry replays the whole script with a ZoneDeath pun as its opening instead of the welcome.
+    Shield and Heal come in with their lines and only their overlap survives; a death never leaves the colour step: after
+    DeathTime it rewinds into itself (StepAfter ZoneColors), the whole script replayed with a ZoneDeath pun as its opening
+    (step visit above 1) instead of the welcome.
     No line names a colour (zone colours are params).
-    Then the lethal wave (the player's death leaves), then the safe-spot waves; a death leaves SafeSpots for
-    SafeSpotsWait, which comes back after DeathTime."""
-    def colors_step(name, opening, opening_row):
-        return b.step(name, [
-            b.rule(b.player_died(), [b.delay(DEATH_TIME)], completes=True, step_after="ZoneColorsRetry"),
-            b.rule(b.counter("Survived"), [], completes=True, step_after="LethalWave"),
-        ], on_enter=[
-            opening, b.zone("Damage"), b.delay(opening_row),
-            b.say("It starts small and spreads until it owns the whole floor, like you did in ~~my~~ house.",
-                  seconds="ColorLineHouseSeconds"),
-            b.delay("ColorLineHouseSeconds"),
-            b.say("Let me \"help\": a zone that softens the damage. Softens. I just like the show to last.",
-                  seconds="ColorLineShieldSeconds"),
-            b.zone("Shield"), b.delay("ColorLineShieldSeconds"),
-            b.say("Now one that heals, because you don't have nine lives. I'm saving you. Stand in both, if you like your "
-                  "tail.", seconds="ColorLineHealSeconds"),
-            b.zone("Heal"), b.delay("ColorLineHealSeconds"),
-            b.delay("ColorSurviveSeconds"), b.count("Survived")])
-
-    steps = [
-        colors_step("ZoneColors", b.say(
-            "Welcome to the Color Room. The floor will hurt you, and I'll enjoy it. Think of it as customer service.",
-            seconds="ColorLineWelcomeSeconds"), "ColorLineWelcomeSeconds"),
-        colors_step("ZoneColorsRetry", b.say_from_file("ZoneDeath", random=False, seconds="ColorDeathLineSeconds"),
-                    "ColorDeathLineSeconds"),
-    ]
+    Then the lethal wave (the player's death leaves), then the safe-spot waves; a death rewinds SafeSpots after
+    DeathTime."""
+    steps = [b.step("ZoneColors", [
+        b.rule(b.player_died(), [b.delay(DEATH_TIME)], completes=True, step_after="ZoneColors"),
+        b.rule(b.counter("Survived"), [], completes=True, step_after="LethalWave"),
+    ], on_enter=[
+        b.say("Welcome to the Color Room. The floor will hurt you, and I'll enjoy it. Think of it as customer service.",
+              seconds="ColorOpeningSeconds", condition=b.visit_is(EQUAL, 1)),
+        b.say_from_file("ZoneDeath", random=False, seconds="ColorOpeningSeconds", condition=b.visit_is(GREATER, 1)),
+        b.zone("Damage"), b.delay("ColorOpeningSeconds"),
+        b.say("It starts small and spreads until it owns the whole floor, like you did in ~~my~~ house.",
+              seconds="ColorLineHouseSeconds"),
+        b.delay("ColorLineHouseSeconds"),
+        b.say("Let me \"help\": a zone that softens the damage. Softens. I just like the show to last.",
+              seconds="ColorLineShieldSeconds"),
+        b.zone("Shield"), b.delay("ColorLineShieldSeconds"),
+        b.say("Now one that heals, because you don't have nine lives. I'm saving you. Stand in both, if you like your "
+              "tail.", seconds="ColorLineHealSeconds"),
+        b.zone("Heal"), b.delay("ColorLineHealSeconds"),
+        b.delay("ColorSurviveSeconds"), b.count("Survived")])]
     steps.append(b.step("LethalWave", [
         b.rule(b.player_died(), [
             b.say("Oh, it hurts? Upsy, I forgot to leave you room to survive...", True),
@@ -802,17 +803,18 @@ def zones_steps(b):
                        "game.", seconds="ColorLineRememberSeconds"),
                  b.delay("ColorLineRememberSeconds"), b.delay(0.5),
                  b.say("Big wave is coming! Avoid it! Quick, quick, you can do it!"), b.wave()]))
-    steps.append(b.step("SafeSpotsWait", [b.rule(b.counter("Waited"), [], completes=True)],
-                        on_enter=[b.delay(DEATH_TIME), b.count("Waited")]))
-    # The exit pad opens from the finishing rule, not OnExit: a death leaves this step too.
+    # A death rewinds the step; its OnExit (after the running waves are cancelled) says the death line and waits DeathTime, skipped when
+    # the series was done. The exit pad opens from the finishing rule, not OnExit: a death leaves this step too.
+    died = b.counter_is("WavesDone", EQUAL, 0)
     steps.append(b.step("SafeSpots", [
-        b.rule(b.player_died(), [b.say("Get into a spot before the wave lands. Then another wave. The spots move, so you "
-                                       "move. It's like dancing, but you die.", True)],
-               completes=True, step_after="SafeSpotsWait"),
+        b.rule(b.player_died(), [], completes=True, step_after="SafeSpots"),
         b.rule(b.counter("WavesDone"), open_with_last_line(b, "Zones", [
             b.say("Survived? Don't get cocky: this wave was nicely labeled. The real ones are not.")]),
                condition=b.payload_count(EQUAL, 1), completes=True),
-    ], on_enter=[b.wave(lanes) for lanes in SAFE_WAVE_LANES] + [b.count("WavesDone")]))
+    ], on_enter=[b.wave(lanes) for lanes in SAFE_WAVE_LANES] + [b.count("WavesDone")],
+        on_exit=[b.say("Get into a spot before the wave lands. Then another wave. The spots move, so you move. It's like "
+                       "dancing, but you die.", True, condition=died),
+                 b.delay(DEATH_TIME, condition=died)]))
     return steps
 
 

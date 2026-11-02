@@ -101,6 +101,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoEncounter")
 	int32 GetCounter(FName Counter) const { return Counters.FindRef(Counter); }
 
+	/** How many times the current step was entered since Start / Restart (1 on the first entry); 0 while Idle. */
+	UFUNCTION(BlueprintPure, Category = "GeoEncounter")
+	int32 GetStepVisit() const { return State == EState::Idle ? 0 : StepVisits.FindRef(CurrentStep); }
+
 	/** The name of the step being run, NAME_None while the encounter is not running (what a test reports on a stall).
 	 */
 	FName GetCurrentStepName() const
@@ -147,7 +151,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoEncounter")
 	bool bStartOnBeginPlay = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoEncounter")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoEncounter", meta = (TitleProperty = "Name"))
 	TArray<FGeoEncounterStep> Steps;
 
 	/** The start of this encounter's room: a world URL portal equal to its PlayerStartTag, or to its number along
@@ -244,6 +248,9 @@ private:
 	FPendingChange Pending;
 
 	TMap<FName, int32> Counters;
+
+	/** Entries per step index, cleared by Start / Restart. */
+	TMap<int32, int32> StepVisits;
 
 	/** Actions that asked HoldUntilStepLeft during the current step. */
 	UPROPERTY(Transient)

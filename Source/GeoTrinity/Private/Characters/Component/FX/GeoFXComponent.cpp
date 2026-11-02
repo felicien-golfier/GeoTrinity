@@ -22,24 +22,10 @@ static constexpr float FastBlinkSpeedMultiplier = 2.f;
 
 void FGeoRunningSustainedFX::Stop() const
 {
-	// Only a running system completes, and completing is what destroys an ended one.
-	if (VFXComponent && VFXComponent->IsActive())
+	// Cut at once: a buff's held layers never die by themselves, so a graceful end would only linger until the cap.
+	if (VFXComponent)
 	{
-		// Armed before Deactivate, which destroys a system that has nothing left to draw.
-		UNiagaraComponent* const Ending = VFXComponent;
-		FTimerHandle CutHandle;
-		Ending->GetWorld()->GetTimerManager().SetTimer(CutHandle,
-													   FTimerDelegate::CreateWeakLambda(Ending,
-																						[Ending]()
-																						{
-																							Ending->DestroyComponent();
-																						}),
-													   MaxLoopFXFadeOutDuration, false);
-		Ending->SetAutoDestroy(true);
-		Ending->Deactivate();
-	}
-	else if (VFXComponent)
-	{
+		VFXComponent->DeactivateImmediate();
 		VFXComponent->DestroyComponent();
 	}
 	if (AudioComponent)

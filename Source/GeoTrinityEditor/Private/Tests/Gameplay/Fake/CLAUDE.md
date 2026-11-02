@@ -4,7 +4,8 @@ Stand-ins the gameplay tests spawn. Every `UCLASS` is `NotPlaceable, Transient`:
 
 | File | Holds |
 |---|---|
-| `GeoTestWorld.h` | Listen-server test world: `CreateTestWorld` / `DestroyTestWorld` |
+| `GeoTestWorld.h` | Listen-server test world: `CreateTestWorld` / `DestroyTestWorld`; `SetTestNetMode` makes it answer as another machine (client) |
+| `GeoTestHazardPattern.h` | Lateral / devastating wave with a transient `MPC_MaskedArea` stand-in (`GeoTestMask`: make it, read the slots the pattern uploaded) |
 | `GeoTestDeployable.h` | Concrete `AGeoDeployableBase` + deployer pawn (`AI/Testing.md`, "Spawning a deployable in a test") |
 | `GeoTestTurret.h` | Turret with default attributes and a public `FindBestTarget` |
 | `GeoTestEncounter.h` | Fake trigger / actions / encounter / HUD |

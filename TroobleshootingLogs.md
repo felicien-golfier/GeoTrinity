@@ -262,3 +262,8 @@ A test set `GetMutableDefault<AEnemyCharacter>()->FriendlyBodyMaterial` and spaw
 
 ## Force-stopping a montage-less pattern logged an error (2026-10-27)
 `UPattern::EndPattern(true)` read the avatar's anim instance whatever the pattern: the Training Room's hidden caster (no mesh) logged `Please set an anim instance` for each zone pattern cut by the map's teardown. It goes through `GetMontageAnimInstance()` (null when the pattern has no montage), like every other montage path.
+
+# Rendering
+
+## Hex tiles blink when the camera zooms (2026-11-02)
+Tiles flashed a light reflection on every ortho zoom change, with ray tracing, Lumen and virtual shadow maps all off. Fix: **Cast Ray Tracing Shadows** off on the tiles.

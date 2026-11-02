@@ -5,6 +5,9 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "AbilitySystem/Lib/GeoTarget.h"
+#include "Actor/Arena/GeoArena.h"
+#include "Actor/Arena/GeoDummyArena.h"
+#include "Actor/Arena/GeoHexArena.h"
 #include "Actor/GeoTargetPoint.h"
 #include "Characters/EnemyCharacter.h"
 #include "Characters/GeoEnemySetup.h"
@@ -14,6 +17,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameplayTagsManager.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/DataValidation.h"
 #include "Tests/Gameplay/Fake/GeoTestEncounter.h"
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
@@ -169,35 +173,88 @@ bool FGeoTargetPointTest::RunTest(FString const& /*Parameters*/)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoTargetArenaCenterTest, "GeoTrinity.Abilities.Target.ArenaCenter",
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoTargetFightCenterTest, "GeoTrinity.Abilities.Target.FightCenter",
 								 GeoTargetTestFlags)
 
-bool FGeoTargetArenaCenterTest::RunTest(FString const& /*Parameters*/)
+bool FGeoTargetFightCenterTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AGeoTestCasterArena* const Arena = PrepareTargetWorld(*this, *World);
-	FGeoTarget const Target = MakeTarget(EGeoTarget::ArenaCenter);
+	FGameplayTag const RoomTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Tutorial.Zones"));
+	AGeoTargetPoint* const Center = World->SpawnActor<AGeoTargetPoint>(FVector(400.f, 250.f, 0.f), FRotator());
+	Center->GameplayTags.AddTag(FGeoGameplayTags::Get().TargetPoint_FightCenter);
+	Center->GameplayTags.AddTag(RoomTag);
+
+	FGeoTarget Target = MakeTarget(EGeoTarget::TargetPoint);
+	Target.TargetPointTag = FGeoGameplayTags::Get().TargetPoint_FightCenter;
 	FGeoTargetContext Context;
 	Context.Caster = Arena->GetBoss();
-
-	TArray<FGeoTargetPick> const Picks = GeoASLib::PickTargets(Target, Context);
-	if (TestEqual(TEXT("One pick"), Picks.Num(), 1))
+	Context.ArenaTag = RoomTag;
+	TArray<FVector2D> const Locations = GeoASLib::GetTargetLocations(Target, Context);
+	if (TestEqual(TEXT("One location"), Locations.Num(), 1))
 	{
-		TestTrue(TEXT("At the arena's location"), Picks[0].Location.Equals(FVector2D(Arena->GetActorLocation()), 0.01));
-		TestFalse(TEXT("No actor to follow"), Picks[0].Actor.IsValid());
+		TestTrue(TEXT("At the point, not at the arena's location"), Locations[0].Equals(FVector2D(400.f, 250.f), 0.01));
 	}
 
-	AddExpectedErrorPlain(TEXT("Ensure condition failed: Arena"), EAutomationExpectedErrorFlags::Contains, -1);
-	AddExpectedErrorPlain(TEXT("has no arena"), EAutomationExpectedErrorFlags::Contains, -1);
+	UGeoTestTargetPatternAbility* const Ability = NewObject<UGeoTestTargetPatternAbility>();
+	Ability->SetTarget(Target);
+	TestFalse(TEXT("Aiming at the center needs no arena of the caster"), Ability->RequiresArena());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoArenaCenterTest, "GeoTrinity.Arena.Center", GeoTargetTestFlags)
+
+bool FGeoArenaCenterTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	PrepareTargetWorld(*this, *World);
+	FGameplayTag const RoomTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Tutorial.Zones"));
+	FGameplayTag const OtherRoomTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
+	AGeoTargetPoint* const Center = World->SpawnActor<AGeoTargetPoint>(FVector(400.f, 250.f, 0.f), FRotator());
+	Center->GameplayTags.AddTag(FGeoGameplayTags::Get().TargetPoint_FightCenter);
+	Center->GameplayTags.AddTag(RoomTag);
+
+	AGeoArena* const Arena = World->SpawnActor<AGeoArena>(FVector(0.f, 1000.f, 0.f), FRotator());
+	Arena->ArenaTag = RoomTag;
+	TestTrue(TEXT("The center is the point's XY, the arena standing elsewhere"),
+			 Arena->GetCenter().Equals(FVector2D(400.f, 250.f), 0.01));
+	FDataValidationContext ValidContext;
+	static_cast<UObject const*>(Arena)->IsDataValid(ValidContext);
+	TestEqual(TEXT("An arena with its point is valid"), ValidContext.GetNumErrors(), 0u);
+
+	AGeoArena* const Pointless = World->SpawnActor<AGeoArena>(FVector(0.f, 1000.f, 0.f), FRotator());
+	Pointless->ArenaTag = OtherRoomTag;
+	FDataValidationContext InvalidContext;
+	static_cast<UObject const*>(Pointless)->IsDataValid(InvalidContext);
+	TestEqual(TEXT("An arena with no point is invalid"), InvalidContext.GetNumErrors(), 1u);
+	AddExpectedErrorPlain(TEXT("Ensure condition failed: CenterPoint.IsValid() || !RequiresCenter()"),
+						  EAutomationExpectedErrorFlags::Contains, -1);
+	AddExpectedErrorPlain(TEXT("no TargetPoint.FightCenter point carries Arena.Hex"),
+						  EAutomationExpectedErrorFlags::Contains, -1);
 	AddExpectedError(TEXT("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]"),
 					 EAutomationExpectedErrorFlags::Contains, -1);
-	Context.Caster = World->SpawnActor<AEnemyCharacter>();
-	TestEqual(TEXT("A boss with no arena: none"), GeoASLib::GetTargetLocations(Target, Context).Num(), 0);
+	TestTrue(TEXT("No point: the center asserts, then reads the arena's own XY"),
+			 Pointless->GetCenter().Equals(FVector2D(0.f, 1000.f), 0.01));
 
-	UGeoTestTargetPatternAbility* const Ability = NewObject<UGeoTestTargetPatternAbility>();
-	TestFalse(TEXT("Another target needs no arena"), Ability->RequiresArena());
-	Ability->SetTarget(Target);
-	TestTrue(TEXT("A pattern ability aiming there requires one"), Ability->RequiresArena());
+	AGeoDummyArena* const Dummy = World->SpawnActor<AGeoDummyArena>(FVector(0.f, 1000.f, 0.f), FRotator());
+	Dummy->ArenaTag = OtherRoomTag;
+	FDataValidationContext DummyContext;
+	static_cast<UObject const*>(Dummy)->IsDataValid(DummyContext);
+	TestEqual(TEXT("A dummy arena needs no point"), DummyContext.GetNumErrors(), 0u);
+
+	AGeoHexArena* const Hex = World->SpawnActor<AGeoHexArena>(FVector(0.f, 1000.f, 0.f), FRotator());
+	Hex->ArenaTag = RoomTag;
+	Center->SetActorLocation(FVector(0.f, 1000.f, 0.f));
+	FDataValidationContext HexContext;
+	Hex->IsDataValid(HexContext);
+	TestEqual(TEXT("A hex arena with its point on the grid origin is valid"), HexContext.GetNumErrors(), 0u);
+	Center->SetActorLocation(FVector(500.f, 1000.f, 0.f));
+	FDataValidationContext FarHexContext;
+	Hex->IsDataValid(FarHexContext);
+	TestEqual(TEXT("A point farther than a tile from the grid origin is invalid"), FarHexContext.GetNumErrors(), 1u);
 
 	DestroyTestWorld(World);
 	return true;

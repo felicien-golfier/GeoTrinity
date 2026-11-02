@@ -109,7 +109,8 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 					  "Outside the arena — players stand here between fights.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FightLocation, "FightLocation",
 					  "Inside the arena — players are teleported here on fight commit.");
-	AddTargetPointTag(GameplayTags.TargetPoint_FightCenter, "FightCenter", "Center of the fight area.");
+	AddTargetPointTag(GameplayTags.TargetPoint_FightCenter, "FightCenter",
+					  "Center of the arena; mandatory, one per arena.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FiringPoint, "FiringPoint", "Where the AI can fire from.");
 
 	// AI //

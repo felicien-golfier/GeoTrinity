@@ -7,6 +7,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Arena/GeoArenaBarrier.h"
+#include "Actor/Arena/GeoArenaVolume.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/Component/FX/GeoLoopSoundComponent.h"
 #include "Characters/EnemyCharacter.h"
@@ -86,6 +87,32 @@ void AGeoArena::BeginPlay()
 	ApplyBackgroundLook();
 }
 
+AActor* AGeoArena::FindCenterPoint() const
+{
+	TArray<AActor*> const Points =
+		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, ArenaTag);
+
+	return Points.IsEmpty() ? nullptr : Points[0];
+}
+
+FVector2D AGeoArena::GetCenter() const
+{
+	if (!CenterPoint.IsValid())
+	{
+		CenterPoint = FindCenterPoint();
+		ensureMsgf(CenterPoint.IsValid() || !RequiresCenter(), TEXT("%s: no TargetPoint.FightCenter point carries %s"),
+				   *GetName(), *ArenaTag.ToString());
+	}
+
+	FVector2D Center(GetActorLocation());
+	if (CenterPoint.IsValid())
+	{
+		Center = FVector2D(CenterPoint->GetActorLocation());
+	}
+
+	return Center;
+}
+
 void AGeoArena::ResetBoss()
 {
 	if (!ensureMsgf(GeoLib::IsServer(this), TEXT("%s: ResetBoss is server-only"), *GetName()) || !BossClass)
@@ -100,7 +127,8 @@ void AGeoArena::ResetBoss()
 
 	TArray<AActor*> const SpawnPoints =
 		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_BossSpawn, ArenaTag);
-	FVector const SpawnLocation = SpawnPoints.IsEmpty() ? GetActorLocation() : SpawnPoints[0]->GetActorLocation();
+	FVector const SpawnLocation =
+		SpawnPoints.IsEmpty() ? FVector(GetCenter(), GetActorLocation().Z) : SpawnPoints[0]->GetActorLocation();
 	Boss = AEnemyCharacter::SpawnEnemy(*GetWorld(), BossClass, SpawnLocation, this, this, &BossSetup);
 	if (!Boss)
 	{
@@ -172,6 +200,24 @@ TArray<AEnemyCharacter const*> AGeoArena::GetLiveAdds() const
 	}
 
 	return LiveAdds;
+}
+
+TArray<AEnemyCharacter const*> AGeoArena::GetLiveEnemiesInBounds() const
+{
+	TArray<AEnemyCharacter const*> Enemies;
+	FBox2D const Bounds = AGeoArenaVolume::GetArenaBounds(this, ArenaTag);
+	if (Bounds.bIsValid)
+	{
+		for (TActorIterator<AEnemyCharacter> It(GetWorld()); It; ++It)
+		{
+			if (!It->IsDead() && *It != Boss && Bounds.IsInside(FVector2D(It->GetActorLocation())))
+			{
+				Enemies.Add(*It);
+			}
+		}
+	}
+
+	return Enemies;
 }
 
 void AGeoArena::DestroyAdds()
@@ -493,6 +539,12 @@ EDataValidationResult AGeoArena::IsDataValid(FDataValidationContext& Context) co
 		}
 	}
 
+	if (RequiresCenter() && GetWorld() && !FindCenterPoint())
+	{
+		Context.AddError(FText::FromString(
+			FString::Printf(TEXT("No TargetPoint.FightCenter point carries %s"), *ArenaTag.ToString())));
+	}
+
 	if (Context.GetNumErrors() > 0)
 	{
 		return EDataValidationResult::Invalid;
@@ -632,8 +684,7 @@ void AGeoArena::ApplyBackgroundLook() const
 		{
 			UStaticMeshComponent* const FloorMesh = Floor->GetStaticMeshComponent();
 			FloorMesh->SetMaterial(0, Look);
-			FloorMesh->SetCustomPrimitiveDataVector2(GeoMaterialParams::ArenaCenterPrimitiveDataIndex,
-													 FVector2D(GetActorLocation()));
+			FloorMesh->SetCustomPrimitiveDataVector2(GeoMaterialParams::ArenaCenterPrimitiveDataIndex, GetCenter());
 		}
 	}
 }

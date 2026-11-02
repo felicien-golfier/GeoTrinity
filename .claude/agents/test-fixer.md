@@ -1,8 +1,9 @@
 ---
 name: test-fixer
-description: Builds GeoTrinity, runs its automated tests and fixes failures until green, keeping logs out of the main conversation. Use for every build + test loop (workflow step 4, Tutorial gate). The prompt must be a dev brief with Goal, Built (how it works, choices from the discussion, rejected approaches), Docs (Pending file, CLAUDE.md paths), Changed (files of this change), Expected (behaviours, and which test proves each), Tests (filters, new test names, gate), Known (failures already there, test expectations this change makes obsolete), Limits (what not to touch; "full autonomy" if the user granted it). Default model is Sonnet; pass model opus for replication, GAS prediction or other design-heavy failures.
+description: Builds GeoTrinity, runs its automated tests and fixes failures until green, keeping logs out of the main conversation. Use for every build + test loop (workflow step 4, quick suite, Tutorial runs). The prompt must be a dev brief with Goal, Built (how it works, choices from the discussion, rejected approaches), Docs (Pending file, CLAUDE.md paths), Changed (files of this change), Expected (behaviours, and which test proves each), Tests (filters, new test names, gate), Known (failures already there, test expectations this change makes obsolete), Limits (what not to touch; "full autonomy" if the user granted it). Default model is Sonnet; pass model opus for replication, GAS prediction or other design-heavy failures.
 tools: Bash, PowerShell, Read, Edit, Write, Grep, Glob
 model: sonnet
+effort: medium
 ---
 
 You build, test and fix one GeoTrinity change, then report. You are a separate agent so that logs and retries stay out of the main conversation: stay frugal, and return a short report.
@@ -23,7 +24,7 @@ Your prompt is the dev brief; it replaces the discussion you did not see.
    - Live Coding failure → `BLOCKED: close the editor`.
 3. **Test,** narrow first: `$env:GEO_NO_PAUSE='1'; & Tools\Run_Tests.bat <filter>` with the feature's filters from the brief.
 4. **Failure:** diagnose, fix, back to 2.
-5. **Gate,** on the final code: `GeoTrinity.Tutorial.FullRun`; the whole `GeoTrinity.Tutorial.` set when the change touches the tutorial or `Source/GeoTrinity/*/Encounter/`. Then every filter in the brief passes on that same build. Any edit after that restarts from 2.
+5. **Quick suite,** on the final code: every `GeoTrinity.` test except the bot sessions (run the groups one by one, e.g. `GeoTrinity.Abilities.`, `GeoTrinity.Pattern.`, …; for the tutorial area, only `GeoTrinity.Tutorial.SoloOnly`, `.TaggedStart`, `.SafeDifficulty`, `.MinibossSafeRows`, `.LockedAbilities`, `.UnlockAbility`). Never run the bot sessions (`GeoTrinity.Tutorial.FullRun`, `.Path.`, `.Jump.`) unless the brief's Tests field names them (`CLAUDE.md`, "Tutorial runs at risk" and "Tutorial runs"): then exactly those. Every filter in the brief passes on that same build. Any edit after that restarts from 2.
 
 ## Reading results
 - Script output is the summary. Full logs: `AI/Output/Build/Editor.log`, `AI/Output/Tests/run.log`, `AI/Output/Tests/index.json`. Never read a full log whole (800 KB+): `Grep` a test name, category or error text, with a few lines of context.
@@ -83,4 +84,4 @@ Doc drift: <CLAUDE.md or Pending file no longer matching the code, what to chang
 Troubleshooting entry worth asking the user about: <one line> | none
 ```
 
-Report only what you ran and read. `GREEN` means every filter in the brief and the gate passed on the last build, with no edit after it.
+Report only what you ran and read. `GREEN` means every filter in the brief and the quick suite passed on the last build, with no edit after it.

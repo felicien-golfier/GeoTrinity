@@ -38,13 +38,12 @@ ROWS = [
     ("ColorZoneHeal", 6.25),  # per second
     ("ColorZoneGrowSeconds", 8.0),
     ("ColorZoneMaxRadius", 1350.0),  # past the Zones room's corner (half 700 x 1100)
-    ("ColorLineWelcomeSeconds", 5.0),  # the timed script of the Zones room (AI/Tutorial/Steps.md): one row per beat
+    ("ColorOpeningSeconds", 5.0),  # the timed script of the Zones room (AI/Tutorial/Steps.md): one row per beat
     ("ColorLineHouseSeconds", 6.0),
     ("ColorLineShieldSeconds", 6.0),
     ("ColorLineHealSeconds", 6.0),
     ("ColorSurviveSeconds", 6.0),
     ("ColorLineRememberSeconds", 5.0),  # first line of the lethal-wave step
-    ("ColorDeathLineSeconds", 5.0),
     ("HealCallPauseSeconds", 6.0),  # Deploy room: pause before each "I need healing" line
     ("MinibossProjectileDamage", (5.0, 8.0, 8.0)),
     ("MinibossProjectileSpeed", 600.0),

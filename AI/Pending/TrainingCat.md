@@ -4,6 +4,7 @@ Goal: the Training Room's top-left corner holds the Cat: it tells random `Pun` l
 Priority: 2
 Docs written: `Source/GeoTrinity/Public/Characters/CLAUDE.md` ("GeoTrainingCat"), `AI/StateTree/{Movement,Ability,Utility}/CLAUDE.md`, `Actor/CLAUDE.md` (`GeoCatAnim.h`), `Tool/CatLine/CLAUDE.md` (`Retort`), `Source/GeoTrinity/Public/CLAUDE.md` (tests list), `AI/Tutorial/Cat.md` ("Training Room Cat"), `AI/Tutorial/Flow.md`, `AI/Python/Tutorial/CLAUDE.md` (`training_room.py`, `pie_training_cat.py`).
 Decided with the user: enemy character (replicated, hittable, reuses GAS + StateTree); lines on the HUD Cat-line popup; hit → angry line + non-lethal warning burst; second hit → instant lethal strike.
+Related: the Training Room becoming a networked encounter, `EncounterNetwork.md`.
 
 ## Check first (before coding)
 - [ ] Read `GeoCat.cpp` anim-speed block (~l.260-280) and lift it as-is to `Actor/GeoCatAnim.h/.cpp` `GeoCatAnim::WriteSpeed(USkeletalMeshComponent*, float)`; `AGeoCat` calls it (one copy)

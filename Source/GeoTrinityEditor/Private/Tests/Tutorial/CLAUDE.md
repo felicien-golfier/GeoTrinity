@@ -1,6 +1,6 @@
 # Tests/Tutorial
 
-Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the tutorial and checks what each room must show. Editor module because play-in-editor needs `UnrealEd` / `LevelEditor`. How to run, the gate: `AI/Testing.md`, "Tutorial runs".
+Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the tutorial and checks what each room must show. Editor module because play-in-editor needs `UnrealEd` / `LevelEditor`. How to run: `AI/Testing.md`, "Tutorial runs".
 
 | File | Role |
 |---|---|
@@ -22,7 +22,7 @@ Headless play-in-editor runs of the real `/Game/Maps/Tutorial`: a bot plays the 
 - Expected, never failed on: `GC_Explosion`'s Blueprint error (headless: no Niagara component to set a variable on).
 - A kept line (`KeepLineFragment`) is never ended by the bot: the arrival's abort ends it (`Path.EarlyPortal`).
 - Miniboss wave lanes: the wave's direction is rolled per firing, so the bot reads the live pattern's yaw and half width and places the pawn by its offset across the travel. "Out of every lane" and "no dummy alive" both stand where no lane is, clear of the spot a killed ally respawns on (its lane reopens at once).
-- Waves after a death: the run before still fires its remaining waves while its Cat line waits for the respawn, so the safe-spot bot re-bases its wave count when the pawn is alive again. The Miniboss wipe stages walk the respawned pawn back into the arena before each death.
+- Waves after a death: a death cancels the run's waves at once (the death line and wait sit in `OnExit`); the rewound run fires its first wave on the respawn frame, so the safe-spot bot's wave base is the count it saw while the pawn was dead. The Miniboss wipe stages walk the respawned pawn back into the arena before each death.
 - The play-in-editor world begins play before its player joins: its start stage clears the line log, then a FullRun restarts `Tut_Landing_Encounter` once the pawn exists; a path test jumps instead.
 - The Miniboss kill writes XP and loot to the user's gem profile: every session that can kill it loads the profile first and writes it back after (`FGeoRestoreGemProfileCommand`).
 - Headless `-NullRHI` spawns no Niagara component; `UPattern::SpawnPersistentVfx` ensures only where the game can render.
@@ -55,7 +55,7 @@ Every branch of `tutorial_encounters.py` has one owner. A new room, step, rule o
 | Dummies | chaser closes in, shooter fires; three kills | FullRun |
 | Dummies | death mid-fight: respawn on the entrance, survivors stay, fight goes on | Path.DummiesDeath |
 | Zones | timed script: Damage zone grows from the centre and hurts; Shield then Heal spawn on their lines; the pawn walks into the Shield, then the overlap, and survives with health rising there; the step ends on its clock (no early finish, F ignored: lines are timed) and every zone is gone; the colour line opens the lethal wave step; lethal wave kills | FullRun |
-| Zones | camping outside Shield and Heal dies before the survive beat; camping in the Shield only, then in the Heal only, dies before the timeline ends; each death: next `[ZoneDeath]` line in file order as the opening line of `ZoneColorsRetry` (the welcome is not said again), the timeline restarts from t=0 (zones back); no Cat line of the room names a colour; the wave's far edge reaches the room's far wall; camping in both survives to the colour line of the lethal wave step | Path.ZonesCamp |
+| Zones | camping outside Shield and Heal dies before the survive beat; camping in the Shield only, then in the Heal only, dies before the timeline ends; each death: `ZoneColors` rewinds with the next `[ZoneDeath]` line in file order as its opening (the welcome is not said again), the timeline restarts from t=0 (zones back); no Cat line of the room names a colour; the wave's far edge reaches the room's far wall; camping in both survives to the colour line of the lethal wave step | Path.ZonesCamp |
 | Zones | safe spots: series 1 dies on wave 2, series 2 on wave 3, series 3 clears; every lane of every wave used once; retry line, restart from wave 1 | Path.SafeSpotsRetry |
 | Miniboss | salve, boss moves between its points, summon's zone grows, killed summon turns ally and fires its own salve (`GA_TutorialAllySalve`), wave, last hit (health to 0, as damage does) opens the final exit, loot and XP granted; the fountain throws one drop per granted gem and shard | FullRun |
 | Miniboss | deaths 1-3: wipe (adds gone, boss full), tips in order; 4th death silent | Path.MinibossWipe |

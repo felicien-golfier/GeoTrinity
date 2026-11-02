@@ -1188,7 +1188,8 @@ namespace GeoTutorialStages
 			FCamp const Camp = Camps[Index];
 			TSharedRef<bool> bCamping = MakeShared<bool>(false);
 			TSharedRef<double> LastLogged = MakeShared<double>(-1.);
-			// The first run opens with the welcome; after a death ZoneColorsRetry opens with the next death line.
+			// The first run opens with the welcome; after a death ZoneColors rewinds and opens with the next death
+			// line.
 			Bot.AddLineStage(FString::Printf(TEXT("Zones camp %d (%s): the timeline starts"), Index + 1, *Camp.Name),
 							 Index == 0 ? ZonesIntroLine : ZonesDeathLines[Index - 1]);
 			Bot.AddStage(
@@ -1268,50 +1269,57 @@ namespace GeoTutorialStages
 		float const CentreX = GeoTutorial::RoomCentreX(GeoTutorial::Zones);
 		TSharedRef<int32> Base = MakeShared<int32>(0);
 		TSharedRef<bool> bAlive = MakeShared<bool>(false);
-		Bot.AddStage(FString::Printf(TEXT("Zones: safe-spot run %d"), Index + 1),
-					 [&Bot, Watch, Series, Index, CentreX, Base, bAlive, LethalWaveCount](bool const bFirstTick)
-					 {
-						 if (bFirstTick)
-						 {
-							 *Base = Index == 0 ? *LethalWaveCount : Bot.GetWatchCount(Watch);
-							 *bAlive = false;
-						 }
+		TSharedRef<int32> DeadCount = MakeShared<int32>(0);
+		Bot.AddStage(
+			FString::Printf(TEXT("Zones: safe-spot run %d"), Index + 1),
+			[&Bot, Watch, Series, Index, CentreX, Base, bAlive, DeadCount, LethalWaveCount](bool const bFirstTick)
+			{
+				if (bFirstTick)
+				{
+					*Base = Index == 0 ? *LethalWaveCount : Bot.GetWatchCount(Watch);
+					*bAlive = false;
+					*DeadCount = *Base;
+				}
 
-						 int32 const Fired = Bot.GetWatchCount(Watch) - *Base;
-						 APlayableCharacter const* const Pawn = Bot.GetPawn();
-						 bool bDone = false;
-						 if (Pawn && !Pawn->IsDead())
-						 {
-							 if (!*bAlive)
-							 {
-								 // Back from a death: waves of the run before still fired while it waited for the
-								 // respawn.
-								 *Base = Bot.GetWatchCount(Watch);
-							 }
+				int32 const Fired = Bot.GetWatchCount(Watch) - *Base;
+				APlayableCharacter const* const Pawn = Bot.GetPawn();
+				bool bDone = false;
+				if (Pawn && !Pawn->IsDead())
+				{
+					if (!*bAlive)
+					{
+						// Back from a death: waves of the run before still fired while it waited for the
+						// respawn. The run's own first wave can fire on the respawn's very frame: it counts.
+						*Base = *DeadCount;
+					}
 
-							 *bAlive = true;
-							 int32 const Wave = FMath::Clamp(Bot.GetWatchCount(Watch) - *Base, 1, Series.LaneY.Num());
-							 FVector2D const Lane(CentreX, Series.LaneY[Wave - 1]);
-							 if (FVector2D::Distance(FVector2D(Pawn->GetActorLocation()), Lane) > 1.f)
-							 {
-								 Bot.MovePawn(Lane);
-							 }
-						 }
-						 else if (Pawn && *bAlive)
-						 {
-							 *bAlive = false;
-							 bDone = true;
-							 Bot.Test.TestEqual(TEXT("The wave the pawn died on"), Fired, Series.DeathWave);
-						 }
+					*bAlive = true;
+					int32 const Wave = FMath::Clamp(Bot.GetWatchCount(Watch) - *Base, 1, Series.LaneY.Num());
+					FVector2D const Lane(CentreX, Series.LaneY[Wave - 1]);
+					if (FVector2D::Distance(FVector2D(Pawn->GetActorLocation()), Lane) > 1.f)
+					{
+						Bot.MovePawn(Lane);
+					}
+				}
+				else if (Pawn && !*bAlive)
+				{
+					*DeadCount = Bot.GetWatchCount(Watch);
+				}
+				else if (Pawn && *bAlive)
+				{
+					*bAlive = false;
+					bDone = true;
+					Bot.Test.TestEqual(TEXT("The wave the pawn died on"), Fired, Series.DeathWave);
+				}
 
-						 if (Series.DeathWave == 0 && Bot.IsPadOpen(ExitPad(GeoTutorial::Zones)))
-						 {
-							 bDone = true;
-							 Bot.Test.TestEqual(TEXT("Safe-spot waves fired"), Fired, Series.LaneY.Num());
-						 }
+				if (Series.DeathWave == 0 && Bot.IsPadOpen(ExitPad(GeoTutorial::Zones)))
+				{
+					bDone = true;
+					Bot.Test.TestEqual(TEXT("Safe-spot waves fired"), Fired, Series.LaneY.Num());
+				}
 
-						 return bDone;
-					 });
+				return bDone;
+			});
 	}
 
 	void AddZonesStages(FGeoTutorialBot& Bot, bool const bAllSeries)
@@ -1697,17 +1705,15 @@ namespace GeoTutorialStages
 					 {
 						 return !Bot.GetPawn()->IsDead();
 					 });
-		AddWaveLaneStage(
-			Bot, TEXT("Miniboss: out of every lane the pawn dies"), WaveWatch, false, false,
-			FarthestFromLanes);
+		AddWaveLaneStage(Bot, TEXT("Miniboss: out of every lane the pawn dies"), WaveWatch, false, false,
+						 FarthestFromLanes);
 		Bot.AddStage(TEXT("Miniboss: the player is back"),
 					 [&Bot](bool)
 					 {
 						 return !Bot.GetPawn()->IsDead();
 					 });
-		AddWaveLaneStage(
-			Bot, TEXT("Miniboss: with no dummy alive the pawn dies anywhere"), WaveWatch, false, true,
-			FarthestFromLanes);
+		AddWaveLaneStage(Bot, TEXT("Miniboss: with no dummy alive the pawn dies anywhere"), WaveWatch, false, true,
+						 FarthestFromLanes);
 	}
 
 	/** Waits for a new play world (the pawn in it) on a map whose name holds MapName. */

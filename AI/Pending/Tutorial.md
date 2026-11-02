@@ -13,7 +13,7 @@ Gate: each slice starts by writing the `CLAUDE.md` rows listed under its "Docs f
 - [ ] New Board page "Prompt" (the Cat says you SHOULD; refusing = "incompetent and ignorant"); then sync `Flow.md` / `Cat.md` if it adds rules
 - [ ] User sends further steps, if any → pages + `Steps.md` rows
 - [ ] Cat palette: exact boss colour slot and variations (portrait uses a placeholder, `CatPortrait.md`; hologram slice 8)
-- [ ] Training Room map design (class select, dummies, zones, teleport to lobby; no boss portals): after the tutorial ships, own `CLAUDE.md` + Pending file
+- [ ] Training Room map design (class select, dummies, zones, teleport to lobby; no boss portals): after the tutorial ships, own `CLAUDE.md` + Pending file. The room becomes an encounter: needs `EncounterNetwork.md`
 
 ## Text sync (2026-10-21, Board vs `tutorial_encounters.py`)
 - [x] Re-run (2026-10-21): `encounters_diff.py` showed only the Landing lines 2-3 differing (script newer, no hand edit), `tutorial_encounters.py` applied, diff `identical` in every room
@@ -34,7 +34,7 @@ Docs written: `AI/Tutorial/Steps.md` (step 2 shake, step 3 cut, hurt ally, steps
 - [x] Remove `Encounter/Action/GeoSetHealthRatioAction.h/.cpp` and `GeoTrinity.Encounter.SetHealthRatio`; `tutorial_encounters.py`: drop the `Setup` steps of steps 4-5 and the action (line ~201) — done (script and action); the placed allies still point at `BP_TutorialHurtAlly` (`ALLY_BP`), which the editor step below creates first
 - [x] (done via bridge: GE Health 50, BP_TutorialHurtAlly, allies re-placed by tutorial_encounters.py, CT rows dropped) Editor: `GE_TutorialHurtAllyAttributes` (copy of `BP_TrainingAlly`'s `DefaultAttributes` effect, Health = 0.1 × MaxHealth); `BP_TutorialHurtAlly` (child of `BP_TrainingAlly`, `DefaultAttributes` = it); the placed allies of steps 4-5 become `BP_TutorialHurtAlly`; `CT_Tutorial`: drop rows `AllyDummyStartHealthRatio`, `AllyDummyLowHealthRatio` (`tutorial_assets.py`)
 - [x] clang-format every touched file
-- [x] Tests: `GeoTrinity.Encounter.HealthThresholdClass` (`GeoEncounterTests.cpp`) — an actor of `WatchedClass` spawned after arming fires `Below` with `Actor` = it; one of another class never; a spawn at MaxHealth 0 does not fire; `GeoTrinity.Encounter.HealthThreshold` still passes. Solo pause, Cat line skip and Z-order: no headless layer (need a local player and viewport); checked in PIE by the user when asked
+- [x] Tests: `GeoTrinity.Encounter.HealthThresholdClass` (`Encounter/GeoEncounterTriggerTests.cpp`) — an actor of `WatchedClass` spawned after arming fires `Below` with `Actor` = it; one of another class never; a spawn at MaxHealth 0 does not fire; `GeoTrinity.Encounter.HealthThreshold` still passes. Solo pause, Cat line skip and Z-order: no headless layer (need a local player and viewport); checked in PIE by the user when asked
 - [x] Run: `Tools\Build_Editor.bat` OK; `Tools\Run_Tests.bat GeoTrinity` 62/62, `GeoTrinityUI` 1/1
 
 ## Slice 0 — Training kit rename
@@ -104,7 +104,7 @@ Needs `VoidDeath.md` done. Docs first: `Encounter/Trigger/CLAUDE.md` (`GeoPlayer
 - [x] `Config/Tags/GeoGameplayTags.ini` — `Arena.Tutorial.<Room>` per room (`Landing`, `Move`, `Dash`, `Shoot`, `Deploy`, `Special`, `Dummies`, `Zones`, `Miniboss`)
 - [x] Editor, tutorial map: per room an `AGeoArenaVolume` + `TargetPoint.Entrance` points for its tag; rooms linked by `AGeoArenaBarrier`s opened with `GeoSetBarrierClosedAction`; move marker (step 1); void line (a real hole, between a walk-off and 500 cm wide) + far platform (step 2) — built by `tutorial_encounters.py` (void 300 cm, near floor 600 cm, far platform)
 - [x] Editor: one `AGeoEncounter` per room; step 2 = `Falls` (`GeoActorDiedTrigger`, `WatchedClass` = player, `bRepeat`, Cat line by `Count` 1 / 2 / ≥ 3 + `GeoAddToCounterAction Falls`), reach (`GeoVolumeEnteredTrigger` on the platform, `GeoCompareCondition` `Falls == 0` → stunned line, else dry relief), idle tiers (`GeoPlayerIdleTrigger`) — built by `tutorial_encounters.py`; checked by `Tutorial/Runtime/pie_tutorial_flow.py` (Landing → Move → Dash no-fall → Shoot, doors open in order, no encounter warning)
-- [x] Tests `GeoEncounterTests.cpp`: `GeoTrinity.Encounter.PlayerIdle` — fires per tier while still, not while moving, restarts after a move
+- [x] Tests `Encounter/GeoEncounterTriggerTests.cpp`: `GeoTrinity.Encounter.PlayerIdle` — fires per tier while still, not while moving, restarts after a move
 - [ ] Tests `GeoVoidDeathTests.cpp`: `GeoTrinity.Characters.DashOverVoid` — a dash from one floor edge over a gap narrower than 500 cm lands alive on the far floor (root motion over a real hole; if the headless world cannot run the dash, say so and ask the user for a PIE check) — NOT WRITTEN: the headless test world does not tick actors, and ticking the movement component by hand leaves the character hovering in Walking mode over the gap (no floor, no fall); needs the PIE check by the user
 - [x] Run: build, then `Tools\Run_Tests.bat GeoTrinity.Encounter` and `GeoTrinity.Characters` (`GeoTrinity.Encounter` 24/24 incl. `SetHealthRatio`; `Characters` 3/3)
 
@@ -113,7 +113,7 @@ Goal: steps 0 and 1 are one room and one encounter; movement is locked while the
 Docs written: `Tutorial/Steps.md` (steps 0-2), `Tutorial/CLAUDE.md` (invariant), `Tutorial/Flow.md` ("Rooms"), `Encounter/Action/CLAUDE.md` (`GeoSetMovementLockedAction`), `AI/Python/Level/CLAUDE.md`.
 - [x] `Encounter/Action/GeoSetMovementLockedAction.h/.cpp` — `bLocked`; first local player's controller `SetIgnoreMoveInput(bLocked)` (counted); the lock lives on the controller, which a respawn does not reset, and the Landing room has no void, so no `OnRevived` re-apply
 - [x] Dash locked at start: add the Dash ability tag to the tutorial map's `LockedAbilityTags` (editor, `World/CLAUDE.md`); the Dash encounter's first `OnEnter` = the "reached a portal" line, then `GeoUnlockAbilityAction` (Dash) — check the ability page popping on arrival suits the whistle silence that follows, and that the dash is a class ability `GeoUnlockAbilityAction` can grant
-- [x] Tests (`GeoEncounterTests.cpp`): `GeoTrinity.Encounter.SetMovementLocked` — lock sets the flag, unlock clears it, a double lock needs one unlock
+- [x] Tests (`Encounter/GeoEncounterJumpTests.cpp`): `GeoTrinity.Encounter.SetMovementLocked` — lock sets the flag, unlock clears it, a double lock needs one unlock
 - [x] `tutorial_map.py` — drop the `Move` room (8 rooms: Landing, Dash, Shoot, Deploy, Special, Dummies, Zones, Miniboss; Landing keeps the Move room's size if the pad needs space), its pads / arrival zone; remove tag `Arena.Tutorial.Move` (`GeoGameplayTags.ini`); delete the old `Tut_Move_*` actors from `/Game/Maps/Tutorial`; Landing gets an exit pad at the old marker spot (`Tut_Move_Marker` gone, no marker volume)
 - [x] `tutorial_encounters.py` — `landing_steps` + `move_steps` become one encounter in the Landing room: `OnEnter` = lock, Landing lines, Move lines (the "Lesson one" Landing line and the first Move line overlap: re-read the Board's page 3-4 text and keep what the user wrote), then open the exit pad + unlock; `Move` idle rule armed after the unlock; entering the open pad is the exit (no completes rule of its own); the Dash encounter's first line = "You reached a portal by walking. Truly the peak of the genre. Next lesson: gravity.", before the whistle silence; `ROOMS`, `ROOM_ORDER` and the `Landing` / `Move` dict entries updated
 - [x] Sync the "Dungeon & Dihedral" situation line into `landing_steps` once it is on the published Board's page 3 (the published Board, read 2026-10-19, does not have it yet); Board page 4 beat 3 still says "square" where the Dash room's arrival line says "portal" (`Steps.md`): fix the Board text
@@ -139,8 +139,8 @@ Docs first: `World/CLAUDE.md` (`LockedAbilityTags`), `AbilitySystem/Components/C
 Needs `HiddenCaster.md` done.
 - [x] Zones room = points `Tut_Zones_ZonePoint_<Color>` (`TargetPoint.Tutorial.Zone<Color>`) and `Tut_Zones_WaveStart`, all `Arena.Tutorial.Zones`; waves fire on the encounters' shared caster, no arena (`tutorial_encounters.py`, `Encounter/CLAUDE.md` "Shared caster")
 - [x] Step 7 = steps `Zones_Heal`, `Zones_Shield`, `Zones_Damage` (`GeoSpawnZoneAction`, box over each spot)
-- [x] Step 8 = `LethalWave`: the player's death completes, next in the list is `SafeSpotsWait`
-- [x] Step 9 = `SafeSpotsWait` (`DeathTime` timer) then `SafeSpots` (three waves, `WavesDone`; a death → `SafeSpotsWait`; the exit pad opens from the finishing rule)
+- [x] Step 8 = `LethalWave`: the player's death completes, next in the list is `SafeSpots`
+- [x] Step 9 = `SafeSpots` (three waves, `WavesDone`; a death → `DeathTime` then rewinds the step; the exit pad opens from the finishing rule)
 - [ ] User checks in game: Cat lines timing against the zone steps (the Heal step's three lines are cut short if the player steps in the box first), the wave lanes readable, the 50 cm strip at each end of the room that no wave reaches (a player hugging a wall there survives the lethal wave and `LethalWave` waits: widen `TRAVEL` in `tutorial_waves.py` if it shows)
 - [x] Tests: none new (stock triggers / actions already tested); the headless game check above
 

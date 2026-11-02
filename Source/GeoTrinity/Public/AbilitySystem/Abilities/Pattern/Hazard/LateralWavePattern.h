@@ -30,11 +30,11 @@ struct GEOTRINITY_API FLateralWavePatternData : public FPatternData
  * [front - BandWidth, front] (along the travel) hits everything within HalfWidth of the origin across the travel,
  * except what stands in a safe spot's lane (ESafeSpotShadow::Lane, parallel to the travel). Spots come from
  * SafeSpotSources, read every tick so a dead add drops its lane at once: Fixed from the firing's
- * FLateralWavePatternData, Adds from the caster's arena (server only, the tutorial is solo). The band is one beam
- * shape: during the wind-up the whole rectangle, its fill running from the start edge along the travel, the moving
- * band after; the zone layer cuts the lanes out of it from the safe spot mask.
- * A firing with FLateralWavePatternData::bRandomDirection rolls its direction and fits origin, distance and width to
- * the caster's arena.
+ * FLateralWavePatternData, Adds = the living enemies in the caster's arena (every machine reads them, so hits and drawn
+ * lanes agree). The band is one beam shape: during the wind-up the whole rectangle, its fill running from the start
+ * edge along the travel, the moving band after; the zone layer cuts the lanes out of it from the safe spot mask. A
+ * firing with FLateralWavePatternData::bRandomDirection rolls its direction and fits origin, distance and width to the
+ * caster's arena.
  */
 UCLASS(Blueprintable)
 class GEOTRINITY_API ULateralWavePattern : public UBeamPattern

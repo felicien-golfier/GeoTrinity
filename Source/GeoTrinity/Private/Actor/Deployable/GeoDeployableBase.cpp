@@ -122,16 +122,7 @@ FVector AGeoDeployableBase::ComputePushTarget(AActor* Target, float const PushDi
 
 	// Pushing outward is blocked, so push toward the arena's centre instead — the one direction guaranteed to be
 	// inside the fight.
-	TArray<AActor*> const FightCenters =
-		GeoLib::GetTargetPoints(this, FGeoGameplayTags::Get().TargetPoint_FightCenter, FightingArena->ArenaTag);
-	if (!ensureMsgf(!FightCenters.IsEmpty(), TEXT("%hs: no TargetPoint.FightCenter point in arena %s"), __FUNCTION__,
-					*FightingArena->ArenaTag.ToString()))
-	{
-		return PushTarget;
-	}
-
-	FVector ToCenter = FightCenters[0]->GetActorLocation() - GetActorLocation();
-	ToCenter.Z = 0.f;
+	FVector const ToCenter(FightingArena->GetCenter() - FVector2D(GetActorLocation()), 0.f);
 	FVector RedirectedTarget = GetActorLocation() + ToCenter.GetSafeNormal() * PushDistance;
 	RedirectedTarget.Z = Target->GetActorLocation().Z;
 	return RedirectedTarget;

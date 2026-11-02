@@ -35,9 +35,9 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 
 | Priority | File |
 |---|---|
-| 1 | `TelegraphFootprint.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |
+| 2 | `ArenaCenterPoint.md` |
 | 2 | `HexDeployAnims.md` |
 | 2 | `DashVoidEdge.md` |
 | 2 | `BadgePartMarks.md` |
@@ -62,6 +62,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 2 | `CatLineEmotions.md` |
 | 2 | `DevastatingWaveZone.md` |
 | 2 | `CueToZoneLayer.md` |
+| 3 | `BuffFXEnd.md` |
 | 3 | `CatAnimation.md` |
 | 3 | `CatClipsPick.md` |
 | 3 | `CatEvilFace.md` |
@@ -70,6 +71,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 3 | `CatWalkRun.md` |
 | 3 | `EchoSocketHalo.md` |
 | 3 | `EchoUiPolish.md` |
+| 3 | `EncounterNetwork.md` |
 | 3 | `MaterialFunctionDedup.md` |
 | 3 | `MenuGuide.md` |
 | 3 | `MessageLog.md` |

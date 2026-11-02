@@ -9,6 +9,7 @@
 #include "GeoEncounterAction.generated.h"
 
 class IGeoHUDInterface;
+class UGeoEncounterCondition;
 
 /**
  * Base of every action: does one thing, in Execute, and the encounter runs the next one once it has finished. A
@@ -43,6 +44,10 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "GeoEncounter")
 	void OnSkipped();
 	virtual void OnSkipped_Implementation() {}
+
+	/** None runs the action. Failed (evaluated with the run's payload): the action is skipped, the list goes on. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "GeoEncounter")
+	TObjectPtr<UGeoEncounterCondition> Condition;
 
 protected:
 	/** The HUD of the first local player: in the solo tutorial (a listen host) the authority running the encounter

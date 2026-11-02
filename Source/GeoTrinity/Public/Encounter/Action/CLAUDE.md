@@ -67,7 +67,8 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 - Refused activation (no caster on a client, a `RequiresArena()` class, blocked or already running): log to `LogGeoEncounter`, `Finish()`; the encounter never stalls on it. `IsDataValid` (editor) flags an empty `AbilityClass` and a `RequiresArena()` one.
 - `OnCancel` (step left while waiting) cancels the ability and unbinds. One fired without waiting runs on past a step exit (overlapping waves); an abort (`IsAborting()`) cancels it too.
 
-- `OnSkipped` (jump start, `../CLAUDE.md`): only `GeoUnlockAbilityAction` and `GeoSetMovementLockedAction` (table above) override it; everything else (lines, pads, spawns, cards, menus) is a no-op when skipped.
+- `Condition` (base, optional): lives on the base, an action never checks it itself; the encounter skips the action when it fails (`../CLAUDE.md`, "Model"). Skipped action: no `Execute`, no `Finish`; an abort still calls its `OnCancel` (safe by the contract, `../CLAUDE.md`, "Arrival reset").
+- `OnSkipped` (jump start, `../CLAUDE.md`): only `GeoUnlockAbilityAction` and `GeoSetMovementLockedAction` (table above) override it; everything else (lines, pads, spawns, cards, menus) is a no-op when skipped. With a `Condition` it is not called at all.
 - An action does one thing and reads what it needs from the payload or its own properties; no action knows the step it sits in.
 - Moving players, opening a way between rooms, raising a tag event: the room's `AGeoTeleporter` pads (`GeoSetTeleporterOpenAction`), and a StateTree task or Blueprint for an event (`../CLAUDE.md`, event bus). No action for them until a step needs one.
 - A new gameplay verb (lock an ability, grant loot, open a menu page, say a Cat line) is an action in this folder, written with the feature that needs it, with its own doc row here.

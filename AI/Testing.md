@@ -28,8 +28,6 @@ Use the lightest layer that can prove the behaviour.
   `GeoTrinity.` runs everything and `GeoTrinity.Gems` runs one area.
 - Flags: `EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter`.
 - Guard every test file with `WITH_DEV_AUTOMATION_TESTS`.
-- Recommended home: a dedicated `GeoTrinityTests` module (Type=Editor, depends on `CQTest`), so test code and
-  its dependencies never reach a package. `GeoGemTests.cpp` would move there.
 - **A new test class appears only after a full editor restart.** Live Coding does not register it.
 - Expecting an `ensureMsgf`: its condition line and its dump lines log as errors, its message as its own line. Expect each: `AddExpectedErrorPlain(<condition text>, Contains, 0)` (logged twice), `AddExpectedErrorPlain(<message>, Contains, 1)`, `AddExpectedError("=== Handled ensure: ===|^\\s*$|^Stack:|\\[Callstack\\]", Contains, -1)` (`GeoTrinity.Encounter.SharedCaster`). An ensure fires once per process: one test per ensure.
 - A fake ability's per-test value goes on its granted instance (`InstancedPerActor`, `GetPrimaryInstance()`), never its CDO: a native class's instances never copy CDO edits.
@@ -79,17 +77,17 @@ Also check that the expected tests **actually ran**: an empty filter match "succ
 - The engine still writes its own files into `Saved/`. That cannot be avoided, and nothing there may be read or
   relied on.
 
-## Tutorial runs (mandatory gate)
+## Tutorial runs (optional)
 
-Headless play-in-editor runs of the real `/Game/Maps/Tutorial`, a bot playing it: `Source/GeoTrinityEditor/Private/Tests/Tutorial/` (bot, branches, coverage table: its `CLAUDE.md`). `GeoTrinity.Tutorial.FullRun` plays every room in order (the gate, `CLAUDE.md` "Tutorial gate"); `GeoTrinity.Tutorial.Path.*` and `GeoTrinity.Tutorial.Jump.*` play every other branch, one session each.
-- Run: `Tools\Build_Editor.bat` (editor closed), then `Tools\Run_Tests.bat GeoTrinity.Tutorial.FullRun`; the whole set with `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
+Headless play-in-editor runs of the real `/Game/Maps/Tutorial`, a bot playing it: `Source/GeoTrinityEditor/Private/Tests/Tutorial/` (bot, branches, coverage table: its `CLAUDE.md`). `GeoTrinity.Tutorial.FullRun` plays every room in order; `GeoTrinity.Tutorial.Path.*` and `GeoTrinity.Tutorial.Jump.*` play every other branch, one session each. Mandatory when the change puts their behaviour at risk, else optional (`CLAUDE.md` "Tutorial runs at risk", "Tutorial runs"). The other `GeoTrinity.Tutorial.` tests need no map or session: quick suite.
+- Run: `Tools\Build_Editor.bat` (editor closed), then `Tools\Run_Tests.bat GeoTrinity.Tutorial.FullRun`; every test of the area, instant ones included, with `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
 - Map loaded with `FAutomationEditorCommonUtils::LoadMap`, never `AutomationOpenMap`: in the editor that starts its own standalone play session, which the listen one then replaces under the bot. Play session: listen server, one client process (`FGeoStartListenPlayCommand`).
 - A new room, step or branch adds its stages and its coverage row in the same change.
 
 ## Spawning a deployable in a test
 
 Any test that needs a deployable spawns a real one, through the production funnel, never a hand-built stand-in.
-Model: `GeoTrinity.Deployable.StartHealth` in `GeoGemTests.cpp`.
+Model: `GeoTrinity.Deployable.StartHealth` in `Tests/Gameplay/Deployable/GeoDeployableStartHealthTests.cpp`.
 
 - **Class**: `AGeoTestDeployable` (`GeoTrinityEditor/Private/Tests/Gameplay/Fake/GeoTestDeployable.h`), a concrete transient `AGeoDeployableBase`.
   `AGeoDeployableBase` is `Abstract` and gets its health from a Blueprint's `DefaultAttributes`, so the fake carries
@@ -116,8 +114,7 @@ Write or extend the test next to the change (lightest layer), then hand the buil
 
 ## Next steps
 
-1. `GeoTrinityTests` module + `GeoGemTests.cpp` moved into it.
-2. CI: a test step after the editor build in the GitHub Actions workflow (see `CI-RUNNER.md`).
+1. CI: a test step after the editor build in the GitHub Actions workflow (see `CI-RUNNER.md`).
 3. First tests: ExecCalc damage/heal and gems, then a two-client `PIENetworkComponent` test of the
    cooldown-reset path (`ResetCooldowns()`).
 

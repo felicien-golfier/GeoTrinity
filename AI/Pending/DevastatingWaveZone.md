@@ -32,7 +32,7 @@ Docs written: `Source/GeoTrinity/Public/AbilitySystem/Abilities/Pattern/Hazard/C
 
 ## Tests
 - [x] `GeoZoneLayerTests.cpp` (`GeoTrinity.ZoneLayer.PackSlot`) — `Ring`: shape ordinal 2, row 1 = centre, outer, inner.
-- Ring radii / pattern parent: no test builds a pattern with its ability (as `TelegraphFootprint.md`); the tutorial covers the lateral wave and the miniboss live.
+- Ring radii / pattern parent: no test builds a pattern with its ability; the tutorial covers the lateral wave and the miniboss live.
 - [x] Build; `Tools\Run_Tests.bat GeoTrinity.ZoneLayer`, `GeoTrinity.Pattern` (9/9 green); `GeoTrinity.Tutorial.` set (34/34 green).
 
 ## Verify

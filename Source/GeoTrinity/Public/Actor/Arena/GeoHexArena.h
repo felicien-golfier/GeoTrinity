@@ -126,6 +126,11 @@ public:
 	/** Server. Drops Requester's highlight. */
 	void ClearHighlight(AActor* Requester);
 
+#if WITH_EDITOR
+	/** Adds an error when the FightCenter point lies more than one TileSize from the grid origin. */
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+#endif
+
 protected:
 	/** Builds the initial tile grid and applies base arena startup (boss spawn, match state subscription). */
 	virtual void BeginPlay() override;

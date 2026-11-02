@@ -19,7 +19,7 @@ struct FGeoVFXParams;
 struct FGeoSoundEntry;
 struct FGeoSustainedFXMoment;
 
-/** Longest an ended loop system is left to play its outro before it is cut, for one that never completes on its own. */
+/** Longest an ended projectile loop system is left to play its outro before it is cut. */
 constexpr float MaxLoopFXFadeOutDuration = 3.f;
 
 /** What one sustained moment plays on: the system attached to its owner and the loop playing beside it. */
@@ -39,9 +39,7 @@ struct FGeoRunningSustainedFX
 	/** Rolled when the loop starts and kept until it stops, so re-pushing the loop's pitch never jumps it. */
 	float PitchVariation = 1.f;
 
-	/** Ends both — a buff's teardown. The system is ended rather than cut: it stops emitting, plays whatever outro it
-	 * authors on its owner's execution state, then destroys itself — or is destroyed after MaxLoopFXFadeOutDuration,
-	 * whichever comes first. The sound stops and is destroyed at once. An owner
+	/** Ends both — a buff's teardown. The system is destroyed at once, with no outro, and so is the sound. An owner
 	 * that lends its own components (a projectile's flight) ends them without destroying them. */
 	void Stop() const;
 };

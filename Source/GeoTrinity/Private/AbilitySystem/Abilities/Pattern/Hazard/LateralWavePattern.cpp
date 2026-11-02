@@ -79,7 +79,7 @@ TArray<FSafeSpot> ULateralWavePattern::GetSafeSpots() const
 	}
 
 	TArray<ESafeSpotSource> Sources = SafeSpotSources;
-	bool const bGatherAdds = Sources.Remove(ESafeSpotSource::Adds) > 0 && GeoLib::IsServer(GetWorld());
+	bool const bGatherAdds = Sources.Remove(ESafeSpotSource::Adds) > 0;
 	TArray<FSafeSpot> Spots = GatherSafeSpots(this, StoredPayload, FiringOrigin, Sources, ESafeSpotShadow::Lane, 0.f,
 											  SpotRadius, FixedLocations);
 	if (bGatherAdds)

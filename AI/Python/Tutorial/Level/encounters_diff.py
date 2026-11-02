@@ -16,7 +16,7 @@ PROPS = ["Line", "bWaitForRespawn", "CounterName", "Delta", "AbilityTag", "bLock
          "Title", "Max", "TimeLimitSeconds", "bShowMax", "Target", "Duration", "Volume", "Watched", "Delay",
          "bLooping", "Side", "Ratio", "Source", "Comparison", "Operand", "bForge", "Cat", "Path", "Speed",
          "StopDistance", "Settings", "Montage", "Actor", "bHidden", "bWaitForEnd", "AbilityClass", "EffectDataArray", "Params",
-         "Team", "PatternData"]  # add a new action's properties here
+         "Team", "PatternData", "bTimed", "Seconds", "Categories", "bRandom"]  # add a new action's properties here
 
 ns = {"__name__": "tutorial_encounters"}
 exec(compile(open(SCRIPT, encoding="utf-8").read(), SCRIPT, "exec"), ns)
@@ -46,6 +46,10 @@ def describe(obj):
             parts.append("%s=%s" % (name, text(obj.get_editor_property(name))))
         except Exception:
             pass
+    try:
+        parts.append("Condition=%s" % describe(obj.get_editor_property("Condition")))
+    except Exception:
+        pass
     return "%s(%s)" % (obj.get_class().get_name(), "; ".join(parts))
 
 

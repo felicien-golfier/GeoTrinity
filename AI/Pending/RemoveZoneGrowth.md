@@ -11,7 +11,7 @@ Docs written: none yet (workflow steps 2-3 when picked up). Owner docs: `Source/
 ## Code (to implement)
 - [ ] `Actor/Deployable/GeoDeployableBase.h` — drop `FDeployableDataParams::GrowToSize`, `GrowSeconds`.
 - [ ] `Actor/Deployable/Zones/GeoEffectZone.h/.cpp` — drop `GrowthStartServerTime` (+ its replication), `GrowthAlpha`, growth `Tick`; `GetRadius()` = `Data.Params.Size` (or callers read `Size` directly); class comment.
-- [ ] `GeoTrinityEditor/Private/Tests/Gameplay/GeoEncounterTests.cpp` — delete `GeoTrinity.Deployable.GrowingZone`; `Tests/Gameplay/Fake/GeoTestEncounter.h` — drop `ZoneParams.GrowToSize` / `GrowSeconds`.
+- [ ] `GeoTrinityEditor/Private/Tests/Gameplay/Deployable/GeoGrowingZoneTests.cpp` — delete `GeoTrinity.Deployable.GrowingZone`; `Tests/Gameplay/Fake/GeoTestEncounter.h` — drop `ZoneParams.GrowToSize` / `GrowSeconds`.
 - [ ] `GeoTrinityEditor/Private/Tests/Tutorial/GeoTutorialRoomStages.cpp` — Zones stage waits on `ColorZoneMaxRadius` growth (lines ~72, ~967-1000): rework to the new layout.
 
 ## Scripts

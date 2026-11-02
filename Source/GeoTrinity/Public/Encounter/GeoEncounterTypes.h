@@ -42,6 +42,7 @@ enum class EGeoCompareSource : uint8
 	PayloadCount,
 	PayloadValue,
 	Counter,
+	StepVisit,
 };
 
 UENUM(BlueprintType)

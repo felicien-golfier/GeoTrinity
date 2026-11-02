@@ -7,6 +7,7 @@
 #include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Misc/DataValidation.h"
 #include "Net/UnrealNetwork.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
@@ -265,8 +266,7 @@ bool AGeoHexArena::GetLastAliveTileAlongRay(FVector2D const Origin, FVector2D co
 	// Half a tile keeps the walk from stepping over a tile the ray only clips.
 	float const StepSize = TileSize * 0.5f;
 	// Past the far edge of the platform there is nothing left to cross, however long the ray is.
-	float const MaxDistance =
-		FVector2D::Distance(Origin, FVector2D(GetActorLocation())) + GridRadius * TileSize * Sqrt3;
+	float const MaxDistance = FVector2D::Distance(Origin, GetCenter()) + GridRadius * TileSize * Sqrt3;
 
 	for (float Distance = MaxDistance; Distance >= 0.f; Distance -= StepSize)
 	{
@@ -460,7 +460,7 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 
 	if (bFallCheckEnabled)
 	{
-		FVector2D const Center(GetActorLocation());
+		FVector2D const Center = GetCenter();
 		for (AActor* Actor : GeoASLib::GetInteractableActors(this, FGenericTeamId::NoTeam, TeamAttitudeMask::All,
 															 /*bMustBeDamageable*/ false, Center, FallCheckRadius))
 		{
@@ -490,6 +490,23 @@ void AGeoHexArena::Tick(float const DeltaSeconds)
 		}
 	}
 }
+
+#if WITH_EDITOR
+EDataValidationResult AGeoHexArena::IsDataValid(FDataValidationContext& Context) const
+{
+	Super::IsDataValid(Context);
+
+	AActor const* const FoundPoint = GetWorld() ? FindCenterPoint() : nullptr;
+	if (FoundPoint
+		&& FVector2D::Distance(FVector2D(FoundPoint->GetActorLocation()), FVector2D(GetActorLocation())) > TileSize)
+	{
+		Context.AddError(FText::FromString(
+			TEXT("The FightCenter point is more than one TileSize from the grid origin (the middle tile)")));
+	}
+
+	return Context.GetNumErrors() > 0 ? EDataValidationResult::Invalid : EDataValidationResult::Valid;
+}
+#endif
 
 void AGeoHexArena::ShakeHighlightedTiles()
 {

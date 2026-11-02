@@ -43,7 +43,7 @@ public:
 	 */
 	virtual bool ShouldPlayAbilityMontage() const override;
 
-	/** True when Target aims at the arena's centre, else PatternToLaunch's answer (UPattern::RequiresArena). */
+	/** PatternToLaunch's answer (UPattern::RequiresArena). */
 	virtual bool RequiresArena() const override;
 
 protected:

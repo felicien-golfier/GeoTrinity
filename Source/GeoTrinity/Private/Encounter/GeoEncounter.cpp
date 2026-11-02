@@ -294,23 +294,20 @@ AGeoEncounter* AGeoEncounter::FindNextInChain() const
 
 void AGeoEncounter::SkipActions() const
 {
+	auto const SkipAll = [](TArray<TObjectPtr<UGeoEncounterAction>> const& Actions)
+	{
+		for (UGeoEncounterAction* const Action : Actions)
+		{
+			if (Action && !Action->Condition)
+			{
+				Action->OnSkipped();
+			}
+		}
+	};
 	for (FGeoEncounterStep const& Step : Steps)
 	{
-		for (UGeoEncounterAction* const Action : Step.OnEnter)
-		{
-			if (Action)
-			{
-				Action->OnSkipped();
-			}
-		}
-
-		for (UGeoEncounterAction* const Action : Step.OnExit)
-		{
-			if (Action)
-			{
-				Action->OnSkipped();
-			}
-		}
+		SkipAll(Step.OnEnter);
+		SkipAll(Step.OnExit);
 	}
 }
 
@@ -375,6 +372,11 @@ void AGeoEncounter::ApplyPending()
 		Pending = FPendingChange();
 
 		StopCurrentStep();
+		if (!Change.bRunExit)
+		{
+			StepVisits.Reset();
+		}
+
 		if (Change.bRunExit && !Steps[CurrentStep].OnExit.IsEmpty())
 		{
 			State = EState::Exiting;
@@ -431,6 +433,7 @@ void AGeoEncounter::EnterStep(int32 const StepIndex)
 		UE_LOG(LogGeoEncounter, Verbose, TEXT("%s: enter step %s"), *GetName(), *Step.Name.ToString());
 		CurrentStep = StepIndex;
 		State = EState::Running;
+		++StepVisits.FindOrAdd(StepIndex);
 		RuleArmed.Init(true, Step.Rules.Num());
 		RuleRuns.SetNum(Step.Rules.Num());
 		for (FGeoEncounterRule const& Rule : Step.Rules)
@@ -563,12 +566,12 @@ void AGeoEncounter::Advance(FGeoEncounterActionRun& Run)
 		while (Run.bActive && !Pending.IsSet() && !Run.Awaiting && Run.Next < Run.Actions.Num())
 		{
 			UGeoEncounterAction* const Action = Run.Actions[Run.Next++];
-			if (Action)
+			if (Action && (!Action->Condition || Action->Condition->Evaluate(Run.Payload)))
 			{
 				Run.Awaiting = Action;
 				Action->Begin(Run.Payload);
 			}
-			else
+			else if (!Action)
 			{
 				UE_LOG(LogGeoEncounter, Error, TEXT("%s: null action skipped"), *GetName());
 			}
@@ -658,6 +661,29 @@ EDataValidationResult AGeoEncounter::IsDataValid(FDataValidationContext& Context
 		for (FGeoEncounterRule const& Rule : Step.Rules)
 		{
 			bActionAfterStart |= HasActionAfterStart(Rule.Actions);
+		}
+
+		auto const HasNamelessCounterCondition = [](TArray<TObjectPtr<UGeoEncounterAction>> const& Actions)
+		{
+			return Actions.ContainsByPredicate(
+				[](UGeoEncounterAction const* const Action)
+				{
+					UGeoCompareCondition const* const ActionCompare =
+						Action ? Cast<UGeoCompareCondition>(Action->Condition) : nullptr;
+					return ActionCompare && ActionCompare->IsCounterNameMissing();
+				});
+		};
+		bool bNamelessActionCounter =
+			HasNamelessCounterCondition(Step.OnEnter) || HasNamelessCounterCondition(Step.OnExit);
+		for (FGeoEncounterRule const& Rule : Step.Rules)
+		{
+			bNamelessActionCounter |= HasNamelessCounterCondition(Rule.Actions);
+		}
+
+		if (bNamelessActionCounter)
+		{
+			Context.AddError(FText::FromString(FString::Printf(
+				TEXT("Step %s: a counter compare on an action has no counter name"), *Step.Name.ToString())));
 		}
 
 		if (bActionAfterStart)

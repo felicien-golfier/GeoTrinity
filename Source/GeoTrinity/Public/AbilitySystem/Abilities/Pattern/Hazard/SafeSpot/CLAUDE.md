@@ -17,7 +17,7 @@ Safe spots of a hazard: places that shield from it. One system for every boss ha
 
 ## Sources (`ESafeSpotSource`, a pattern picks one or several)
 - `Pillars`: living `AGeoPillar` of the caster's hostile-or-neutral set; radius = collision radius. Devastating adds them as its front reaches them.
-- `Adds`: living adds of the caster's arena (`AGeoArena::GetLiveAdds()`, server only: a client sees none, the tutorial is solo); radius = the pattern's `AddSpotRadius` (at the payload's level; a pattern without one uses `SpotRadius`). No arena (the encounters' shared caster) = no add spots: one wave asset serves the miniboss (adds) and an encounter (fixed spots).
+- `Adds`: living enemies standing in the caster's arena, its boss excepted (`AGeoArena::GetLiveEnemiesInBounds()`, `Actor/Arena/CLAUDE.md`): replicated actors read locally, the same code on every machine, so hit test and drawn lanes share one rule; radius = the pattern's `AddSpotRadius` (at the payload's level; a pattern without one uses `SpotRadius`). No arena (the encounters' shared caster) = no add spots: one wave asset serves the miniboss (adds) and an encounter (fixed spots).
 - `Fixed`: world locations the pattern computes from offsets from the payload origin in its own frame, taken from its runtime pattern data (lateral wave: `FLateralWavePatternData`, given by the encounter per firing); radius = `SpotRadius`.
 - Read every tick: a dead add drops its spot at once. A spot exists from the telegraph on so the player reads it before the front moves.
 

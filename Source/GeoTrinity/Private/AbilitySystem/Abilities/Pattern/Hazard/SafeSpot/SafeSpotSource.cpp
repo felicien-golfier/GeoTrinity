@@ -29,7 +29,7 @@ TArray<FSafeSpot> GatherSafeSpots(UObject const* WorldContext, FAbilityPayload c
 		AGeoArena const* const Arena = AGeoArena::GetArenaOfBoss(Payload.SourceAvatar);
 		if (Arena)
 		{
-			for (AEnemyCharacter const* const Add : Arena->GetLiveAdds())
+			for (AEnemyCharacter const* const Add : Arena->GetLiveEnemiesInBounds())
 			{
 				Spots.Add({FVector2D(Add->GetActorLocation()), Radius, Shadow});
 			}

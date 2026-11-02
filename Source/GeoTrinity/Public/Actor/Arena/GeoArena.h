@@ -92,8 +92,22 @@ public:
 							  FGeoEnemySetup const* Setup = nullptr);
 
 	/** The adds still alive, the dead ones a death leaves in the list until they are destroyed left out. The list lives
-	 * on the server, so a client gets none. */
+	 * on the server, so a client gets none: it is the arena's own wipe and reset bookkeeping. */
 	TArray<AEnemyCharacter const*> GetLiveAdds() const;
+
+	/** Every machine. The living enemies standing inside GetArenaBounds(ArenaTag), the boss excepted: replicated actors
+	 * read locally, so a client sees what the server does. None when the arena has no volume. */
+	TArray<AEnemyCharacter const*> GetLiveEnemiesInBounds() const;
+
+	/** The AGeoTargetPoint tagged TargetPoint.FightCenter + ArenaTag, or null when the level has none. Never asserts:
+	 * IsDataValid reads it too. */
+	AActor* FindCenterPoint() const;
+	/** Every machine. XY of this arena's FightCenter point, resolved once and kept. A missing point is a level bug
+	 * (ensure) unless RequiresCenter is false; the actor's own XY is returned then, the arena actor is never the center
+	 * otherwise. */
+	FVector2D GetCenter() const;
+	/** True when this arena needs a FightCenter point: IsDataValid errors without one, GetCenter asserts. */
+	virtual bool RequiresCenter() const { return true; }
 
 	/** Returns this arena's boss character; nullptr before BeginPlay spawns it. */
 	AEnemyCharacter* GetBoss() const { return Boss; }
@@ -223,6 +237,9 @@ protected:
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_Boss)
 	TObjectPtr<AEnemyCharacter> Boss;
+
+	/** The FightCenter point GetCenter found; cached so the lookup runs once. */
+	mutable TWeakObjectPtr<AActor> CenterPoint;
 
 	/** The live adds. Server-only bookkeeping — each add replicates itself as a normal actor, so clients never need the
 	 *  list. */
