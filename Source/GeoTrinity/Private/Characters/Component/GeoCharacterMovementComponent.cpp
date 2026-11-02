@@ -109,6 +109,7 @@ void UGeoCharacterMovementComponent::OnRegister()
 	// every net mode, so the cached base is always the real default.
 	BaseMaxWalkSpeed = MaxWalkSpeed;
 	BaseMaxAcceleration = MaxAcceleration;
+	MaxWalkSpeed = BaseMaxWalkSpeed * SetupWalkSpeedScale * AttributeSpeedMultiplier;
 }
 
 void UGeoCharacterMovementComponent::TickComponent(float const DeltaTime, ELevelTick const TickType,
@@ -133,8 +134,15 @@ void UGeoCharacterMovementComponent::TickComponent(float const DeltaTime, ELevel
 
 void UGeoCharacterMovementComponent::ApplySpeedMultiplier(float Multiplier)
 {
-	MaxWalkSpeed = BaseMaxWalkSpeed * Multiplier;
+	AttributeSpeedMultiplier = Multiplier;
+	MaxWalkSpeed = BaseMaxWalkSpeed * SetupWalkSpeedScale * Multiplier;
 	MaxAcceleration = BaseMaxAcceleration * Multiplier;
+}
+
+void UGeoCharacterMovementComponent::SetSetupWalkSpeedScale(float const Scale)
+{
+	SetupWalkSpeedScale = Scale;
+	MaxWalkSpeed = BaseMaxWalkSpeed * SetupWalkSpeedScale * AttributeSpeedMultiplier;
 }
 
 void UGeoCharacterMovementComponent::RequestDash(FVector const& RequestVelocity, float const RequestDuration)

@@ -9,6 +9,7 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/Component/FX/GeoLoopSoundComponent.h"
+#include "Characters/Component/GeoCharacterMovementComponent.h"
 #include "Characters/GeoEnemySetup.h"
 #include "Engine/World.h"
 #include "GameClasses/Match/GeoGameState.h"
@@ -86,7 +87,10 @@ void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)
 		Tags.Add(Setup.Tag);
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed *= Setup.WalkSpeedMultiplier;
+	if (UGeoCharacterMovementComponent* const Movement = GetGeoMovementComponent())
+	{
+		Movement->SetSetupWalkSpeedScale(Setup.WalkSpeedMultiplier);
+	}
 	AggroRadiusOverride = Setup.AggroRadius;
 	MaxHealthOverride = Setup.MaxHealth;
 	StartHealthRatio = Setup.StartHealthRatio;

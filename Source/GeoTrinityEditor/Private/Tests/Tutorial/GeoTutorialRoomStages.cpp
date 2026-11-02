@@ -1379,6 +1379,7 @@ namespace GeoTutorialStages
 		Bot.AddStage(TEXT("Zones: the retry line and the survived line"),
 					 [&Bot, Deaths](bool)
 					 {
+						 for (FString const& L : Bot.Lines) { UE_LOG(LogTemp, Warning, TEXT("WAVEDBG line: %s"), *L); } // WAVEDBG
 						 Bot.SetInvincible(true);
 						 Bot.Test.TestEqual(TEXT("Retry lines"), Bot.CountLines(ZonesRetryLine), Deaths);
 						 Bot.Test.TestTrue(TEXT("The survived line"), Bot.SawLine(ZonesSurvivedLine));

@@ -116,6 +116,9 @@ public:
 	 */
 	void ApplySpeedMultiplier(float Multiplier);
 
+	/** Spawn-time walk speed factor (MaxWalkSpeed only), kept on top of the attribute multiplier. */
+	void SetSetupWalkSpeedScale(float Scale);
+
 	/**
 	 * Called by UGeoDashAbility on every machine it runs on. The controlling machine starts the dash on its next move,
 	 * which carries the request to the server. The server starts a remote client's dash on that same move, and only
@@ -186,6 +189,10 @@ private:
 
 	float BaseMaxWalkSpeed = 0.f;
 	float BaseMaxAcceleration = 0.f;
+	/** Last attribute multiplier given to ApplySpeedMultiplier. */
+	float AttributeSpeedMultiplier = 1.f;
+	/** Spawn-time factor (FGeoEnemySetup::WalkSpeedMultiplier), independent of the attribute and of when OnRegister ran. */
+	float SetupWalkSpeedScale = 1.f;
 
 	FGeoCharacterNetworkMoveDataContainer GeoNetworkMoveDataContainer;
 	/** Never decreases, so a client-side ping estimate jump cannot rewind a hazard it already passed. */
