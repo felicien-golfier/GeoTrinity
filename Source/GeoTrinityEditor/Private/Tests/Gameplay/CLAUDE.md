@@ -13,7 +13,7 @@ Automation tests of the `GeoTrinity` module, one subfolder per area (mirrors the
 | `Fake/` | Fake actors / worlds → `Fake/CLAUDE.md` |
 | `GeoCatTests.cpp` | Cat walk, stop distance, hidden walk, replace, roam, montage order, idle variants |
 | `GeoCatLineBankTests.cpp` | Cat line bank: parse, bags, file order, live reload, missing file |
-| `GeoLeaderboardTests.cpp` | Leaderboard save: one best attempt per player, group row shared, worse / equal attempt dropped, per boss and difficulty, legacy file collapse, build wipe once per stamp |
+| `GeoLeaderboardTests.cpp` | Leaderboard save: one best attempt per player, group row shared, worse / equal attempt dropped, per boss and difficulty, legacy file collapse, echo level kept through prune and a save round trip, build wipe once per stamp |
 | `GeoDifficultyTests.cpp` | Nightmare: effect mask gate at level 8 |
 | `GeoSoundConcurrencyTests.cpp` | Sound concurrency assets |
 | `GeoTutorialTests.cpp` | Solo-only login, listen URL, locked / unlocked abilities, game mode's StartDifficulty → game state |

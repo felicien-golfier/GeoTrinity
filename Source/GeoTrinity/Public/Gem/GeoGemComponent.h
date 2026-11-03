@@ -42,6 +42,9 @@ public:
 	/** Server: the level the owning client last sent for PlayerClass; 1 until it has sent one. */
 	int32 GetClassLevel(EPlayerClass const PlayerClass) const { return Loadouts.FindRef(PlayerClass).Level; }
 
+	/** Server: the echo level the owning client last sent with PlayerClass's loadout; 0 until it has sent one. */
+	int32 GetEchoLevel(EPlayerClass const PlayerClass) const { return Loadouts.FindRef(PlayerClass).EchoLevel; }
+
 	/** Server: hands Reward to the owning client, whose profile keeps the gems and the class XP. */
 	void GrantReward(FGeoGemReward const& Reward);
 

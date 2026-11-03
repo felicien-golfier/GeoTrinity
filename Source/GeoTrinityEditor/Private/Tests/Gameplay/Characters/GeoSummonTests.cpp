@@ -60,7 +60,6 @@
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
 #include "Tests/Gameplay/GeoTestFlags.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
-#include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -72,37 +71,62 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoTestReadableZone::StaticClass();
-	AEnemyCharacter* const Dummy =
-		Arena->SpawnAdd(AGeoTestSummonedDummy::StaticClass(), FTransform(FVector(300.f, 0.f, 0.f)));
-	if (TestNotNull(TEXT("The dummy spawns"), Dummy))
+	auto const SpawnDummy = [Arena](float const X)
 	{
-		TActorIterator<AGeoTestReadableZone> const Zone(World);
-		if (TestTrue(TEXT("The default zone spawns at its feet"), static_cast<bool>(Zone)))
+		AEnemyCharacter* const Dummy =
+			Arena->SpawnAdd(AEnemyCharacter::StaticClass(), FTransform(FVector(X, 0.f, 0.f)));
+		UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Dummy);
+		FGameplayAbilitySpecHandle const Zone =
+			ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSelfZoneAbility::StaticClass(), 1));
+		FGameplayAbilitySpecHandle const Ally =
+			ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSpawnOnDeathAbility::StaticClass(), 1));
+		ASC->TryActivateAbility(Zone);
+		ASC->TryActivateAbility(Ally);
+		return Dummy;
+	};
+	auto const FindAllies = [World]()
+	{
+		TArray<AEnemyCharacter*> Allies;
+		for (TActorIterator<AEnemyCharacter> It(World); It; ++It)
 		{
-			World->TimeSeconds += 5.f;
-			Zone->Tick(0.f);
-			TestEqual(TEXT("It grows by the dummy's ZoneParams"), Zone->GetTestRadius(), 350.f, 0.01f);
+			if (It->ActorHasTag(TEXT("Ally")))
+			{
+				Allies.Add(*It);
+			}
 		}
 
-		Dummy->Death();
-		AEnemyCharacter* Ally = nullptr;
-		for (TActorIterator<AEnemyCharacter> It(World); It && !Ally; ++It)
-		{
-			Ally = It->ActorHasTag(TEXT("Ally")) ? *It : nullptr;
-		}
+		return Allies;
+	};
 
-		if (TestNotNull(TEXT("Killed, it leaves its ally"), Ally))
-		{
-			TestTrue(TEXT("An add of the same arena"), Ally->Arena.Get() == Arena);
-			TestEqual(TEXT("With the ally setup's team"), Ally->GetGenericTeamId(),
-					  FGenericTeamId(static_cast<uint8>(ETeam::Player)));
-			TestEqual(TEXT("In its place"), Ally->GetActorLocation().X, 300.0, 1.0);
-		}
+	AEnemyCharacter* const Dummy = SpawnDummy(300.f);
+	AEnemyCharacter* const OtherDummy = SpawnDummy(-300.f);
+	TickTestTimers(*World, 0.f);
+	TickTestTimers(*World, 5.f); // The zone is placed when the ability's fire delay ends.
+	TActorIterator<AGeoTestDeployable> const FirstZone(World);
+	if (TestTrue(TEXT("Its zone is placed"), static_cast<bool>(FirstZone)))
+	{
+		TestEqual(TEXT("Centred on the dummy, not on a fire socket"), FMath::Abs(FirstZone->GetActorLocation().X),
+				  300.0, 1.0);
 	}
 
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
+	TestEqual(TEXT("Alive: no ally yet"), FindAllies().Num(), 0);
+	Dummy->Death();
+	TArray<AEnemyCharacter*> const Allies = FindAllies();
+	if (TestEqual(TEXT("A dead dummy leaves one ally"), Allies.Num(), 1))
+	{
+		TestTrue(TEXT("An add of the same arena"), Allies[0]->Arena.Get() == Arena);
+		TestEqual(TEXT("With the ally setup's team"), Allies[0]->GetGenericTeamId(),
+				  FGenericTeamId(static_cast<uint8>(ETeam::Player)));
+		TestEqual(TEXT("In its place"), Allies[0]->GetActorLocation().X, 300.0, 1.0);
+	}
+
+	OtherDummy->Death();
+	TestEqual(TEXT("Each dummy leaves its own ally"), FindAllies().Num(), 2);
+
+	AEnemyCharacter* const Wiped = SpawnDummy(0.f);
+	Wiped->Destroy();
+	TestEqual(TEXT("Destroyed without dying: no ally"), FindAllies().Num(), 2);
+
 	DestroyTestWorld(World);
 	return true;
 }
@@ -151,20 +175,6 @@ bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
 		TestEqual(TEXT("Each its own"), Adds[0]->GetActorLocation().X + Adds[1]->GetActorLocation().X, 0.0, 1.0);
 	}
 
-	LaunchTestPattern(*Pattern, Boss, {FVector2D(0.f, 400.f)}, GeoDifficultyMask::Safe);
-	Pattern->EndPattern();
-	TArray<AEnemyCharacter*> const AllAdds = FindAdds(TEXT("Summoned"));
-	if (TestEqual(TEXT("Safe level: the add is still AddSetup's"), AllAdds.Num(), 3))
-	{
-		int32 AddsWithTree = 0;
-		for (AEnemyCharacter const* const Add : AllAdds)
-		{
-			AddsWithTree += Add->StateTree != nullptr ? 1 : 0;
-		}
-
-		TestEqual(TEXT("Safe level: only that add loses AddSetup's StateTree"), AddsWithTree, 2);
-	}
-
 	DestroyTestWorld(World);
 	return true;
 }
@@ -183,7 +193,9 @@ bool FGeoArenaBossSetupTest::RunTest(FString const& /*Parameters*/)
 	AddPoint->GameplayTags.AddTag(FGeoGameplayTags::Get().TargetPoint_AddSpawn);
 	AddPoint->GameplayTags.AddTag(ArenaTag);
 
-	FGameplayTag const AbilityTag = UGeoTestCastAbility::GetCastTag();
+	// A real non-passive spell: the boss really gets it. The fake cast tag is ShieldBurst, a passive that now
+	// activates at InitGAS and cannot on this mesh-less boss.
+	FGameplayTag const AbilityTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Ability.Spell.BasicBeam"));
 	AGeoTestCasterArena* const Arena =
 		World->SpawnActorDeferred<AGeoTestCasterArena>(AGeoTestCasterArena::StaticClass(), FTransform::Identity);
 	Arena->ArenaTag = ArenaTag;

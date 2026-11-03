@@ -26,6 +26,6 @@ A child only adds what lands with the hit. Telegraph, hit and cues belong to the
 
 ## SpawnAdd
 - Natural `EndPattern`, server, before `Super` (the base's `OnPatternEnd` ends the ability, which force-stops the pattern re-entrantly): `Arena->SpawnAdd(AddClass, FTransform(location), Setup)` per target location, so the hit never touches the add. Force-stop (wipe, boss death): nothing spawned.
-- `AddSetup` (`FGeoEnemySetup`): the add's variant (health row, tree, abilities), so the add class holds only its look and its own behaviour's params. `bSafeDropsStateTree`: at Safe payload level the add spawns with `AddSetup`'s `StateTree` cleared, so it keeps its class's (tutorial: the same add without its shooting tree).
+- `AddSetup` (`FGeoEnemySetup`): the add's variant (health row, tree, abilities), so the add class holds only its look and its own behaviour's params.- The add owns its behaviour (zone, ally on death) through passives in `AddSetup.AbilityTags` (`Characters/CLAUDE.md`, "Enemy setup"); the pattern tracks nothing after the spawn.
 - `RequiresArena()` true; arena = `AGeoArena::GetArenaOfBoss(StoredPayload.SourceAvatar)`.
 - Tutorial use: `GA_TutorialMinibossSummon` = plain `UPatternAbility`, `Target` = `RandomPlayers` (`Count` 1). Its `FireDelay` (a plain float, the same at every level) holds the caster still and is the telegraph's length; the hit's numbers are its `EffectDataInstances`; the pattern's `AnimMontage` is the caster's cosmetic summon animation (the Pillar drop clip).

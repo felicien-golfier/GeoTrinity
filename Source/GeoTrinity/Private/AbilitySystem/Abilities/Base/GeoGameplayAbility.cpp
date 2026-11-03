@@ -243,6 +243,7 @@ void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 	if (FireMode == EFireMode::ChargeForFireDelay && !bIsAbilityEnding && IsActive()
 		&& FireTriggerTimerHandle.IsValid())
 	{
+		UE_LOG(LogGeoASC, Verbose, TEXT("%s: charge fired by input RELEASE"), *GetName());
 		GetWorld()->GetTimerManager().ClearTimer(FireTriggerTimerHandle);
 		FireTriggerTimerHandle.Invalidate();
 		BuildDataAndFire();
@@ -251,6 +252,11 @@ void UGeoGameplayAbility::InputReleased(FGameplayAbilitySpecHandle const Handle,
 		{
 			GetAbilitySystemComponentFromActorInfo()->CurrentMontageJumpToSection(GeoASLib::SectionEndName);
 		}
+	}
+	else if (FireMode == EFireMode::ChargeForFireDelay)
+	{
+		UE_LOG(LogGeoASC, Verbose, TEXT("%s: input release IGNORED (ending=%d active=%d timerValid=%d)"), *GetName(),
+			   bIsAbilityEnding, IsActive(), FireTriggerTimerHandle.IsValid());
 	}
 }
 
@@ -453,6 +459,13 @@ void UGeoGameplayAbility::BuildDataAndFire()
 	// This ref to AbilityTargetData needs to exist only during Fire as we create a new pointer in SendFireDataToServer
 	FGeoAbilityTargetData const AbilityTargetData = GetUpdatedTargetData();
 	UpdatePayloadFromTargetData(AbilityTargetData);
+
+	if (FireMode == EFireMode::ChargeForFireDelay)
+	{
+		// No "RELEASE" line right before this one means the charge timer ran out (release never reached the ability).
+		UE_LOG(LogGeoASC, Verbose, TEXT("%s: BuildDataAndFire chargeRatio=%.2f elapsed=%.2fs fireDelay=%.2fs"),
+			   *GetName(), GetChargeRatio(), GetChargeElapsedSeconds(), GetFireDelay());
+	}
 
 	// The activation prediction window closed when ActivateAbility returned, so the shot needs one of its own: without
 	// it a client fails HasAuthorityOrPredictionKey and silently applies neither cost nor Cooldown, leaving it free to

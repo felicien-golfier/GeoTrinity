@@ -65,6 +65,11 @@ void AEnemyCharacter::InitGAS()
 	AbilitySystemComponent->OnHealthChanged.AddDynamic(
 		this,
 		&AEnemyCharacter::OnHealthChanged); // Do we need to remove this on destroy?
+
+	if (GeoLib::IsServer(this))
+	{
+		AbilitySystemComponent->ReactivatePassiveAbilities();
+	}
 }
 
 void AEnemyCharacter::ApplySetup(FGeoEnemySetup const& Setup)

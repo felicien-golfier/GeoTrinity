@@ -812,6 +812,10 @@ TArray<FGeoTargetPick> UGeoAbilitySystemLibrary::PickTargets(FGeoTarget const& T
 				   Context.Origin + FVector2D(FRotator(0.f, Context.Yaw, 0.f).Vector()) * Target.Distance});
 		break;
 
+	case EGeoTarget::Self:
+		AddActorPick(Context.Caster, FVector2D::ZeroVector);
+		break;
+
 	case EGeoTarget::AllPlayers:
 		for (APlayableCharacter* const Player : GeoLib::GetAlivePlayers(Context.Caster))
 		{

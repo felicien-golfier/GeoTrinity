@@ -1,6 +1,7 @@
 // Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #include "GameplayTagContainer.h"
+#include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 #include "System/Stats/GeoLeaderboardSave.h"
 
@@ -122,6 +123,34 @@ bool FGeoLeaderboardLegacyTest::RunTest(FString const& /*Parameters*/)
 	TestTrue("fast kept", IsListed(Leaderboard, Fast));
 	TestFalse("slow dropped", IsListed(Leaderboard, Slow));
 	TestTrue("other player kept", IsListed(Leaderboard, Other));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoLeaderboardEchoLevelTest, "GeoTrinity.Leaderboard.EchoLevelSurvivesSave",
+								 GeoLeaderboardTestFlags)
+bool FGeoLeaderboardEchoLevelTest::RunTest(FString const& /*Parameters*/)
+{
+	UGeoLeaderboardSave* Leaderboard = NewObject<UGeoLeaderboardSave>();
+	FGeoAttemptEntry Echoed = MakeAttempt(100.f, {"A", "B"});
+	Echoed.Players[0].Level = 20;
+	Echoed.Players[0].EchoLevel = 7;
+	FGeoAttemptEntry const Faster = MakeAttempt(80.f, {"C"});
+	Leaderboard->AddAttempt(Echoed);
+	Leaderboard->AddAttempt(Faster);
+	TestEqual("pruning and sorting keep the echo level", Leaderboard->Entries[1].Players[0].EchoLevel, 7);
+	TestEqual("a player without one reads 0", Leaderboard->Entries[1].Players[1].EchoLevel, 0);
+
+	TArray<uint8> Bytes;
+	if (TestTrue("saved", UGameplayStatics::SaveGameToMemory(Leaderboard, Bytes)))
+	{
+		UGeoLeaderboardSave const* const Loaded =
+			Cast<UGeoLeaderboardSave>(UGameplayStatics::LoadGameFromMemory(Bytes));
+		if (TestNotNull("loaded", Loaded) && TestEqual("both rows back", Loaded->Entries.Num(), 2))
+		{
+			TestEqual("echo level round trips", Loaded->Entries[1].Players[0].EchoLevel, 7);
+			TestEqual("class level round trips", Loaded->Entries[1].Players[0].Level, 20);
+		}
+	}
 	return true;
 }
 

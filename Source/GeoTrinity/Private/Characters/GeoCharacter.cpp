@@ -93,6 +93,7 @@ void AGeoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AGeoCharacter, bIsDead);
 	DOREPLIFETIME(AGeoCharacter, bInvulnerable);
+	DOREPLIFETIME(AGeoCharacter, TeamId);
 }
 
 void AGeoCharacter::SetInvulnerable(bool const bNewInvulnerable)

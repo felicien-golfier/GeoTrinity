@@ -3,7 +3,7 @@
 | File | Role |
 |---|---|
 | `GeoCombatStatsSubsystem.h` | Per-player DPS/HPS/damage-received, fixed-size state |
-| `GeoLeaderboardSave.h` | Fight records on this machine: each player's best attempt per boss and difficulty (name, class, figures), build wipe |
+| `GeoLeaderboardSave.h` | Fight records on this machine: each player's best attempt per boss and difficulty (name, class, class and echo level, figures), build wipe |
 
 ## Combat stats
 - Rates exponentially smoothed (`SmoothingWindowSeconds = 3`); `FightDPS` / `FightHPS` = totals / the player's own active time (`CombatStartTime` → their death, or now while alive), clamped to ≥ 1 s.

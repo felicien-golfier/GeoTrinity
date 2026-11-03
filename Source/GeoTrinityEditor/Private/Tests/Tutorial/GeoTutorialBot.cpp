@@ -10,7 +10,6 @@
 #include "Actor/Buttons/GeoTeleporter.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/EnemyCharacter.h"
-#include "Characters/GeoSummonedDummy.h"
 #include "Characters/PlayableCharacter.h"
 #include "Encounter/GeoEncounter.h"
 #include "Encounter/GeoEncounterSubsystem.h"
@@ -620,9 +619,14 @@ void FGeoTutorialBot::UpdateHealthWatches()
 
 	if (!HealthTags.IsEmpty())
 	{
-		for (TActorIterator<AGeoSummonedDummy> It(GetWorld()); It; ++It)
+		for (TActorIterator<AEnemyCharacter> It(GetWorld()); It; ++It)
 		{
-			AGeoSummonedDummy* const Summon = *It;
+			AEnemyCharacter* const Summon = *It;
+			if (!Summon->ActorHasTag(TEXT("TutorialMinibossSummon")))
+			{
+				continue;
+			}
+
 			FSummonWatch* Found = SummonWatches.FindByPredicate(
 				[Summon](FSummonWatch const& W)
 				{

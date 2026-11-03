@@ -29,6 +29,11 @@ struct FGeoLeaderboardPlayer
 	UPROPERTY()
 	int32 Level = 0;
 
+	/** Echo level they had when the fight ended; 0 = not unlocked, and what an attempt saved before it was recorded
+	 *  reads as. */
+	UPROPERTY()
+	int32 EchoLevel = 0;
+
 	/** Damage this player dealt over the whole attempt. */
 	UPROPERTY()
 	float DamageDealt = 0.f;

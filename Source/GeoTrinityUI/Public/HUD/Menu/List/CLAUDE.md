@@ -8,6 +8,6 @@ One list look for the whole game: server browser and leaderboard differ only by 
 | `GeoListPanelWidget.h` | Base of every full-screen list page; fills the frame with `RowWidgetClass` rows (`MakeRow…`) |
 | `GeoListRowWidget.h` | One line (`WBP_ListRow`): columns, optional `OnClicked`; text roles from theme |
 | `GeoTableWidget.h` | Column definitions / table helper for list pages |
-| `GeoLeaderboardWidget.h` | Fights recorded on this machine: boss tabs, difficulty tabs (Nightmare, Original, Reduced, Safe; opens on Original), best attempts first (least health left, ties by faster); a row is one attempt that is some player's best, so a group that stayed together is one row and each player appears once per boss (`System/Stats/CLAUDE.md`, "Leaderboard"); each row shows the date and each player's class level |
+| `GeoLeaderboardWidget.h` | Fights recorded on this machine: boss tabs, difficulty tabs (Nightmare, Original, Reduced, Safe; opens on Original), best attempts first (least health left, ties by faster); a row is one attempt that is some player's best, so a group that stayed together is one row and each player appears once per boss (`System/Stats/CLAUDE.md`, "Leaderboard"); each row shows the date and each player's class level and, from echo level 1, their echo level |
 
 - Editing `WBP_ListPanel` / `WBP_ListRow` re-skins every list.

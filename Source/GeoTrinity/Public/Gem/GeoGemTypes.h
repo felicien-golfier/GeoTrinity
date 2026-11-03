@@ -252,7 +252,7 @@ struct FGeoGemLoadout
 	/** The class's echo level when UGeoGemProfileSave::GetLoadout read this, so the server learns it with the loadout.
 	 *  Never read back from a saved build. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
-	int32 EchoLevel = 1;
+	int32 EchoLevel = 0;
 };
 
 namespace GeoGem

@@ -22,7 +22,7 @@ TIMEOUT_SECONDS = 300.0
 ROOM_PITCH = 2900.0   # tutorial_map.py: 2 * 700 + ROOM_GAP
 ROOM = 7              # Miniboss
 BOSS_TAG = "TutorialMiniboss"  # the Miniboss arena's BossSetup.Tag: the boss is a BP_Dummy
-SUMMONED_CLASS = "BP_TutorialSummonedDummy_C"
+SUMMON_TAG = "TutorialMinibossSummon"   # tutorial_miniboss.py SUMMON_ACTOR_TAG
 DUMMY_CLASS = "BP_Dummy_C"
 ALLY_TAG = "TutorialMinibossAlly"   # tutorial_encounters.py MINIBOSS_ALLY_TAG
 EXIT_PAD_LABEL = "Tut_Miniboss_PadExit"
@@ -96,7 +96,7 @@ def watch_fight(world, boss):
                 and index not in state["points_reached"]:
             state["points_reached"].add(index)
             log("boss reached point %d at %s" % (index, location))
-    summoned = of_class(world, unreal.EnemyCharacter, SUMMONED_CLASS)
+    summoned = [a for a in actors_of(world, unreal.EnemyCharacter) if a.actor_has_tag(SUMMON_TAG)]
     for dummy in summoned:
         if dummy.get_name() not in state["summoned_names"]:
             state["summoned_names"].add(dummy.get_name())

@@ -1,4 +1,4 @@
-# CueToZoneLayer — pending
+# CueToZoneLayer — pending - TO BE SIMPLIFIED (Can't we "just" add a Cue that calls a zone with params.)
 
 Goal: a footprint (circle, ray, marker on the ground) is never drawn by a cue's own Niagara or material: the zone layer draws it. A gameplay cue stays the way to launch one, so a Blueprint (a deployable's moment, a pattern cue, a test) picks a zone per case and no C++ owner forces one.
 Priority: 2

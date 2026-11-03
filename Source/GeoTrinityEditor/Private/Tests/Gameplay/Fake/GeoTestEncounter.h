@@ -1,10 +1,9 @@
-// Copyright 2024 GeoTrinity. All Rights Reserved.
+﻿// Copyright 2024 GeoTrinity. All Rights Reserved.
 
 #pragma once
 
 #include "Actor/Arena/GeoDummyArena.h"
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
-#include "Characters/GeoSummonedDummy.h"
 #include "Characters/HiddenCasterCharacter.h"
 #include "CoreMinimal.h"
 #include "Encounter/Action/GeoStartEncounterAction.h"
@@ -309,24 +308,4 @@ public:
 	float GetGrowthStartServerTime() const { return GrowthStartServerTime; }
 	/** What a client that receives the zone late gets: the server's growth start, not its own BeginPlay. */
 	void ReceiveGrowthStartServerTime(float const ServerTime) { GrowthStartServerTime = ServerTime; }
-};
-
-/** Summoned dummy with its zone and ally set, as its Blueprint would: the zone grows, the ally is a plain enemy tagged
- * "Ally". Its zone class is the Game Data Settings' DefaultZoneClass, which the test sets. */
-UCLASS(NotPlaceable, Transient)
-class AGeoTestSummonedDummy : public AGeoSummonedDummy
-{
-	GENERATED_BODY()
-
-public:
-	AGeoTestSummonedDummy()
-	{
-		ZoneStartSize = FScalableFloat(100.f);
-		ZoneParams.GrowToSize = FScalableFloat(600.f);
-		ZoneParams.GrowSeconds = FScalableFloat(10.f);
-		ZoneParams.Color.Color = EGeoColor::Damage;
-		AllyClass = AEnemyCharacter::StaticClass();
-		AllySetup.Team = ETeam::Player;
-		AllySetup.Tag = TEXT("Ally");
-	}
 };

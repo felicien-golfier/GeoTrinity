@@ -34,6 +34,7 @@ The one targeting code of every ability: projectiles, salves, beams, zones, pill
 | `EGeoTarget` | Params | Picks |
 |---|---|---|
 | `Forward` (default) | `Distance` | `Origin` + yaw × `Distance`; 0 = the origin itself |
+| `Self` | — | The caster's own actor (a pick that follows it): where it stands, not `Origin` (the fire socket) |
 | `AllPlayers` | — | Each live player |
 | `RandomPlayers` | `Count`, `ExtraBelowHealth`, `MinScatterRadius`, `MaxScatterRadius` | Live players from a seeded start. Total = `Count` + one per `ExtraBelowHealth` ratio above the caster's health ratio, never the number of players; one per player, those beyond the alive count scattered around a player within the radii |
 | `Boss` | — | Live boss of `AGeoArena::GetFightingArena`; none outside a fight |

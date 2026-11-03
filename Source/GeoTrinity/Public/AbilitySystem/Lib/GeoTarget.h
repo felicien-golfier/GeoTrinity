@@ -13,6 +13,9 @@ enum class EGeoTarget : uint8
 {
 	/** Along the context's yaw, Distance away from its origin; 0 = the origin itself. */
 	Forward,
+	/** The caster's own actor, followed while it exists: where it stands, not the context's origin (the fire socket).
+	 */
+	Self,
 	/** Each live player. */
 	AllPlayers,
 	/** Live players from a seeded start, Count plus one per ExtraBelowHealth ratio above the caster's health ratio. */

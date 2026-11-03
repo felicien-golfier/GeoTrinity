@@ -4,7 +4,6 @@
 
 #include "Actor/Arena/GeoArena.h"
 #include "Characters/EnemyCharacter.h"
-#include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
 
 void USpawnAddPattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
@@ -21,15 +20,9 @@ void USpawnAddPattern::EndPattern(bool const bForceStop)
 		if (ensureMsgf(Arena, TEXT("%s: the caster has no arena to summon into"), *GetName())
 			&& ensureMsgf(AddClass, TEXT("%s: no AddClass set"), *GetName()))
 		{
-			FGeoEnemySetup Setup = AddSetup;
-			if (bSafeDropsStateTree && StoredPayload.AbilityLevel == GeoDifficultyMask::Safe)
-			{
-				Setup.StateTree = nullptr;
-			}
-
 			for (FVector2D const& Location : GetTargetLocations())
 			{
-				Arena->SpawnAdd(AddClass, FTransform(FVector(Location, ArbitraryCharacterZ)), &Setup);
+				Arena->SpawnAdd(AddClass, FTransform(FVector(Location, ArbitraryCharacterZ)), &AddSetup);
 			}
 		}
 	}

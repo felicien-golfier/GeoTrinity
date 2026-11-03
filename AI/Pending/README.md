@@ -31,7 +31,7 @@ Docs written: list of CLAUDE.md files that describe it.
 - A step an editor script can do becomes a script row; the rest stays here for the user.
 
 ## Order
-Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). This list is sorted by it: a new file, or a changed priority, moves its row in the same change; a deleted file leaves it.
+Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later, none = undecided, only on the user's say). This list is sorted by it: a new file, or a changed priority, moves its row in the same change; a deleted file leaves it.
 
 | Priority | File |
 |---|---|
@@ -50,7 +50,6 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 2 | `TutorialTeleporters.md` |
 | 2 | `TutorialAggroRadius.md` |
 | 2 | `TrainingCat.md` |
-| 2 | `EncounterHandEdits.md` |
 | 2 | `TestAim.md` |
 | 2 | `PendingSweep.md` |
 | 2 | `GemShapes3D.md` |
@@ -71,6 +70,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 3 | `CatLocomotionIdles.md` |
 | 3 | `CatPortrait.md` |
 | 3 | `CatWalkRun.md` |
+| 3 | `DifficultyCondition.md` |
 | 3 | `EchoSocketHalo.md` |
 | 3 | `EchoUiPolish.md` |
 | 3 | `EncounterNetwork.md` |
@@ -78,3 +78,4 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later). Thi
 | 3 | `MessageLog.md` |
 | 3 | `PatternDescriptionTokens.md` |
 | 3 | `RemoveZoneGrowth.md` |
+| none | `EncounterHandEdits.md` |

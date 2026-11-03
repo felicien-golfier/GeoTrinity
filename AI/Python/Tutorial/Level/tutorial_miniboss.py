@@ -43,6 +43,11 @@ SALVE_SHOOTER_TREE = TREE_DIR + "/ST_TutorialSalveShooter"  # ST_Dummy_Shooter f
 SALVE_TAG = "Ability.Spell.TutorialSalve"
 ALLY_SALVE_TAG = SALVE_TAG + ".Ally"  # a child tag: the shooter tree firing SALVE_TAG fires the ally's salve too
 SUMMON_TAG = "Ability.Spell.TutorialMinibossSummon"
+SUMMON_ZONE_TAG = "Ability.Spell.TutorialSummonZone"  # passive of the dummy: its growing zone
+SUMMON_ALLY_TAG = "Ability.Spell.TutorialSummonAlly"  # passive of the dummy: its ally where it dies
+PASSIVE_TAG = "Ability.Type.Passive"
+DEFAULT_ZONE_CLASS = "/Game/Actors/BP_Zone.BP_Zone_C"  # Game Data Settings' DefaultZoneClass
+SUMMON_ACTOR_TAG = "TutorialMinibossSummon"  # the dummy's actor tag: how the bot and the tests find it
 WAVE_TAG = "Ability.Spell.LateralWave"  # tutorial_waves.py: the one wave, lanes from the living adds
 WAVE_EVENT_TAG = "Event.StateTree.TriggerMinibossWave"
 WAVE_PATTERN_DATA = "/Script/GeoTrinity.LateralWavePatternData(bRandomDirection=True)"  # each firing rolls its direction
@@ -61,7 +66,7 @@ COLUMN = 1.0  # CT_Tutorial is flat: every difficulty column holds the same valu
 OLD_ASSETS = [CHARACTER_DIR + "/BP_TutorialMiniboss", ABILITY_DIR + "/GA_TutorialMinibossShoot",
               ABILITY_DIR + "/GA_TutorialAllyShoot", ABILITY_DIR + "/BP_TutorialPattern_MinibossShoot",
               ABILITY_DIR + "/BP_TutorialPattern_AllyShoot", ABILITY_DIR + "/BP_ZonePattern_MinibossSummon",
-              ATTRIBUTE_DIR + "/GE_TutorialMinibossAttributes", ATTRIBUTE_DIR + "/GE_TutorialSummonedDummyAttributes",
+              ATTRIBUTE_DIR + "/GE_TutorialMinibossAttributes", ATTRIBUTE_DIR + "/GE_TutorialSummonedDummyAttributes", CHARACTER_DIR + "/BP_TutorialSummonedDummy",
               ACTOR_DIR + "/BP_TutorialGrowingZone"]
 OLD_TAGS = ["Ability.Spell.TutorialMinibossShoot", "Ability.Spell.TutorialAllyShoot"]
 
@@ -214,8 +219,7 @@ def build_summon_pattern(add_class):
         cdo.set_editor_property(name, look.get_editor_property(name))
     cdo.set_editor_property("AnimMontage", unreal.load_asset(SUMMON_MONTAGE))
     cdo.set_editor_property("AddClass", add_class)
-    cdo.set_editor_property("AddSetup", enemy_setup(unreal.Team.ENEMY, "DummyHealth", SALVE_TAG))
-    cdo.set_editor_property("bSafeDropsStateTree", True)
+    cdo.set_editor_property("AddSetup", summon_setup())
     waves.commit_bp(pattern_bp)
     return pattern_bp
 
@@ -246,31 +250,51 @@ def reparented_copy(source, destination, parent_path):
     return blueprint, created
 
 
-def build_summoned_dummy():
-    """BP_Dummy's look with the zone and ally params; its health, tree and salve are the summon's AddSetup, so the
-    rest stays BP_Dummy's."""
-    blueprint, created = reparented_copy(BP_DUMMY, CHARACTER_DIR + "/BP_TutorialSummonedDummy",
-                                         "/Script/GeoTrinity.GeoSummonedDummy")
-    cdo = unreal.get_default_object(blueprint.generated_class())
+def tag_container(names):
+    tags = unreal.GameplayTagContainer()
+    tags.import_text("(GameplayTags=(%s))" % ",".join('(TagName="%s")' % name for name in names))
+    return tags
+
+
+def build_summon_zone():
+    """Passive of the dummy: a growing damage zone at its feet (Target Self), alive as long as the dummy."""
+    ability_bp, created = native_child("GA_TutorialDummyZone", "/Script/GeoTrinity.GeoPlaceDeployableAbility")
+    cdo = unreal.get_default_object(ability_bp.generated_class())
+    cdo.set_editor_property("AbilityTags", tag_container([SUMMON_ZONE_TAG, PASSIVE_TAG]))
     zone_params = unreal.DeployableDataParams()
     zone_params.import_text("(Color=(Color=Damage),Attitude=%d)" % HOSTILE_ATTITUDE)
     zone_params.set_editor_property("GrowToSize", scalable_row("DummyZoneMaxRadius"))
     zone_params.set_editor_property("GrowSeconds", scalable_row("DummyZoneGrowthTime"))
-    cdo.set_editor_property("ZoneEffects", [damage_effect("DummyZoneDamage", per_second=True)])
-    cdo.set_editor_property("ZoneParams", zone_params)
-    cdo.set_editor_property("ZoneStartSize", scalable_row("DummyZoneStartRadius"))
+    cdo.set_editor_property("DeployableActorClass", unreal.load_class(None, DEFAULT_ZONE_CLASS))
+    cdo.set_editor_property("Params", zone_params)
+    cdo.set_editor_property("Size", scalable_row("DummyZoneStartRadius"))
+    cdo.set_editor_property("EffectDataInstances", [damage_effect("DummyZoneDamage", per_second=True)])
+    set_target(cdo, "(Mode=Self)")
+    cdo.set_editor_property("bUseGeneralChargeTimeForFireDelay", False)
+    cdo.set_editor_property("FireDelay", 0.0)  # the zone exists the moment the dummy does
+    waves.commit_bp(ability_bp)
+    waves.register(ability_bp, SUMMON_ZONE_TAG, "Tutorial summon zone", "Growing damage zone under the summoned dummy.")
+    log("summon zone", "created" if created else "updated")
+
+
+def build_summon_ally():
+    """Passive of the dummy: leaves the salve-shooting ally (BP_DummyAlly) where it dies."""
+    ability_bp, created = native_child("GA_TutorialSpawnAlly", "/Script/GeoTrinity.GeoSpawnOnDeathAbility")
+    cdo = unreal.get_default_object(ability_bp.generated_class())
+    cdo.set_editor_property("AbilityTags", tag_container([SUMMON_ALLY_TAG, PASSIVE_TAG]))
     cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY_ALLY).generated_class())
     cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_SALVE_TAG, ALLY_ACTOR_TAG))
-    dummy = unreal.get_default_object(unreal.load_asset(BP_DUMMY).generated_class())
-    for name in ("StateTree", "ResetToFullLifeWhenReachingZero"):
-        cdo.set_editor_property(name, dummy.get_editor_property(name))
-    asc = cdo.get_editor_property("AbilitySystemComponent")
-    dummy_asc = dummy.get_editor_property("AbilitySystemComponent")
-    for name in ("DefaultAttributes", "StartupAbilityTags"):
-        asc.set_editor_property(name, dummy_asc.get_editor_property(name))
-    waves.commit_bp(blueprint)
-    log("summoned dummy", "created" if created else "updated")
-    return blueprint
+    waves.commit_bp(ability_bp)
+    waves.register(ability_bp, SUMMON_ALLY_TAG, "Tutorial summon ally", "Leaves an ally where the summoned dummy dies.")
+    log("summon ally", "created" if created else "updated")
+
+
+def summon_setup():
+    """The summoned dummy: a plain BP_Dummy that never shoots (no tree), its zone and its ally as passives."""
+    setup = enemy_setup(unreal.Team.ENEMY, "DummyHealth", SUMMON_ZONE_TAG, SUMMON_ACTOR_TAG)
+    setup.set_editor_property("StateTree", None)
+    setup.set_editor_property("AbilityTags", [waves.tag(SUMMON_ZONE_TAG), waves.tag(SUMMON_ALLY_TAG)])
+    return setup
 
 
 def build_salve_shooter_tree():
@@ -342,7 +366,9 @@ def run():
     try:
         build_ally_salve(build_salve())
         build_salve_shooter_tree()
-        build_summon(build_summoned_dummy().generated_class())
+        build_summon_zone()
+        build_summon_ally()
+        build_summon(unreal.load_asset(BP_DUMMY).generated_class())
         build_tree()
         delete_old_assets()
         log("OK")

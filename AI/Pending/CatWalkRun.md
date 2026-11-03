@@ -12,7 +12,7 @@ Docs written: `AI/Tutorial/CatAnimation.md` ("Living, not mechanical" Walk / Run
 
 ## Editor / Blueprint
 - [x] Delete stale asset `/Game/Characters/Anim/Cat/Cat_Walk_Strut` after the rerun (redirectors none; `BS_Cat_Walk` rebuilt by the script)
-- [ ] User: ABP integration of `Cat_Run` (later)
+- [ ] User: ABP integration of `Cat_Run` (Goind to the portal in the fur-st encounter)
 
 ## Docs follow-up
 - [x] Rename Strut → Fast in `AI/Pending/CatAnimation.md`, `CatEvilFace.md`, `CatLocomotionIdles.md`, `CatClipsPick.md`, and `AI/Python/Tutorial/Level/tutorial_encounters.py` comments if any

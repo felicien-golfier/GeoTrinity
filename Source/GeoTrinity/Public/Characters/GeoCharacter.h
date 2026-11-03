@@ -53,7 +53,7 @@ public:
 	 * null on dedicated server), GameFeelComponent, DeployableManagerComponent and IndicatorComponent.
 	 */
 	AGeoCharacter(FObjectInitializer const& ObjectInitializer);
-	/** Registers replicated character properties (bIsDead, bInvulnerable). */
+	/** Registers replicated character properties (bIsDead, bInvulnerable, TeamId). */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Emits a visual-log entry at the character's location; optionally draws a debug sphere on the server
@@ -238,7 +238,9 @@ protected:
 
 	// Team
 
-	UPROPERTY(Category = "GeoCharacter|Team", EditAnywhere, BlueprintReadOnly)
+	/** Set on the server (SetGenericTeamId, AEnemyCharacter::ApplySetup) before the first replication; replicated so a
+	 *  client's projectile overlap judges allies like the server. */
+	UPROPERTY(Category = "GeoCharacter|Team", EditAnywhere, BlueprintReadOnly, Replicated)
 	ETeam TeamId;
 
 	// Components

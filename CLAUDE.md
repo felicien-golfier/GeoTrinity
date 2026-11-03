@@ -42,7 +42,7 @@ Skip step 1 (go straight to find + fix) when: the user says so ("no test", "just
 - Never test in the editor (PIE, live editor, in-editor MCP checks) unless the user asks; automated tests (headless) are the default check.
 - Never take mouse or window focus (clicking in the editor, PIE with real clicks, focus-dependent screen grabs) unless the user asked to test it yourself. Default tests: automated (`Tests/Gameplay/`), headless, bridge scripts (`AI/Testing.md`).
 - Launch / quit / dismiss dialogs of an editor only on request, and only your own (`-RemoteControlAllow`).
-- Full autonomy: when the user says "on your own", "I'm out", "you're alone" (or similar), every optional rule above is lifted for that task: build, test, play in editor, take focus, and even close the user's editor or test in their open editor. Even Workflow stops are removed, you can implement straight after step 3 directly. Don't stop until task is fully done : Planned, implemented, tested.
+- Full autonomy: when the user says "on your own", "I'm out", "you're alone", "Finish it up"  (or similar), every optional rule above is lifted for that task: build, test, play in editor, take focus, and even close the user's editor or test in their open editor. Even Workflow stops are removed, you can implement straight after step 3 directly. Don't stop until task is fully done : Planned, implemented, tested.
 - Empty folder left by a move or delete (code, docs, scripts): delete it in the same change, always; no ask needed.
 - Never write into `Saved/`. Sound work → `AI/Audio/`; reports, probes, exports → `AI/Output/`; throwaway → session scratchpad.
 - Before writing any code: read `AI/CodingStyle.md`. Planning or answering: don't.
@@ -54,7 +54,7 @@ Skip step 1 (go straight to find + fix) when: the user says so ("no test", "just
 - **No memory files, ever.** Never create or update anything under `~/.claude/projects/*/memory/`. A fact worth keeping goes in the file from "Where a fact goes" below, in the same session. A rule the user states ("always…", "never…") is written there, not remembered.
 - **Research page.** Every research / study / concept-exploration artifact (visual studies, design options, room or feature research) goes into the existing "Research" artifact (`https://claude.ai/artifact/RZhzLd3DV8276eMvRo7bbF`) as a new tab (`pages` array + `<main id="page…">`), never a separate artifact. Read the whole saved file before republishing.
 - Camera is orthographic by default (`Geo.CameraPerspective 0`): a position mismatch is then never parallax or height; find the gameplay or network cause.
-- **Exceptions to workflow** When the task is really small, add a uproperty, rename something, add logs, fix a line in code etc... Also sentences like "Fix it straight", "code right away" or such... Ignore the workflow ! 
+- **Exceptions to workflow** When the task is really small, add a uproperty, rename something, add logs, fix a line in code etc... Also sentences like "Fix it straight", "code right away" or such...  Ignore the workflow ! 
 
 ## Where a fact goes
 | Kind of fact | File |

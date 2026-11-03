@@ -36,9 +36,4 @@ protected:
 	/** The add's variant (health, tree, abilities), so AddClass holds only its look and its own behaviour's params. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoSummon")
 	FGeoEnemySetup AddSetup;
-
-	/** True: a pattern launched at Safe level spawns the add with AddSetup's StateTree cleared, so it keeps its
-	 * class's. */
-	UPROPERTY(EditDefaultsOnly, Category = "GeoSummon")
-	bool bSafeDropsStateTree = false;
 };

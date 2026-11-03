@@ -96,7 +96,7 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 
 	// GEM CORES //
 	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Critical, "Gem.Core.Critical",
-							   "Critical Core slotted: hits and heals may crit.");
+							   "Critical Core slotted: +30% crit damage and +10% crit chance (crits work without it).");
 	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Leverage, "Gem.Core.Leverage",
 							   "Leverage Core slotted: deployable health scales with the deploy distance.");
 	CreateAndAssignGameplayTag(GameplayTags.Gem_Core_Surplus, "Gem.Core.Surplus",

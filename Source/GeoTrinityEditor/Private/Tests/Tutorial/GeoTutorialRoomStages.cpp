@@ -11,7 +11,6 @@
 #include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Actor/GeoGemDrop.h"
 #include "Characters/EnemyCharacter.h"
-#include "Characters/GeoSummonedDummy.h"
 #include "Characters/HiddenCasterCharacter.h"
 #include "Characters/PlayableCharacter.h"
 #include "Components/Button.h"
@@ -142,6 +141,7 @@ namespace GeoTutorialStages
 	FName const MoverTag = "TutorialMover";
 	FName const MinibossTag = "TutorialMiniboss";
 	FName const MinibossAllyTag = "TutorialMinibossAlly";
+	FName const MinibossSummonTag = "TutorialMinibossSummon";
 
 	constexpr int32 QuestKills = 12;
 	constexpr int32 QuestDummies = 9;
@@ -213,17 +213,9 @@ namespace GeoTutorialStages
 		return FindFirstLiving(Bot, MinibossTag);
 	}
 
-	AGeoSummonedDummy* FindLivingSummon(FGeoTutorialBot const& Bot)
+	AEnemyCharacter* FindLivingSummon(FGeoTutorialBot const& Bot)
 	{
-		for (TActorIterator<AGeoSummonedDummy> It(Bot.GetWorld()); It; ++It)
-		{
-			if (IsValid(*It) && !It->IsDead())
-			{
-				return *It;
-			}
-		}
-
-		return nullptr;
+		return FindFirstLiving(Bot, MinibossSummonTag);
 	}
 
 	/** Every living dummy of the Miniboss room but the boss: the summons and the allies, the sources of the wave's
@@ -1379,7 +1371,10 @@ namespace GeoTutorialStages
 		Bot.AddStage(TEXT("Zones: the retry line and the survived line"),
 					 [&Bot, Deaths](bool)
 					 {
-						 for (FString const& L : Bot.Lines) { UE_LOG(LogTemp, Warning, TEXT("WAVEDBG line: %s"), *L); } // WAVEDBG
+						 for (FString const& L : Bot.Lines)
+						 {
+							 UE_LOG(LogTemp, Warning, TEXT("WAVEDBG line: %s"), *L);
+						 } // WAVEDBG
 						 Bot.SetInvincible(true);
 						 Bot.Test.TestEqual(TEXT("Retry lines"), Bot.CountLines(ZonesRetryLine), Deaths);
 						 Bot.Test.TestTrue(TEXT("The survived line"), Bot.SawLine(ZonesSurvivedLine));
@@ -1448,7 +1443,7 @@ namespace GeoTutorialStages
 		Bot.AddStage(TEXT("Miniboss: a summon lands and its zone grows"),
 					 [&Bot, FirstZoneRadius](bool)
 					 {
-						 AGeoSummonedDummy const* const Summon = FindLivingSummon(Bot);
+						 AEnemyCharacter const* const Summon = FindLivingSummon(Bot);
 						 AGeoEffectZone const* const Zone =
 							 Summon ? Bot.FindZoneAt(FVector2D(Summon->GetActorLocation())) : nullptr;
 						 float const Radius =

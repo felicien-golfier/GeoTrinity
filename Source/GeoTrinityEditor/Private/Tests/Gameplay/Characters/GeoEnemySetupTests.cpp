@@ -116,4 +116,30 @@ bool FGeoCharactersSetupAggroRadiusTest::RunTest(FString const& /*Parameters*/)
 	return true;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoCharactersTeamReplicatedTest, "GeoTrinity.Characters.TeamReplicated",
+								 GeoCharactersTestFlags)
+
+bool FGeoCharactersTeamReplicatedTest::RunTest(FString const& /*Parameters*/)
+{
+	for (UClass* const CharacterClass : {AEnemyCharacter::StaticClass(), APlayableCharacter::StaticClass()})
+	{
+		FProperty const* const TeamProperty = CharacterClass->FindPropertyByName("TeamId");
+		if (TestNotNull(TEXT("TeamId exists"), TeamProperty))
+		{
+			TArray<FLifetimeProperty> Replicated;
+			CharacterClass->GetDefaultObject()->GetLifetimeReplicatedProps(Replicated);
+			bool const bRegistered = Replicated.ContainsByPredicate(
+				[TeamProperty](FLifetimeProperty const& Lifetime)
+				{
+					return Lifetime.RepIndex == TeamProperty->RepIndex;
+				});
+			TestTrue(*FString::Printf(TEXT("%s replicates TeamId, so a client judges allies like the server"),
+									  *CharacterClass->GetName()),
+					 bRegistered);
+		}
+	}
+	return true;
+}
+
 #endif

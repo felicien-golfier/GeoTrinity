@@ -29,7 +29,7 @@ static float const DateColumnWeight = 2.f;
 
 // A row always shows this many player columns, empty where the team was short, so they line up down the list.
 static int32 const PlayersPerRow = 3;
-static float const PlayerColumnWeight = 3.f;
+static float const PlayerColumnWeight = 4.f;
 static float const ClassIconSize = 16.f;
 static int32 const PlayerNameMaxChars = 14;
 
@@ -332,6 +332,12 @@ void UGeoLeaderboardWidget::AddPlayerColumn(UGeoListRowWidget* Row, FGeoLeaderbo
 	{
 		Column->AddChildToHorizontalBox(
 			Row->MakeColumnText(FText::FromString(FString::Printf(TEXT("Lv %d"), Player.Level))));
+	}
+
+	if (Player.EchoLevel >= 1)
+	{
+		Column->AddChildToHorizontalBox(
+			Row->MakeColumnText(FText::FromString(FString::Printf(TEXT("Echo %d"), Player.EchoLevel))));
 	}
 
 	Row->AddColumn(Column, PlayerColumnWeight);

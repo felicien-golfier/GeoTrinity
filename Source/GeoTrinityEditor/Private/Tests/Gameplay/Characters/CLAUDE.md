@@ -4,6 +4,6 @@ Character and enemy setup tests; paths `GeoTrinity.Characters.*`, `GeoTrinity.Ar
 
 | File | Covers |
 |---|---|
-| `GeoEnemySetupTests.cpp` | Setup health reset, setup aggro radius |
+| `GeoEnemySetupTests.cpp` | Setup health reset, setup aggro radius, team replicated |
 | `GeoSummonTests.cpp` | Summoned dummy, summon add setup, arena boss setup |
 | `GeoVoidDeathTests.cpp` | Void death with an enemy whose body stays |

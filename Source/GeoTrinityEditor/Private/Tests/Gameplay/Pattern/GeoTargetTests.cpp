@@ -90,6 +90,21 @@ bool FGeoTargetModesTest::RunTest(FString const& /*Parameters*/)
 		TestTrue(TEXT("Forward: origin + yaw x distance"), Locations[0].Equals(FVector2D(100.f, 200.f), 0.01));
 	}
 
+	Locations = GeoASLib::GetTargetLocations(MakeTarget(EGeoTarget::Self), Context);
+	if (TestEqual(TEXT("Self: one location"), Locations.Num(), 1))
+	{
+		TestTrue(TEXT("Self: where the caster stands, not the origin"),
+				 Locations[0].Equals(FVector2D(Context.Caster->GetActorLocation()), 0.01));
+	}
+
+	TArray<FGeoTargetPick> const SelfPicks = GeoASLib::PickTargets(MakeTarget(EGeoTarget::Self), Context);
+	Context.Caster->SetActorLocation(FVector(700.f, 50.f, Context.Caster->GetActorLocation().Z));
+	if (TestEqual(TEXT("Self: one pick"), SelfPicks.Num(), 1))
+	{
+		TestTrue(TEXT("Self: follows the caster"),
+				 GeoASLib::ResolvePicks(SelfPicks)[0].Equals(FVector2D(700.f, 50.f), 0.01));
+	}
+
 	TArray<FVector> const Directions =
 		GeoASLib::GetTargetDirections(MakeTarget(EGeoTarget::Forward), Context, FVector(Context.Origin, 0.f));
 	if (TestEqual(TEXT("Zero length: one direction"), Directions.Num(), 1))
