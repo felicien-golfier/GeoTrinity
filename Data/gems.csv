@@ -11,7 +11,7 @@ Cut,Recovery,Recovery,ReceivedHealBoost,Add,0.0133333,Healing received,HealBoost
 Cut,Reflex,Reflex,DashCooldownMultiplier,Add,-0.02,Dash cooldown,MoveSpeed,,
 Cut,Reload,Reload,ReloadSpeedMultiplier,Add,0.0666667,Reload speed,AllyDamage,,
 Cut,Stride,Stride,DashDistanceMultiplier,Add,0.0666667,Dash distance,MoveSpeed,,
-Cut,WindUp,Wind-up,WindUpMultiplier,Add,-0.006,Ability wind-up time,Neutral,,
+Cut,WindUp,Attack Speed,WindUpMultiplier,Add,-0.006,Attack speed: time to cast an attack,Neutral,,
 Cut,Flicker,Flicker,DeployableBlinkMultiplier,Add,0.03,Deployable blinking time,DeployableNotBlocking,,
 Prism,Focus,Focus,SpecialCooldownMultiplier,Add,-0.03,Special cooldown,Neutral,,
 Prism,Anchor,Anchor,DeployableHealthMultiplier,Add,0.03,Deployable health,DeployableBlockingEnemies,,

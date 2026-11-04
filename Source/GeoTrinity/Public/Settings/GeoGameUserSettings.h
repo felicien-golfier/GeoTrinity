@@ -66,6 +66,13 @@ public:
 	/** Fires after SetShowCombatStats, with the new value. */
 	FGeoShowCombatStatsChangedSignature OnShowCombatStatsChanged;
 
+	/** Returns true when a complete Cat line ends by itself after its reading time; false: it waits for the skip key.
+	 */
+	bool CatLineAutoSkip() const { return bCatLineAutoSkip; }
+
+	/** Sets the value and persists it. */
+	void SetCatLineAutoSkip(bool bEnabled);
+
 	/** Returns true once the first-launch tutorial prompt was answered, either way. */
 	bool IsTutorialPromptAnswered() const { return bTutorialPromptAnswered; }
 
@@ -85,6 +92,9 @@ private:
 
 	UPROPERTY(Config)
 	bool bShowCombatStats = true;
+
+	UPROPERTY(Config)
+	bool bCatLineAutoSkip = false;
 
 	UPROPERTY(Config)
 	bool bTutorialPromptAnswered = false;

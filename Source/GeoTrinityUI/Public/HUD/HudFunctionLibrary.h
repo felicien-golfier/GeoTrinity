@@ -40,8 +40,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GeoHUD")
 	static FText FormatCompactNumber(float Value);
 
-	/** The first key LocalPlayer has mapped to InputAction now; invalid when none. Shared by the ability slots' key
-	 * label and the Cat's {Key:...} tokens, so a key reads the same everywhere. */
+	/** The first key LocalPlayer has mapped to InputAction now, else its keyboard key in the player's key profile (an
+	 * action of a context not active right now: the gameplay keys while the pause menu is open); invalid when none.
+	 * Shared by the ability slots' key label, the ability details and the Cat's {Key:...} tokens, so a key reads the
+	 * same everywhere. */
 	static FKey GetMappedKey(ULocalPlayer const* LocalPlayer, UInputAction const* InputAction);
 
 	/** The first key Context (the asset, whether or not it is active) maps to InputAction; invalid when none. */

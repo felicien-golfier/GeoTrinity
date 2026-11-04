@@ -2,6 +2,7 @@
 
 #include "GeoTutorialRoomStages.h"
 
+#include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/LateralWavePattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
@@ -22,6 +23,7 @@
 #include "GameClasses/Match/GeoPlayerState.h"
 #include "GameClasses/Player/GeoPlayerController.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameplayTagsManager.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemProfileSave.h"
 #include "Gem/GeoGemSubsystem.h"
@@ -1000,6 +1002,18 @@ namespace GeoTutorialStages
 			: FVector2D::ZeroVector;
 	}
 
+	/** The telegraph every zone of the Zones room shows before it lands: the zone ability's own fire delay (a zone is
+	 * spawned by the wind-up's end, so the first hit comes this long after the line that fires it). Read from the
+	 * ability, the one the Damage zone uses, as the pattern reads its own StartDelay. */
+	float GetZoneTelegraphSeconds(FGeoTutorialBot const& Bot)
+	{
+		FGameplayTag const Tag =
+			UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Ability.Spell.TutorialZoneDamage"));
+		UGeoGameplayAbility const* const Ability = GeoASLib::GetAbilityCDO(Tag);
+		Bot.Test.TestNotNull(TEXT("The Damage zone ability is registered"), Ability);
+		return Ability ? Ability->GetFireDelay() : 0.f;
+	}
+
 	/** The Zones room's timed colour step, from its first line: the Damage zone grows and hurts; Shield then Heal spawn
 	 * on their lines and intersect; the pawn in the overlap gains health; the step ends on its clock with every zone
 	 * gone. The bot ends no Cat line meanwhile (they are timed: F does nothing). */
@@ -1046,8 +1060,10 @@ namespace GeoTutorialStages
 							 if (*FirstRadius == 0.f)
 							 {
 								 *FirstRadius = Zone->GetSimpleCollisionRadius();
-								 // The timeline starts with its first zone: not on the frame the bot noticed it.
-								 *Start = Bot.GetWorld()->GetTimeSeconds() - Zone->GetGameTimeSinceCreation();
+								 // The timeline starts with its first zone's firing: its landing less the telegraph,
+								 // not the frame the bot noticed it.
+								 *Start = Bot.GetWorld()->GetTimeSeconds() - Zone->GetGameTimeSinceCreation()
+									 - GetZoneTelegraphSeconds(Bot);
 								 Bot.MovePawn(Spot);
 							 }
 

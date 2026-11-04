@@ -137,6 +137,7 @@ void AGeoEffectZone::JudgeZone()
 		ZoneJudge.EndAt(ServerTime);
 	}
 
+	{ static int32 DbgN = 0; if (++DbgN % 120 == 0) { for (AActor* A : FGeoHazardJudge::FindCandidates(Data.Owner, Data.Params.Attitude)) { UE_LOG(LogTemp, Display, TEXT("DBGZONE %s cand=%s dist=%.0f r=%.0f inCircle=%d active=%d blink=%d"), *GetName(), *A->GetName(), FVector2D::Distance(FVector2D(A->GetActorLocation()), FVector2D(GetActorLocation())), GetRadius(), (int32)GeoASLib::IsInCircle(A, FVector2D(A->GetActorLocation()), FVector2D(GetActorLocation()), GetRadius(), ETargetOverlapMode::IncludeRadius, GeoASLib::GetTeamId(Data.Owner)), (int32)IsActive(), (int32)IsBlinking()); } } }
 	OnZoneJudged(ZoneJudge.Judge(
 		MakeHazardSource(), Data.EffectDataArray, FGeoHazardJudge::FindCandidates(Data.Owner, Data.Params.Attitude),
 		[this](AActor const* Target, FVector2D const Location, float /*SpentTime*/)

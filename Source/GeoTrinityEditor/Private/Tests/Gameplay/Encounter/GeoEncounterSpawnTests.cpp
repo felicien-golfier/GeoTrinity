@@ -6,7 +6,6 @@
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Actor/Buttons/GeoTeleporter.h"
-#include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Actor/GeoCat.h"
 #include "Actor/GeoTargetPoint.h"
 #include "Characters/EnemyCharacter.h"
@@ -29,7 +28,6 @@
 #include "Encounter/Action/GeoSetTeleporterOpenAction.h"
 #include "Encounter/Action/GeoShowAbilityPageAction.h"
 #include "Encounter/Action/GeoSpawnEnemiesAction.h"
-#include "Encounter/Action/GeoSpawnZoneAction.h"
 #include "Encounter/GeoEncounterSubsystem.h"
 #include "Encounter/Trigger/GeoAbilityActivatedTrigger.h"
 #include "Encounter/Trigger/GeoActorDiedTrigger.h"
@@ -47,11 +45,9 @@
 #include "HAL/FileManager.h"
 #include "Materials/Material.h"
 #include "Misc/AutomationTest.h"
-#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Misc/DataValidation.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-#include "Settings/GameDataSettings.h"
 #include "StateTree.h"
 #include "Tests/Gameplay/Encounter/GeoEncounterTestHelpers.h"
 #include "Tests/Gameplay/Fake/GeoTestDeployable.h"
@@ -59,6 +55,7 @@
 #include "Tests/Gameplay/Fake/GeoTestEnemy.h"
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
+#include "Tests/Gameplay/GeoTestFlags.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
 #include "Tool/GeoDifficulty.h"
 #include "Tool/UGeoGameplayLibrary.h"
@@ -296,62 +293,6 @@ bool FGeoEncounterSpawnEnemiesHeldTest::RunTest(FString const& /*Parameters*/)
 	return true;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSpawnZoneHeldTest, "GeoTrinity.Encounter.SpawnZoneHeld",
-								 GeoEncounterTestFlags)
-
-bool FGeoEncounterSpawnZoneHeldTest::RunTest(FString const& /*Parameters*/)
-{
-	UWorld* World = CreateTestWorld();
-	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
-	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
-	World->SetGameState(World->SpawnActor<AGeoGameState>());
-	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoEffectZone::StaticClass();
-
-	FGameplayTag const PurposeTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("TargetPoint.ZoneSpawn"));
-	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
-	AGeoTargetPoint* const Point = World->SpawnActor<AGeoTargetPoint>(FVector(400.f, 0.f, 0.f), FRotator());
-	Point->GameplayTags.AddTag(PurposeTag);
-	Point->GameplayTags.AddTag(ArenaTag);
-
-	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
-	Encounter->AddSteps(1);
-	UGeoSpawnZoneAction* const Spawner = NewObject<UGeoSpawnZoneAction>(Encounter);
-	Spawner->PurposeTag = PurposeTag;
-	Spawner->ArenaTag = ArenaTag;
-	Spawner->Params.Size = 300.f;
-	Spawner->Params.Color.Color = EGeoColor::Heal;
-	UGeoTestAction* const After = Encounter->NewAction("After");
-	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner, After}, true);
-	Encounter->Start();
-
-	SpawnTrigger->FireNow();
-	TestEqual(TEXT("The action after the zone runs at once"), After->Runs, 1);
-	TActorIterator<AGeoEffectZone> const FirstFound(World);
-	if (TestTrue(TEXT("The zone spawns"), static_cast<bool>(FirstFound)))
-	{
-		AGeoEffectZone const* const First = *FirstFound;
-		SpawnTrigger->FireNow();
-		AGeoEffectZone const* Second = nullptr;
-		for (TActorIterator<AGeoEffectZone> It(World); It; ++It)
-		{
-			Second = *It != First ? *It : Second;
-		}
-
-		TestFalse(TEXT("Run again: the previous zone is recalled"), First->IsActive());
-		if (TestNotNull(TEXT("Run again: a new zone spawns"), Second))
-		{
-			TestTrue(TEXT("The new zone is up"), Second->IsActive());
-			Encounter->Abort();
-			TestFalse(TEXT("Abort recalls the held zone"), Second->IsActive());
-		}
-	}
-
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
-	DestroyTestWorld(World);
-	return true;
-}
 
 // ---------------------------------------------------------------------------------------------------------------------
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoArenaSpawnAddResetTest, "GeoTrinity.Arena.SpawnAddReset", GeoEncounterTestFlags)
@@ -373,53 +314,6 @@ bool FGeoArenaSpawnAddResetTest::RunTest(FString const& /*Parameters*/)
 		TestFalse(TEXT("A wipe reset removes it"), IsValid(Add));
 	}
 
-	DestroyTestWorld(World);
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterSpawnZoneTest, "GeoTrinity.Encounter.SpawnZone", GeoEncounterTestFlags)
-
-bool FGeoEncounterSpawnZoneTest::RunTest(FString const& /*Parameters*/)
-{
-	UWorld* World = CreateTestWorld();
-	World->SetGameInstance(NewObject<UGameInstance>(GEngine));
-	AddExpectedError(TEXT("Missing DefaultAttributes"), EAutomationExpectedErrorFlags::Contains, 0);
-	World->SetGameState(World->SpawnActor<AGeoGameState>());
-	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoEffectZone::StaticClass();
-
-	FGameplayTag const PurposeTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("TargetPoint.ZoneSpawn"));
-	FGameplayTag const ArenaTag = UGameplayTagsManager::Get().RequestGameplayTag(TEXT("Arena.Hex"));
-	AGeoTargetPoint* const Point = World->SpawnActor<AGeoTargetPoint>(FVector(400.f, 0.f, 0.f), FRotator());
-	Point->GameplayTags.AddTag(PurposeTag);
-	Point->GameplayTags.AddTag(ArenaTag);
-
-	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
-	Encounter->AddSteps(2);
-	UGeoSpawnZoneAction* const Spawner = NewObject<UGeoSpawnZoneAction>(Encounter);
-	Spawner->PurposeTag = PurposeTag;
-	Spawner->ArenaTag = ArenaTag;
-	Spawner->Params.Size = 300.f;
-	Spawner->Params.Color.Color = EGeoColor::Damage;
-	Spawner->Team = ETeam::Enemy;
-	UGeoTestTrigger* const SpawnTrigger = Encounter->AddRule(0, {Spawner});
-	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
-	Encounter->Start();
-
-	SpawnTrigger->FireNow();
-	TActorIterator<AGeoEffectZone> const Found(World);
-	if (TestTrue(TEXT("The zone spawns"), static_cast<bool>(Found)))
-	{
-		AGeoEffectZone const* const Zone = *Found;
-		TestEqual(TEXT("On the tagged point"), Zone->GetActorLocation().X, 400.0);
-		TestEqual(TEXT("With the action's team"), Zone->GetGenericTeamId(),
-				  FGenericTeamId(static_cast<uint8>(ETeam::Enemy)));
-		LeaveTrigger->FireNow();
-		TestFalse(TEXT("Leaving the step ends it"), Zone->IsActive());
-	}
-
-	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
 	DestroyTestWorld(World);
 	return true;
 }

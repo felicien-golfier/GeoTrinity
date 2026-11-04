@@ -48,7 +48,7 @@ unclear.
   never filled from the doc (see above).
 - **A Core added in the doc** gets a CSV row with both Core columns empty. Say it has no rule in the game until its
   passive class is written and `gem_core_passives.py` is run with it added to `CORES`.
-- **Rows match on `Gem` = CSV `Name`** (Wind-up is `Name` "Wind-up", `Id` "WindUp"), never on position.
+- **Rows match on `Gem` = CSV `Name`** (Attack Speed is `Name` "Attack Speed", `Id` "WindUp"), never on position.
 - **Core rule text is a rule, not a number.** If the doc's text for a Core differs from the CSV `Effect` (a chance
   against a cooldown, a different value), the code behind it decides: ask which is right, do not edit one side.
 

@@ -27,12 +27,24 @@ EDataValidationResult UGeoActivateAbilityAction::IsDataValid(FDataValidationCont
 			TEXT("%s: %s needs a caster's arena, an encounter cannot fire it"), *GetName(), *AbilityClass->GetName())));
 	}
 
+	if (bHeldUntilStepLeft && bWaitForEnd)
+	{
+		Context.AddError(FText::FromString(
+			FString::Printf(TEXT("%s: bHeldUntilStepLeft does not wait for the end, clear bWaitForEnd"), *GetName())));
+	}
+
 	return Context.GetNumErrors() > 0 ? EDataValidationResult::Invalid : EDataValidationResult::Valid;
 }
 #endif
 
 void UGeoActivateAbilityAction::Execute_Implementation(FGeoEncounterPayload const& /*Payload*/)
 {
+	if (bHeldUntilStepLeft)
+	{
+		OnCancel_Implementation();
+		GetEncounter()->HoldUntilStepLeft(*this);
+	}
+
 	UGeoEncounterSubsystem* const Subsystem = GetWorld()->GetSubsystem<UGeoEncounterSubsystem>();
 	FGameplayAbilitySpecHandle const Handle = Subsystem->GrantSharedAbility(AbilityClass);
 	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Subsystem->GetSharedCaster());
@@ -47,7 +59,7 @@ void UGeoActivateAbilityAction::Execute_Implementation(FGeoEncounterPayload cons
 	{
 		ActivatedASC = ASC;
 		ActivatedHandle = Handle;
-		if (bWaitForEnd)
+		if (bWaitForEnd && !bHeldUntilStepLeft)
 		{
 			AbilityEndedDelegateHandle =
 				ASC->OnAbilityEnded.AddUObject(this, &UGeoActivateAbilityAction::OnAbilityEnded);
@@ -65,7 +77,7 @@ void UGeoActivateAbilityAction::Execute_Implementation(FGeoEncounterPayload cons
 			StopWaiting();
 			Finish();
 		}
-		else if (!bWaitForEnd)
+		else if (!bWaitForEnd || bHeldUntilStepLeft)
 		{
 			Finish();
 		}
@@ -78,7 +90,7 @@ void UGeoActivateAbilityAction::OnCancel_Implementation()
 	FGameplayAbilitySpecHandle const Handle = ActivatedHandle;
 	bool const bWasWaiting = AbilityEndedDelegateHandle.IsValid();
 	StopWaiting();
-	if (ASC && (bWasWaiting || GetEncounter()->IsAborting()))
+	if (ASC && (bWasWaiting || bHeldUntilStepLeft || GetEncounter()->IsAborting()))
 	{
 		ASC->CancelAbilityHandle(Handle);
 	}

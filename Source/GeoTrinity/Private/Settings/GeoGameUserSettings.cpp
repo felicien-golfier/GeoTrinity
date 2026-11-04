@@ -35,6 +35,12 @@ void UGeoGameUserSettings::SetShowCombatStats(bool const bShow)
 	OnShowCombatStatsChanged.Broadcast(bShow);
 }
 
+void UGeoGameUserSettings::SetCatLineAutoSkip(bool const bEnabled)
+{
+	bCatLineAutoSkip = bEnabled;
+	SaveSettings();
+}
+
 void UGeoGameUserSettings::MarkTutorialPromptAnswered()
 {
 	bTutorialPromptAnswered = true;

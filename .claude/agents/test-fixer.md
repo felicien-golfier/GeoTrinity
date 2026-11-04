@@ -61,7 +61,7 @@ Your prompt is the dev brief; it replaces the discussion you did not see.
 ## When to stop
 Stop and report instead of continuing when:
 - two fixes for the same failure did not work;
-- six build cycles are used up;
+- five build cycles are used up;
 - the fix falls under "Never", or the failure comes from outside this change.
 
 Leave the tree in a state you can describe: keep a fix that helped, undo one that did not. You may be resumed with an answer; continue from where you stopped.

@@ -501,6 +501,8 @@ def build_forge(underline_tab):
                           unreal.load_class(None, ROW_CLASS))
         wings_hud.finish(wbp)
     wbp = unreal.load_asset(path)
+    asset_guard.write(path, unreal.get_default_object(wbp.generated_class()), "shard_icon",
+                      unreal.load_asset(SHARD_ICON))
     # The tier rows' counts and the BREAK DOWN ALL FREE summary first ran out of a 430 wide column.
     asset_guard.write(path, UTIL.find_widget(wbp, "LeftSize"), "width_override", LEFT_WIDTH, earlier=(430.0, 500.0))
     break_summary(wbp, path)

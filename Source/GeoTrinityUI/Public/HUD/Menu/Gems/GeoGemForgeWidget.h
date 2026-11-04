@@ -10,6 +10,7 @@
 #include "GeoGemForgeWidget.generated.h"
 
 class UEditableTextBox;
+class UGeoIcon;
 class UGeoMenuButton;
 class UGeoTableWidget;
 class UHorizontalBox;
@@ -72,6 +73,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UVerticalBox> GemListBox;
 
+	/** The row of the chip a guide teaches (GuidedGem): the guide frames it. */
+	TWeakObjectPtr<UGeoListRowWidget> GuidedRow;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoGemGlyph> PickedGlyph;
 
@@ -118,6 +122,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoMenuButton> CraftButton;
+
+	/** Shard symbol drawn after the +Y of BreakButton and the −X of CraftButton (their ButtonIcon). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem")
+	TObjectPtr<UGeoIcon> ShardIcon;
 
 	/** The menu guide's hints on the Chip tier tab and on CraftButton. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Guide")

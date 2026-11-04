@@ -69,8 +69,9 @@ public:
 	FGameplayAttributeData DeployableCooldownMultiplier;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, DeployableCooldownMultiplier)
 
-	/** Scales the FireDelay of every ability but the reload: its wind-up, a charge's full charge time, an automatic
-	 * fire's shot interval. */
+	/** Attack Speed (shown as such; the name is historic). Scales the FireDelay of every ability but the reload:
+	 * FireDelay IS the attack speed (wind-up, a charge's full charge time, an automatic fire's shot interval); what
+	 * follows it is plain cooldown. Lower = faster. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem", ReplicatedUsing = OnRep_WindUpMultiplier)
 	FGameplayAttributeData WindUpMultiplier;
 	ATTRIBUTE_ACCESSORS(UGeoGemAttributeSet, WindUpMultiplier)

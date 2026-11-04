@@ -157,8 +157,8 @@ void UGeoMenuGuideWidget::Refresh()
 {
 	// A page coming on top of the menu under a goal gets to set up where the path starts, once.
 	AGeoPlayerController const* const GeoController = Cast<AGeoPlayerController>(GetOwningPlayer());
-	UGeoMenuRootWidget* const Menu = GeoController && GeoController->IsPauseMenuOpen() && Goal != EGeoMenuGuideGoal::None
-			&& Goal != EGeoMenuGuideGoal::Hold
+	UGeoMenuRootWidget* const Menu = GeoController && GeoController->IsPauseMenuOpen()
+			&& Goal != EGeoMenuGuideGoal::None && Goal != EGeoMenuGuideGoal::Hold
 		? Cast<UGeoMenuRootWidget>(GeoController->GetPauseMenuWidget())
 		: nullptr;
 	UGeoMenuPageWidget* const ShownPage = Menu ? Menu->GetShownPage() : nullptr;
@@ -173,17 +173,24 @@ void UGeoMenuGuideWidget::Refresh()
 	}
 
 	FGeoMenuGuideTarget const Target = FindTarget(GetOwningPlayer(), Goal);
-	UWidget const* const Control = Target.Widget.Get();
 	TOptional<FSlateRect> Hole;
-	if (Control && Root.IsValid())
+	for (UWidget const* const Lit : {Target.Widget.Get(), Target.AlsoLit.Get()})
 	{
-		FGeometry const& RootGeometry = Root->GetCachedGeometry();
-		FGeometry const& Geometry = Control->GetCachedGeometry();
-		FVector2f const Min = RootGeometry.AbsoluteToLocal(Geometry.GetAbsolutePosition());
-		FVector2f const Max = RootGeometry.AbsoluteToLocal(Geometry.GetAbsolutePosition() + Geometry.GetAbsoluteSize());
-		if (Max.X > Min.X && Max.Y > Min.Y)
+		if (Lit && Root.IsValid())
 		{
-			Hole = FSlateRect(Min.X, Min.Y, Max.X, Max.Y);
+			FGeometry const& RootGeometry = Root->GetCachedGeometry();
+			FGeometry const& Geometry = Lit->GetCachedGeometry();
+			FVector2f const Min = RootGeometry.AbsoluteToLocal(Geometry.GetAbsolutePosition());
+			FVector2f const Max =
+				RootGeometry.AbsoluteToLocal(Geometry.GetAbsolutePosition() + Geometry.GetAbsoluteSize());
+			if (Max.X > Min.X && Max.Y > Min.Y)
+			{
+				FSlateRect const Rect(Min.X, Min.Y, Max.X, Max.Y);
+				Hole = Hole.IsSet()
+					? FSlateRect(FMath::Min(Hole->Left, Rect.Left), FMath::Min(Hole->Top, Rect.Top),
+								 FMath::Max(Hole->Right, Rect.Right), FMath::Max(Hole->Bottom, Rect.Bottom))
+					: Rect;
+			}
 		}
 	}
 

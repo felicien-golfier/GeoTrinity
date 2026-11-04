@@ -27,7 +27,9 @@
 #include "HUD/HudFunctionLibrary.h"
 #include "HUD/Menu/Character/GeoAbilityCardWidget.h"
 #include "HUD/Menu/Character/GeoAbilityDetailWidget.h"
+#include "HUD/Menu/Frame/GeoButton.h"
 #include "HUD/Menu/Frame/GeoMenuButton.h"
+#include "HUD/Menu/Frame/GeoMenuPageFrameWidget.h"
 #include "HUD/Menu/Gems/GeoGemsWidget.h"
 #include "HUD/Menu/GeoPauseMenuWidget.h"
 #include "HUD/Menu/List/GeoTableWidget.h"
@@ -51,7 +53,7 @@ UGeoCharacterSheetWidget::UGeoCharacterSheetWidget(FObjectInitializer const& Obj
 		{INVTEXT("Healing done"), UCharacterAttributeSet::GetAppliedHealBoostAttribute(), EGeoStatFormat::Multiplier},
 		{INVTEXT("Crit chance"), UGeoGemAttributeSet::GetCritChanceAttribute(), EGeoStatFormat::Percent},
 		{INVTEXT("Crit damage"), UGeoGemAttributeSet::GetCritDamageAttribute(), EGeoStatFormat::Multiplier},
-		{INVTEXT("Wind-up"), UGeoGemAttributeSet::GetWindUpMultiplierAttribute(), EGeoStatFormat::Multiplier},
+		{INVTEXT("Attack Speed"), UGeoGemAttributeSet::GetWindUpMultiplierAttribute(), EGeoStatFormat::Multiplier},
 		{INVTEXT("Reload speed"), UGeoGemAttributeSet::GetReloadSpeedMultiplierAttribute(), EGeoStatFormat::Multiplier},
 		{INVTEXT("Max ammo"), UCharacterAttributeSet::GetMaxAmmoAttribute(), EGeoStatFormat::Number},
 		{INVTEXT("Spell distance"), UGeoGemAttributeSet::GetSpellDistanceMultiplierAttribute(),
@@ -121,6 +123,11 @@ void UGeoCharacterSheetWidget::NativeDestruct()
 // ---------------------------------------------------------------------------------------------------------------------
 FGeoMenuGuideTarget UGeoCharacterSheetWidget::GetGuideTarget(EGeoMenuGuideGoal const Goal) const
 {
+	if (Goal == EGeoMenuGuideGoal::AbilityDetail && bDetailLocked && DetailWidget && PageFrame)
+	{
+		return FGeoMenuGuideTarget(DetailWidget, FText::GetEmpty(), PageFrame->GetCloseButton());
+	}
+
 	return GemLoadoutButton ? FGeoMenuGuideTarget(GemLoadoutButton, GuideGemsHint) : Super::GetGuideTarget(Goal);
 }
 
@@ -157,7 +164,7 @@ UWidget* UGeoCharacterSheetWidget::GetInitialFocusWidget() const
 // ---------------------------------------------------------------------------------------------------------------------
 bool UGeoCharacterSheetWidget::HandleBackAction()
 {
-	if (!SelectedRow)
+	if (!SelectedRow || bDetailLocked)
 	{
 		return Super::HandleBackAction();
 	}
@@ -171,7 +178,10 @@ FReply UGeoCharacterSheetWidget::NativeOnMouseButtonDown(FGeometry const& InGeom
 {
 	if (SelectedRow)
 	{
-		CloseDetail();
+		if (!bDetailLocked)
+		{
+			CloseDetail();
+		}
 		return FReply::Handled();
 	}
 
@@ -182,6 +192,11 @@ FReply UGeoCharacterSheetWidget::NativeOnMouseButtonDown(FGeometry const& InGeom
 void UGeoCharacterSheetWidget::HandleAbilitySelected(UGeoAbilityCardWidget* Row)
 {
 	if (!ensureMsgf(DetailWidget, TEXT("%hs: no DetailWidget on %s"), __FUNCTION__, *GetName()))
+	{
+		return;
+	}
+
+	if (bDetailLocked)
 	{
 		return;
 	}
@@ -219,7 +234,9 @@ void UGeoCharacterSheetWidget::OpenAbilityDetail(FGameplayTag const AbilityTag)
 
 	if (Row)
 	{
+		bDetailLocked = false;
 		HandleAbilitySelected(Row);
+		bDetailLocked = true;
 	}
 	else
 	{
@@ -231,6 +248,7 @@ void UGeoCharacterSheetWidget::OpenAbilityDetail(FGameplayTag const AbilityTag)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::CloseDetail()
 {
+	bDetailLocked = false;
 	if (SelectedRow)
 	{
 		SelectedRow->SetSelected(false);

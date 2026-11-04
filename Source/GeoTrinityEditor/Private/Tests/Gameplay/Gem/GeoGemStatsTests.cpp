@@ -215,7 +215,7 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Deploy recharge reads the deployable multiplier"),
 			  GeoASLib::GetGemCooldownMultiplier(ASC, DeployableTags), 0.85f, KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("A basic ability's cooldown is untouched"), GeoASLib::GetGemCooldownMultiplier(ASC, BasicTags), 1.f);
-	TestEqual(TEXT("Wind-up scales a basic ability's fire delay"), GeoASLib::GetGemFireDelayMultiplier(ASC, BasicTags),
+	TestEqual(TEXT("Attack Speed scales a basic ability's fire delay"), GeoASLib::GetGemFireDelayMultiplier(ASC, BasicTags),
 			  0.9f, KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("Reload speed +25% makes the reload 80% as long"),
 			  GeoASLib::GetGemFireDelayMultiplier(ASC, ReloadTags), 0.8f, KINDA_SMALL_NUMBER);

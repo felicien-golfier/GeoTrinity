@@ -25,8 +25,9 @@ ACTOR_CLASS = re.compile(r"Begin Actor Class=\S*\.(\w+)")
 OBJECT_NAME = re.compile(r'Begin Object .*?Name="([^"]+)"')
 OBJECT_REFERENCE = re.compile(r"\"?/Script/[\w.]+'(\w+)'\"?")
 LEVEL_PATH = re.compile(r"PersistentLevel\.(\w+)")
-SPAWNED_ON_LEVEL_LOAD = ("AbstractNavData", "BuoyancyManager", "GameplayDebuggerPlayerManager")  # never in the saved map
-DERIVED_LINE = re.compile(r"\| BodySetup_\d+ \||\| CachedBounds\(")  # the engine rebuilds these, nobody edits them
+SPAWNED_ON_LEVEL_LOAD = ("AbstractNavData", "BuoyancyManager", "GameplayDebuggerPlayerManager",
+                         "GeoZoneLayerActor")  # never in the saved map
+DERIVED_LINE = re.compile(r"\| BodySetup_\d+ \||\| CachedBounds\(|^Actor \| ")  # the engine rebuilds these, nobody edits them
 LOCALIZED_TEXT = re.compile(r'NSLOCTEXT\("[^"]*", "[^"]*", ')  # its keys are generated, per package
 
 

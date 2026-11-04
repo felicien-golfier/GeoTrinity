@@ -9,6 +9,7 @@
 #include "Components/UniformGridSlot.h"
 #include "Components/VerticalBox.h"
 #include "Framework/Application/SlateApplication.h"
+#include "HUD/HudFunctionLibrary.h"
 #include "HUD/Style/Frame/GeoFrame.h"
 #include "HUD/Style/GeoUITheme.h"
 
@@ -17,6 +18,13 @@ void UGeoAbilityDetailWidget::SetAbility(FPlayersGameplayAbilityInfo const& Info
 										 FLinearColor const& ClassColor)
 {
 	Super::SetAbility(Info, AbilityLevel, ClassColor);
+
+	FKey const Key = UHudFunctionLibrary::GetMappedKey(GetOwningLocalPlayer(), Info.InputAction);
+	if (Key.IsValid())
+	{
+		KeyText->SetText(FText::FromString(
+			FString::Printf(TEXT("%s  [%s]"), *KeyText->GetText().ToString(), *Key.GetDisplayName(false).ToString())));
+	}
 
 	StatGrid->ClearChildren();
 	TArray<FGeoAbilityStat> const Stats = Info.GetResolvedStats(AbilityLevel, true);
@@ -64,10 +72,9 @@ void UGeoAbilityDetailWidget::Open()
 // ---------------------------------------------------------------------------------------------------------------------
 EActiveTimerReturnType UGeoAbilityDetailWidget::Slide(double const CurrentTime, float /*DeltaTime*/)
 {
-	float const Alpha =
-		SlideDuration > 0.f ? FMath::Clamp(static_cast<float>(CurrentTime - SlideStartTime) / SlideDuration, 0.f, 1.f)
-							: 1.f;
+	float const Alpha = SlideDuration > 0.f
+		? FMath::Clamp(static_cast<float>(CurrentTime - SlideStartTime) / SlideDuration, 0.f, 1.f)
+		: 1.f;
 	SetRenderTranslation(FVector2D(GetDesiredSize().X * (1.f - FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f)), 0.f));
 	return Alpha < 1.f ? EActiveTimerReturnType::Continue : EActiveTimerReturnType::Stop;
 }
-

@@ -95,6 +95,10 @@ See `GeoWidgetBuilderUtil.cpp` (`CommitTree`, `RemoveWidget`, `ConstructWidgetIn
 and `"Kismet2/KismetEditorUtilities.h"` from UnrealEd. Keep generic primitives in `UGeoWidgetBuilderUtil` and
 content-specific trees in `UGeoHudWidgetBuilderUtil`, which composes them — see `MCP_EditorUtility.md`.
 
+## Editing a tree with `mcp-epic`
+
+A one-widget addition to an existing tree needs no shim or script: `UMGToolSet` add (parent and index), flag the widget as a variable (add leaves it off, so a `BindWidget` target stays unbound until flagged), set values and slot layout through `ObjectTools` (`set_properties` takes `values` as a JSON string; copy a sibling's slot values read with `get_properties`), compile, then save that asset by path. Fixed names come from the C++ `BindWidget`.
+
 ## Setting values
 
 A widget Blueprint's class-default values (a material reference, a slot widget class) are set on the default

@@ -13,11 +13,11 @@ class UWidget;
 enum class EActiveTimerReturnType : uint8;
 
 /**
- * Base of every in-game chat popup, one line at a time: a new line replaces the shown one. The line types out, stays a
- * reading time set by its length once complete, then ends. The owning controller's OnInteractUI completes the text,
- * then ends the line. HitTestInvisible: it never takes a click. The skip key cap (SkipHint holding SkipKey) is part of
- * this base, so no popup can lack it. A child gives the content: it converts the line, shows the revealed part and
- * reacts to the talking state.
+ * Base of every in-game chat popup, one line at a time: a new line replaces the shown one. The line types out, then
+ * waits; with UGeoGameUserSettings::CatLineAutoSkip it ends by itself after a reading time set by its length. The
+ * owning controller's OnInteractUI completes the text, then ends the line. HitTestInvisible: it never takes a click.
+ * The skip key cap (SkipHint holding SkipKey) is part of this base, so no popup can lack it. A child gives the content:
+ * it converts the line, shows the revealed part and reacts to the talking state.
  */
 UCLASS(Abstract)
 class GEOTRINITYUI_API UGeoSpeechPopupWidget : public UUserWidget

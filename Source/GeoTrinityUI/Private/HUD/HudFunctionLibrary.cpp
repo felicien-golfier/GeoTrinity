@@ -7,6 +7,7 @@
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "UserSettings/EnhancedInputUserSettings.h"
 
 bool UHudFunctionLibrary::ShouldDrawHUD(UObject const* WorldContextObject)
 {
@@ -69,7 +70,29 @@ FKey UHudFunctionLibrary::GetMappedKey(ULocalPlayer const* LocalPlayer, UInputAc
 	UEnhancedInputLocalPlayerSubsystem const* const InputSubsystem =
 		LocalPlayer && InputAction ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
 	TArray<FKey> const Keys = InputSubsystem ? InputSubsystem->QueryKeysMappedToAction(InputAction) : TArray<FKey>();
-	return Keys.Num() > 0 ? Keys[0] : FKey();
+	if (Keys.Num() > 0)
+	{
+		return Keys[0];
+	}
+
+	UEnhancedInputUserSettings const* const UserSettings = InputSubsystem ? InputSubsystem->GetUserSettings() : nullptr;
+	UEnhancedPlayerMappableKeyProfile const* const Profile =
+		UserSettings ? UserSettings->GetActiveKeyProfile() : nullptr;
+	if (Profile)
+	{
+		for (TPair<FName, FKeyMappingRow> const& Row : Profile->GetPlayerMappingRows())
+		{
+			for (FPlayerKeyMapping const& Mapping : Row.Value.Mappings)
+			{
+				if (Mapping.GetAssociatedInputAction() == InputAction && !Mapping.GetCurrentKey().IsGamepadKey())
+				{
+					return Mapping.GetCurrentKey();
+				}
+			}
+		}
+	}
+
+	return FKey();
 }
 
 FKey UHudFunctionLibrary::GetDefaultMappedKey(UInputMappingContext const* Context, UInputAction const* InputAction)

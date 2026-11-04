@@ -40,7 +40,6 @@
 #include "Encounter/Action/GeoSetTeleporterOpenAction.h"
 #include "Encounter/Action/GeoShowAbilityPageAction.h"
 #include "Encounter/Action/GeoSpawnEnemiesAction.h"
-#include "Encounter/Action/GeoSpawnZoneAction.h"
 #include "Encounter/GeoEncounterSubsystem.h"
 #include "Encounter/Trigger/GeoAbilityActivatedTrigger.h"
 #include "Encounter/Trigger/GeoActorDiedTrigger.h"

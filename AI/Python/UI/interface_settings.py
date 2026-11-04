@@ -1,5 +1,5 @@
 """
-The Interface settings page: WBP_InterfaceSettings (UGeoInterfaceSettingsWidget) with its Show combat stats checkbox,
+The Interface settings page: WBP_InterfaceSettings (UGeoInterfaceSettingsWidget) with its Show combat stats and Auto-skip Cat lines checkboxes,
 and its INTERFACE button in WBP_Settings, beside Sound and Key Bindings.
 - WBP_InterfaceSettings: built once; menu_pages.py puts it in its page frame and in the pause menu.
 - WBP_Settings: InterfaceButton after KeyBindingsButton, laid out like it; added only when absent.
@@ -78,6 +78,14 @@ def build_panel():
                                       "padding": unreal.Margin(0, 0, 24, 0)})
         _, check_slot = add(wbp, path, unreal.GeoCheckBox, "CombatStatsCheckBox", "CombatStatsRow",
                             {"checked_state": unreal.CheckBoxState.CHECKED})
+        write_slot(path, check_slot, {"vertical_alignment": CENTER})
+        _, row_slot = add(wbp, path, unreal.HorizontalBox, "CatLineAutoSkipRow", "Root")
+        write_slot(path, row_slot, {"padding": unreal.Margin(0, 12, 0, 12)})
+        _, label_slot = add(wbp, path, unreal.GeoText, "CatLineAutoSkipLabel", "CatLineAutoSkipRow",
+                            text(ROLE.BODY, "Auto-skip Cat lines"))
+        write_slot(path, label_slot, {"size": FILL, "vertical_alignment": CENTER,
+                                      "padding": unreal.Margin(0, 0, 24, 0)})
+        _, check_slot = add(wbp, path, unreal.GeoCheckBox, "CatLineAutoSkipCheckBox", "CatLineAutoSkipRow")
         write_slot(path, check_slot, {"vertical_alignment": CENTER})
         wings_hud.finish(wbp)
     return unreal.load_asset(path)

@@ -306,6 +306,14 @@ public:
 	float GetSpawnSize() const { return Data.Params.Size; }
 	/** The server time at which this zone began growing, for testing late-join replication. */
 	float GetGrowthStartServerTime() const { return GrowthStartServerTime; }
+	/** How many times the server judged this zone: none before it landed. */
+	int32 GetJudgedCount() const { return JudgedCount; }
 	/** What a client that receives the zone late gets: the server's growth start, not its own BeginPlay. */
 	void ReceiveGrowthStartServerTime(float const ServerTime) { GrowthStartServerTime = ServerTime; }
+
+protected:
+	virtual void OnZoneJudged(TArray<FGeoHazardJudge::FTargetResult> const& /*Results*/) override { ++JudgedCount; }
+
+private:
+	int32 JudgedCount = 0;
 };

@@ -78,10 +78,12 @@ public:
 	 * have changed the gems. */
 	virtual void OnPageShown() override;
 
-	/** Both Gems goals: GemLoadoutButton; the base's Back when the sheet has none. */
+	/** AbilityDetail with locked details: the drawer and the close cross. Both Gems goals: GemLoadoutButton; the base's
+	 * Back when the sheet has none. */
 	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
 
-	/** Opens the details of the ability with AbilityTag, as a click on its row would (tutorial unlocks). */
+	/** Opens the details of the ability with AbilityTag, as a click on its row would (tutorial unlocks), and locks them
+	 * open: only closing the window leaves them. */
 	void OpenAbilityDetail(FGameplayTag AbilityTag);
 
 protected:
@@ -319,4 +321,8 @@ private:
 	/** The ability whose details are open; null when closed. */
 	UPROPERTY(Transient)
 	TObjectPtr<UGeoAbilityCardWidget> SelectedRow;
+
+	/** True while the details were opened by OpenAbilityDetail: a click outside, the back input and another ability
+	 * leave them open; the guide's AbilityDetail goal lights them and the close cross only. Reset by CloseDetail. */
+	bool bDetailLocked = false;
 };

@@ -30,7 +30,6 @@
 #include "Encounter/Action/GeoSetTeleporterOpenAction.h"
 #include "Encounter/Action/GeoShowAbilityPageAction.h"
 #include "Encounter/Action/GeoSpawnEnemiesAction.h"
-#include "Encounter/Action/GeoSpawnZoneAction.h"
 #include "Encounter/GeoEncounterSubsystem.h"
 #include "Encounter/Trigger/GeoAbilityActivatedTrigger.h"
 #include "Encounter/Trigger/GeoActorDiedTrigger.h"
@@ -178,6 +177,87 @@ bool FGeoEncounterActivateAbilityCancelTest::RunTest(FString const& /*Parameters
 	Encounter->Abort();
 	TestFalse(TEXT("An abort cancels the ability fired without waiting"),
 			  ASC->FindAbilitySpecFromHandle(Handle)->IsActive());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityHeldTest, "GeoTrinity.Encounter.ActivateAbilityHeld",
+								 GeoEncounterTestFlags)
+
+bool FGeoEncounterActivateAbilityHeldTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	PrepareEnemyWorld(*this, *World);
+	FGameplayAbilitySpecHandle Handle;
+	UGeoAbilitySystemComponent* const ASC = GrantShared(*World, UGeoTestCastAbility::StaticClass(), Handle);
+	int32 Ends = 0;
+	ASC->OnAbilityEnded.AddLambda(
+		[&Ends](FAbilityEndedData const&)
+		{
+			++Ends;
+		});
+	auto const IsRunning = [ASC, Handle]()
+	{
+		return ASC->FindAbilitySpecFromHandle(Handle)->IsActive();
+	};
+
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+	Encounter->AddSteps(2);
+	UGeoActivateAbilityAction* const Held = NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass(), false);
+	Held->bHeldUntilStepLeft = true;
+	UGeoTestAction* const After = Encounter->NewAction("After");
+	UGeoTestTrigger* const HoldTrigger = Encounter->AddRule(0, {Held, After}, true);
+	UGeoTestTrigger* const LeaveTrigger = Encounter->AddRule(0, {}, false, true);
+	UGeoTestTrigger* const RewindTrigger = Encounter->AddRule(0, {}, true, true, "A");
+	Encounter->Start();
+
+	HoldTrigger->FireNow();
+	TestTrue(TEXT("The ability runs"), IsRunning());
+	TestEqual(TEXT("The action finishes at once: the next one runs"), After->Runs, 1);
+	TestTrue(TEXT("Still running once the action finished"), IsRunning());
+	LeaveTrigger->FireNow();
+	TestFalse(TEXT("Leaving the step cancels the ability"), IsRunning());
+
+	Encounter->Restart();
+	HoldTrigger->FireNow();
+	TestTrue(TEXT("Fired again after a restart"), IsRunning());
+	RewindTrigger->FireNow();
+	TestFalse(TEXT("A rewind of the step cancels the ability"), IsRunning());
+
+	Ends = 0;
+	HoldTrigger->FireNow();
+	HoldTrigger->FireNow();
+	TestEqual(TEXT("Run again while held: the previous firing was cancelled"), Ends, 1);
+	TestTrue(TEXT("Run again while held: a new firing runs"), IsRunning());
+
+	Encounter->Abort();
+	TestFalse(TEXT("An abort cancels the ability"), IsRunning());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoEncounterActivateAbilityHeldValidationTest,
+								 "GeoTrinity.Encounter.ActivateAbilityHeldValidation", GeoEncounterTestFlags)
+
+bool FGeoEncounterActivateAbilityHeldValidationTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AGeoTestEncounter* const Encounter = World->SpawnActor<AGeoTestEncounter>();
+
+	UGeoActivateAbilityAction* const Action = NewActivateAction(*Encounter, UGeoTestCastAbility::StaticClass(), false);
+	Action->bHeldUntilStepLeft = true;
+	FDataValidationContext NoWaitContext;
+	Action->IsDataValid(NoWaitContext);
+	TestEqual(TEXT("Held without waiting is valid"), NoWaitContext.GetNumErrors(), 0u);
+
+	Action->bWaitForEnd = true;
+	FDataValidationContext WaitContext;
+	Action->IsDataValid(WaitContext);
+	TestEqual(TEXT("Held and waiting for the end is flagged"), WaitContext.GetNumErrors(), 1u);
 
 	DestroyTestWorld(World);
 	return true;

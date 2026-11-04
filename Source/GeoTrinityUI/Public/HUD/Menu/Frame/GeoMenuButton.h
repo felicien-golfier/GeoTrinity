@@ -11,6 +11,8 @@
 class UGeoButton;
 class UGeoFrame;
 class UGeoFrameStyle;
+class UGeoIcon;
+class UGeoIconImage;
 class UTextBlock;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoButtonClickedSignature);
@@ -20,7 +22,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoButtonClickedSignature);
  * and the optional "Frame" wears its frame style (FrameStyle overrides it for one button), so every button changes
  * together. All click logic is wired through the BlueprintAssignable OnClicked delegate in C++.
  * Required in the BP hierarchy: a UGeoButton named "ButtonWidget". Optional: a UTextBlock named "ButtonText" and a
- * UGeoFrame named "Frame" around the button, which goes active on hover and gamepad focus.
+ * UGeoFrame named "Frame" around the button, which goes active on hover and gamepad focus, and a UGeoIconImage named
+ * "ButtonIcon" after the text.
  */
 UCLASS()
 class GEOTRINITYUI_API UGeoMenuButton : public UGeoMenuPanelWidget
@@ -44,6 +47,9 @@ public:
 	/** Sets Label and shows it. */
 	void SetLabel(FText const& InLabel);
 
+	/** Shows Icon right after the label (the shard after "BREAK +5"); null hides it. No-op without a ButtonIcon. */
+	void SetIcon(UGeoIcon const* Icon);
+
 	/** Returns the inner UGeoButton that receives forwarded focus and fires the click delegate. */
 	UGeoButton* GetButtonWidget() const
 	{
@@ -65,6 +71,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ButtonText;
+
+	/** Drawn after ButtonText, collapsed until SetIcon gives it an icon. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoIconImage> ButtonIcon;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UGeoFrame> Frame;

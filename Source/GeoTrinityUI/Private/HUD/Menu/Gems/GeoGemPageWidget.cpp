@@ -7,15 +7,33 @@
 #include "Engine/LocalPlayer.h"
 #include "Gem/GeoGemCatalog.h"
 #include "Gem/GeoGemSubsystem.h"
+#include "HUD/GeoHUD.h"
 #include "HUD/Style/Glyph/GeoGemGlyph.h"
 #include "HUD/Style/GeoUITheme.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
+FName const UGeoGemPageWidget::GuidedGem(TEXT("Power"));
+
 TArray<EGeoGemTier> const& UGeoGemPageWidget::GetTiers()
 {
 	static TArray<EGeoGemTier> const Tiers = {EGeoGemTier::Chip, EGeoGemTier::Cut, EGeoGemTier::Prism,
 											  EGeoGemTier::Core};
 	return Tiers;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoGemPageWidget::IsGemGuideLocked(FName const GemId) const
+{
+	return IsGemGuideActive() && GemId != GuidedGem;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+bool UGeoGemPageWidget::IsGemGuideActive() const
+{
+	APlayerController const* const Controller = GetOwningPlayer();
+	AGeoHUD const* const HUD = Controller ? Cast<AGeoHUD>(Controller->GetHUD()) : nullptr;
+	EGeoMenuGuideGoal const Goal = HUD ? HUD->GetMenuGuideGoal() : EGeoMenuGuideGoal::None;
+	return Goal == EGeoMenuGuideGoal::EquipChip || Goal == EGeoMenuGuideGoal::ForgeChip;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

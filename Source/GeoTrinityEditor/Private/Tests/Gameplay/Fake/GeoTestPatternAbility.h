@@ -289,6 +289,27 @@ public:
 	}
 };
 
+/** Lingering zone of a test: 5 s wind-up, then a radius 100 zone that stays until the pattern is force-stopped. The
+ * test sets UGameDataSettings::DefaultZoneClass to the zone it wants. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestLingeringZonePattern : public UZonePattern
+{
+	GENERATED_BODY()
+
+public:
+	virtual void OnCreate(FGameplayTag, AActor&) override
+	{
+		StartDelay = 5.f;
+		bZoneUntilStopped = true;
+		bHasHazard = LandsAsBurst();
+		ZoneParams.Size = 100.f;
+		ZoneParams.Color.Color = EGeoColor::Damage;
+	}
+
+	/** Whether OnCreate would make this pattern a burst (a hazard judged by the pattern) rather than leave zones. */
+	bool IsBurst() const { return bHasHazard; }
+};
+
 /** Pillar with working attributes, the way BP_Pillar_Deployable's would be. */
 UCLASS(NotPlaceable, Transient)
 class AGeoTestPillar : public AGeoPillar

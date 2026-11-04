@@ -39,6 +39,9 @@ public:
 	/** True while a goal is set; the frame's timer sleeps otherwise. */
 	bool IsGuiding() const { return Goal != EGeoMenuGuideGoal::None; }
 
+	/** The goal running, None when no guide runs. */
+	EGeoMenuGuideGoal GetGoal() const { return Goal; }
+
 	/** The control Controller's pause menu shows for Goal and its hint: the pause menu's top level or the page on top
 	 * answers; a closed menu answers the hint naming the key that opens it, with no widget. None goal: nothing. */
 	FGeoMenuGuideTarget FindTarget(APlayerController* Controller, EGeoMenuGuideGoal Goal) const;

@@ -344,10 +344,11 @@ void AGeoHUD::ShowAbilityPage(FGameplayTag const AbilityTag, FSimpleDelegate OnC
 	}
 
 	Sheet->OpenAbilityDetail(AbilityTag);
+	StartMenuGuide(EGeoMenuGuideGoal::AbilityDetail);
 	TSharedRef<FDelegateHandle> const Handle = MakeShared<FDelegateHandle>();
 	*Handle = Controller->OnPauseMenuClosed.AddWeakLambda(
 		this,
-		[Controller = TWeakObjectPtr<AGeoPlayerController>(Controller), Handle, OnClosed = MoveTemp(OnClosed)]()
+		[this, Controller = TWeakObjectPtr<AGeoPlayerController>(Controller), Handle, OnClosed = MoveTemp(OnClosed)]()
 		{
 			// Remove destroys this lambda and its captures mid-call: take what is needed out first.
 			FSimpleDelegate const Closed = OnClosed;
@@ -355,6 +356,7 @@ void AGeoHUD::ShowAbilityPage(FGameplayTag const AbilityTag, FSimpleDelegate OnC
 			{
 				Controller->OnPauseMenuClosed.Remove(*Handle);
 			}
+			StopMenuGuide();
 			Closed.ExecuteIfBound();
 		});
 }
@@ -401,6 +403,12 @@ void AGeoHUD::StartMenuGuide(EGeoMenuGuideGoal const Goal)
 	{
 		Widget->StartGuide(Goal);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+EGeoMenuGuideGoal AGeoHUD::GetMenuGuideGoal() const
+{
+	return MenuGuideWidget ? MenuGuideWidget->GetGoal() : EGeoMenuGuideGoal::None;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

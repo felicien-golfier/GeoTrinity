@@ -31,6 +31,9 @@ protected:
 	/** Drops the telegraphs; for a lingering zone the server spawns one per location, and every machine ends the
 	 * pattern. */
 	virtual void StartPattern() override;
+	/** True when the pattern lands as a burst on whoever stands inside (the hazard), false when it leaves zones: a
+	 * life drain duration above zero, or bZoneUntilStopped. */
+	bool LandsAsBurst() const;
 	/** True when Location stands in any circle. */
 	virtual bool IsInHazard(AActor const* Target, FVector2D Location, float SpentTime) const override;
 	/** Drops the telegraphs if a force-stop comes before StartPattern. */
@@ -45,6 +48,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GeoZone")
 	FDeployableDataParams ZoneParams;
 
+	/** Lingering zone only: the zones stay until the pattern is force-stopped, which recalls them. The pattern never
+	 * ends by itself. */
+	UPROPERTY(EditDefaultsOnly, Category = "GeoZone")
+	bool bZoneUntilStopped = false;
+
 	/** The wind-up telegraphs still drawn, one per target location. */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UGeoZoneVisualComponent>> IndicatorComponents;
@@ -55,6 +63,9 @@ private:
 
 	/** Destroys the wind-up telegraphs, if still drawn. */
 	void RemoveIndicators();
+
+	/** Server. The zones spawned by this firing, recalled on a force-stop when bZoneUntilStopped. */
+	TArray<TWeakObjectPtr<AGeoDeployableBase>> SpawnedZones;
 
 	/** Zone left behind. Unset uses UGameDataSettings::DefaultZoneClass. Unused by a burst. */
 	UPROPERTY(EditDefaultsOnly, Category = "GeoZone", meta = (AllowPrivateAccess = "true"))

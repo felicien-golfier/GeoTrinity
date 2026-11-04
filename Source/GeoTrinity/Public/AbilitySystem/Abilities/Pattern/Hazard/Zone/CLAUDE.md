@@ -16,6 +16,10 @@ A child only adds what lands with the hit. Telegraph, hit and cues belong to the
   - 0 = burst: `bHasHazard`, the base judge applies `GetHazardEffects()` to whoever `TeamAttitude` matches in any circle; ends once the judge `IsOver`. `StartCue` = the burst.
   - above 0 = lingering: one zone per location (`ZoneClass`, else `DefaultZoneClass`, tinted by `ZoneParams.Color`, never a zone Blueprint per tint) carrying the effects; ends at once.
 - Cues fire once per location, `RawMagnitude` = `ZoneParams.Size`.
+- Every effect zone (`AGeoEffectZone`) is spawned by this pattern, never by an encounter action: a zone knows nothing of its own telegraph, the ability's wind-up (`StartDelay`) is the only warning. A new zone source = a `UZonePattern` ability.
+- `bZoneUntilStopped` (a lingering zone with `LifeDrainMaxDuration` 0: it is not a burst, `bHasHazard` false): the zones last until the pattern is force-stopped. `StartPattern` spawns them (`ZoneParams` incl. `GrowToSize` / `GrowSeconds`, which start at the landing) and the pattern stays alive; it never ends by itself. `EndPattern(true)` `Recall()`s every zone it spawned (blink, then gone). For a room that holds a zone for the whole step (`Encounter/Action/CLAUDE.md`, "GeoActivateAbilityAction").
+- Telegraph radius = `ZoneParams.Size`, the landing footprint; a growing zone's later growth is not telegraphed.
+- One live instance per pattern class (`../../CLAUDE.md`): zones held together (the Zones room's three colours) = one ability + one pattern Blueprint each.
 
 ## SpawnPillar
 - Boss use: `GA_SpawnPillar` = plain `UPatternAbility`, `Target` = `RandomPlayers` (`Count` 1, `ExtraBelowHealth` [0.5, 0.2]), `PreLaunchCue` on the marked players.

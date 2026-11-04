@@ -22,7 +22,7 @@ Scripts grouped by what they touch, one folder per topic; each folder's `CLAUDE.
 | `Runtime/` | Driving a running session or the editor world | `MCP_PIE.md`, `MCP_Preview.md` |
 | `UI/` | Generic widget Blueprints and trees | `AI/UI.md`, `MCP_UI.md` |
 | `Video/` | Footage scan and edit-list render (`uv`, outside the editor) | `AI/MCP/Video/CLAUDE.md` |
-| `Tools/` | Harness hooks (`token_meter.py`) | — |
+| `Tools/` | Harness hooks (`token_meter.py`, `mode_cmd.py` = `/mode`) | — |
 
 ## Conventions
 - A script another imports is loaded by its project-relative path: moving one means fixing those literals.

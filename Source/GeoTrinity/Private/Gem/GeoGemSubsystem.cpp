@@ -27,8 +27,17 @@ UGeoGemProfileSave* UGeoGemSubsystem::GetFirstLocalProfile(UWorld const* World)
 
 void UGeoGemSubsystem::CommitChanges()
 {
+	// TEMP-TIMING: remove once the slowdown is found.
+	double T = FPlatformTime::Seconds();
+	auto Lap = [&T](TCHAR const* Step)
+	{
+		double const Now = FPlatformTime::Seconds();
+		UE_LOG(LogGeoTrinity, Warning, TEXT("GemTiming   subsystem %s: %.1f ms"), Step, (Now - T) * 1000.0);
+		T = Now;
+	};
 	ULocalPlayer const* LocalPlayer = GetLocalPlayerChecked();
 	Profile->Save(LocalPlayer->GetLocalPlayerIndex());
+	Lap(TEXT("Save"));
 
 	APlayerController const* PlayerController = LocalPlayer->GetPlayerController(GetWorld());
 	if (AGeoPlayerState const* PlayerState =
@@ -36,8 +45,10 @@ void UGeoGemSubsystem::CommitChanges()
 	{
 		PlayerState->GetGemComponent()->SendLoadoutsToServer(*Profile);
 	}
+	Lap(TEXT("SendLoadoutsToServer"));
 
 	OnProfileCommitted.Broadcast();
+	Lap(TEXT("OnProfileCommitted"));
 }
 
 void UGeoGemSubsystem::GrantReward(FGeoGemReward const& Reward)
@@ -74,47 +85,61 @@ static EPlayerClass ParsePlayerClass(FString const& Name)
 	return Value == INDEX_NONE ? EPlayerClass::None : static_cast<EPlayerClass>(Value);
 }
 
-static FAutoConsoleCommandWithWorldAndArgs
-	GGemsGrantCommand(TEXT("Geo.Gems.Grant"),
-					  TEXT("Geo.Gems.Grant <GemId|All> <Count> — adds gems to the first local player's stacks"),
-					  FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
-						  [](TArray<FString> const& Args, UWorld* World)
-						  {
-							  UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
-							  UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-							  if (Gems && Catalog && Args.Num() == 2)
-							  {
-								  int32 const Count = FCString::Atoi(*Args[1]);
-								  for (TPair<EGeoGemTier, FGeoGemList> const& Tier : Catalog->GemsByTier)
-								  {
-									  for (FGeoGemInfo const& Gem : Tier.Value.Gems)
-									  {
-										  if (Args[0] == TEXT("All") || Gem.Id == FName(Args[0]))
-										  {
-											  Gems->GetProfile()->AddGems(Gem.Id, Count);
-										  }
-									  }
-								  }
-								  Gems->CommitChanges();
-							  }
-						  }));
+/** The class the first local player plays; None without a player state. */
+static EPlayerClass GetFirstLocalPlayerClass(UWorld const* World)
+{
+	APlayerController const* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	AGeoPlayerState const* PlayerState =
+		PlayerController ? PlayerController->GetPlayerState<AGeoPlayerState>() : nullptr;
+	return PlayerState ? PlayerState->GetPlayerClass() : EPlayerClass::None;
+}
 
-static FAutoConsoleCommandWithWorldAndArgs GGemsSetLevelCommand(
-	TEXT("Geo.Gems.SetLevel"), TEXT("Geo.Gems.SetLevel <Triangle|Circle|Square> <Level> — sets a class level"),
+static FAutoConsoleCommandWithWorldAndArgs GGemsGrantCommand(
+	TEXT("Geo.Gems.Grant"),
+	TEXT("Geo.Gems.Grant [GemId|All] <Count> — adds gems to the first local player's stacks; GemId defaults to All"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
 		[](TArray<FString> const& Args, UWorld* World)
 		{
 			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
-			if (Gems && Args.Num() == 2)
+			UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+			if (Gems && Catalog && (Args.Num() == 1 || Args.Num() == 2))
 			{
-				Gems->GetProfile()->SetClassLevel(ParsePlayerClass(Args[0]), FCString::Atoi(*Args[1]));
+				FString const GemArg = Args.Num() == 2 ? Args[0] : TEXT("All");
+				int32 const Count = FCString::Atoi(*Args.Last());
+				for (TPair<EGeoGemTier, FGeoGemList> const& Tier : Catalog->GemsByTier)
+				{
+					for (FGeoGemInfo const& Gem : Tier.Value.Gems)
+					{
+						if (GemArg == TEXT("All") || Gem.Id == FName(GemArg))
+						{
+							Gems->GetProfile()->AddGems(Gem.Id, Count);
+						}
+					}
+				}
+				Gems->CommitChanges();
+			}
+		}));
+
+static FAutoConsoleCommandWithWorldAndArgs GGemsSetLevelCommand(
+	TEXT("Geo.Character.SetLevel"),
+	TEXT(
+		"Geo.Character.SetLevel [Triangle|Circle|Square] <Level> — sets a class level; the class defaults to the one played"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+		[](TArray<FString> const& Args, UWorld* World)
+		{
+			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
+			if (Gems && (Args.Num() == 1 || Args.Num() == 2))
+			{
+				EPlayerClass const PlayerClass =
+					Args.Num() == 2 ? ParsePlayerClass(Args[0]) : GetFirstLocalPlayerClass(World);
+				Gems->GetProfile()->SetClassLevel(PlayerClass, FCString::Atoi(*Args.Last()));
 				Gems->CommitChanges();
 			}
 		}));
 
 static FAutoConsoleCommandWithWorldAndArgs
-	GGemsSetEchoLevelCommand(TEXT("Geo.Gems.SetEchoLevel"),
-							 TEXT("Geo.Gems.SetEchoLevel <Level> — sets the shared echo level"),
+	GGemsSetEchoLevelCommand(TEXT("Geo.Character.SetEchoLevel"),
+							 TEXT("Geo.Character.SetEchoLevel <Level> — sets the shared echo level"),
 							 FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
 								 [](TArray<FString> const& Args, UWorld* World)
 								 {
@@ -199,6 +224,60 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsUnequipAllCommand(
 				{
 					Gems->GetProfile()->Unequip(ParsePlayerClass(Args[0]), SocketIndex);
 				}
+				Gems->CommitChanges();
+			}
+		}));
+
+static FAutoConsoleCommandWithWorldAndArgs GGemsClearCommand(
+	TEXT("Geo.Gems.Clear"),
+	TEXT(
+		"Geo.Gems.Clear [Gems|Shards|All] — removes every owned gem (unequipping them first) and/or every shard; default All"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+		[](TArray<FString> const& Args, UWorld* World)
+		{
+			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
+			UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+			if (!Gems || !Catalog || Args.Num() > 1)
+			{
+				return;
+			}
+			bool const bAll = Args.IsEmpty() || Args[0] == TEXT("All");
+			UGeoGemProfileSave* Profile = Gems->GetProfile();
+			if (bAll || Args[0] == TEXT("Gems"))
+			{
+				for (EPlayerClass const PlayerClass :
+					 {EPlayerClass::Triangle, EPlayerClass::Circle, EPlayerClass::Square})
+				{
+					for (int32 SocketIndex = 0; SocketIndex < GeoGem::GetSockets().Num(); ++SocketIndex)
+					{
+						Profile->Unequip(PlayerClass, SocketIndex);
+					}
+					Profile->ClearEcho(PlayerClass);
+				}
+				for (TPair<EGeoGemTier, FGeoGemList> const& Tier : Catalog->GemsByTier)
+				{
+					for (FGeoGemInfo const& Gem : Tier.Value.Gems)
+					{
+						Profile->AddGems(Gem.Id, -Profile->GetOwnedCount(Gem.Id));
+					}
+				}
+			}
+			if (bAll || Args[0] == TEXT("Shards"))
+			{
+				Profile->AddShards(-Profile->GetShards());
+			}
+			Gems->CommitChanges();
+		}));
+
+static FAutoConsoleCommandWithWorld GGemsResetAllCommand(
+	TEXT("Geo.Gems.ResetAll"),
+	TEXT("Geo.Gems.ResetAll — fresh profile: removes all gems, shards and builds, resets class and echo levels"),
+	FConsoleCommandWithWorldDelegate::CreateLambda(
+		[](UWorld* World)
+		{
+			if (UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World))
+			{
+				Gems->GetProfile()->ResetAll();
 				Gems->CommitChanges();
 			}
 		}));

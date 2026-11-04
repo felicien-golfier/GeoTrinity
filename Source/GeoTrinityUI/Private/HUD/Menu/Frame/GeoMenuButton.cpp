@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "HUD/Menu/Frame/GeoButton.h"
 #include "HUD/Style/Frame/GeoFrame.h"
+#include "HUD/Style/Glyph/GeoIconImage.h"
 
 void UGeoMenuButton::NativePreConstruct()
 {
@@ -36,6 +37,15 @@ void UGeoMenuButton::SetLabel(FText const& InLabel)
 {
 	Label = InLabel;
 	ApplyStyle();
+}
+
+void UGeoMenuButton::SetIcon(UGeoIcon const* Icon)
+{
+	if (ButtonIcon)
+	{
+		ButtonIcon->SetIcon(Icon);
+		ButtonIcon->SetVisibility(Icon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 }
 
 void UGeoMenuButton::ApplyStyle()

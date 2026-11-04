@@ -41,7 +41,7 @@ Hold to charge, release to fire a beam dealing {Damage} damage, scaled to {MinDa
 | SWEET SPOT | {SweetSpotDamageMultiplier:%}
 
 [Ability.Spell.MoiraBeam]
-Channels a beam for {InitialDuration}s that deals {DamagePerSecond}/sec damage to enemies and heals allies for {HealPerSecond}/sec, while boosting your movement speed by {SpeedBuffEffect:%}. Absorbing your Healing Zones on the beam path extends it by {DurationPerAbsorbedZone}s, widens it, and boosts its damage and healing by {DamageAndHealBoostPerAbsorbedZone:%} per zone and {BoostPerFinishedZone:%} bonus per finished absorbed zone, up to {DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%} boost.
+Channels a beam for {InitialDuration}s that deals {DamagePerSecond}/sec damage to enemies and heals allies for {HealPerSecond}/sec, while boosting your movement speed by {SpeedBuffEffect:%}. Aim the beam across your own Healing Zones to absorb them: each zone the beam passes over extends it by {DurationPerAbsorbedZone}s, widens it, and boosts its damage and healing by {DamageAndHealBoostPerAbsorbedZone:%} per zone and {BoostPerFinishedZone:%} bonus per finished absorbed zone, up to {DamageAndHealBoostPerAbsorbedZone*MaximumZoneAbsorbed:%} boost.
 | DURATION | {InitialDuration}s
 | DAMAGE | {DamagePerSecond}/s
 | HEAL | {HealPerSecond}/s

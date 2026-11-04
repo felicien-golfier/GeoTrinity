@@ -13,7 +13,7 @@
 void UZonePattern::OnCreate(FGameplayTag const AbilityTag, AActor& Owner)
 {
 	Super::OnCreate(AbilityTag, Owner);
-	bHasHazard = ZoneParams.LifeDrainMaxDuration <= 0.f;
+	bHasHazard = LandsAsBurst();
 }
 
 void UZonePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<FPatternData> const& PatternData)
@@ -39,6 +39,7 @@ void UZonePattern::InitPattern(FAbilityPayload const& Payload, TInstancedStruct<
 void UZonePattern::StartPattern()
 {
 	RemoveIndicators();
+	SpawnedZones.Reset();
 	Super::StartPattern();
 
 	if (!bHasHazard)
@@ -47,13 +48,22 @@ void UZonePattern::StartPattern()
 		{
 			for (FVector2D const& Location : GetTargetLocations())
 			{
-				GeoASLib::FullySpawnDeployable(GetZoneClass(), StoredPayload, EffectDataArray, ZoneParams,
-											   FTransform(FVector(Location, ArbitraryCharacterZ)));
+				SpawnedZones.Add(GeoASLib::FullySpawnDeployable(GetZoneClass(), StoredPayload, EffectDataArray,
+																ZoneParams,
+																FTransform(FVector(Location, ArbitraryCharacterZ))));
 			}
 		}
 
-		EndPattern();
+		if (!bZoneUntilStopped)
+		{
+			EndPattern();
+		}
 	}
+}
+
+bool UZonePattern::LandsAsBurst() const
+{
+	return ZoneParams.LifeDrainMaxDuration <= 0.f && !bZoneUntilStopped;
 }
 
 bool UZonePattern::IsInHazard(AActor const* Target, FVector2D const Location, float /*SpentTime*/) const
@@ -74,6 +84,19 @@ bool UZonePattern::IsInHazard(AActor const* Target, FVector2D const Location, fl
 void UZonePattern::EndPattern(bool const bForceStop)
 {
 	RemoveIndicators();
+	if (bForceStop && bZoneUntilStopped)
+	{
+		for (TWeakObjectPtr<AGeoDeployableBase> const& Zone : SpawnedZones)
+		{
+			if (Zone.IsValid())
+			{
+				Zone->Recall();
+			}
+		}
+
+		SpawnedZones.Reset();
+	}
+
 	Super::EndPattern(bForceStop);
 }
 

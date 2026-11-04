@@ -48,6 +48,14 @@ public:
 protected:
 	UGeoGemProfileSave* GetProfile() const;
 
+	/** True while a tutorial guide (EquipChip, ForgeChip) runs and GemId is not the one chip it teaches (Power): the
+	 * page refuses the pick. */
+	bool IsGemGuideLocked(FName GemId) const;
+
+	bool IsGemGuideActive() const;
+
+	static FName const GuidedGem;
+
 	/** Saves and sends the profile, then refreshes the page and broadcasts OnProfileChanged. */
 	void CommitChanges();
 

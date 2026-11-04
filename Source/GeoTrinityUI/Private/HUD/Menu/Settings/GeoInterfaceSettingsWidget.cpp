@@ -15,6 +15,13 @@ void UGeoInterfaceSettingsWidget::NativeConstruct()
 
 	CombatStatsCheckBox->OnCheckStateChanged.AddUniqueDynamic(this,
 															  &UGeoInterfaceSettingsWidget::HandleCombatStatsChanged);
+
+	if (CatLineAutoSkipCheckBox)
+	{
+		CatLineAutoSkipCheckBox->SetIsChecked(UGeoGameUserSettings::Get()->CatLineAutoSkip());
+		CatLineAutoSkipCheckBox->OnCheckStateChanged.AddUniqueDynamic(
+			this, &UGeoInterfaceSettingsWidget::HandleCatLineAutoSkipChanged);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -27,4 +34,10 @@ UWidget* UGeoInterfaceSettingsWidget::GetInitialFocusWidget() const
 void UGeoInterfaceSettingsWidget::HandleCombatStatsChanged(bool const bIsChecked)
 {
 	UGeoGameUserSettings::Get()->SetShowCombatStats(bIsChecked);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoInterfaceSettingsWidget::HandleCatLineAutoSkipChanged(bool const bIsChecked)
+{
+	UGeoGameUserSettings::Get()->SetCatLineAutoSkip(bIsChecked);
 }

@@ -2,7 +2,7 @@
 Dress the shared menu widgets in the Rail look: every one wears a UGeoFrame whose style asset (/Game/HUD/Style) carries
 the look, so tuning a style asset re-skins every widget wearing it. Structure only lives here; colours, fonts and
 motion live in the style assets and DA_UITheme (built by ui_theme.py, which must run first).
-- WBP_GeoButton: Frame (button style, active on hover/focus) > ButtonWidget > ButtonText.
+- WBP_GeoButton: Frame (button style, active on hover/focus) > ButtonWidget > ButtonContent (row) > ButtonText, ButtonIcon.
 - WBP_ListRow: RowFrame (row style) > RowButton > ColumnsBox.
 - WBP_ListPanel: a panel frame behind its header and rows, the old background images dropped.
 Usage: run via MCP execute_script. Rebuilds whole widgets, so it refuses an existing asset (asset_guard.legacy_rebuild)
@@ -235,12 +235,22 @@ def style_menu_button():
     fill_slot(slot)
     clear_button_style(button)
 
-    text, text_slot = construct_into(wbp, unreal.TextBlock, "ButtonText", "ButtonWidget")
+    _, content_slot = construct_into(wbp, unreal.HorizontalBox, "ButtonContent", "ButtonWidget")
+    content_slot.set_editor_property("horizontal_alignment", unreal.HorizontalAlignment.H_ALIGN_CENTER)
+    content_slot.set_editor_property("vertical_alignment", unreal.VerticalAlignment.V_ALIGN_CENTER)
+    content_slot.set_editor_property("padding", BUTTON_PADDING)
+
+    text, text_slot = construct_into(wbp, unreal.TextBlock, "ButtonText", "ButtonContent")
     text.set_editor_property("text", unreal.Text("BUTTON"))
     text.set_editor_property("justification", unreal.TextJustify.CENTER)
-    text_slot.set_editor_property("horizontal_alignment", unreal.HorizontalAlignment.H_ALIGN_CENTER)
     text_slot.set_editor_property("vertical_alignment", unreal.VerticalAlignment.V_ALIGN_CENTER)
-    text_slot.set_editor_property("padding", BUTTON_PADDING)
+
+    # The icon after the label (SetIcon shows it); collapsed while empty.
+    icon, icon_slot = construct_into(wbp, unreal.GeoIconImage, "ButtonIcon", "ButtonContent")
+    icon.set_editor_property("size", 18.0)
+    icon.set_editor_property("visibility", unreal.SlateVisibility.COLLAPSED)
+    icon_slot.set_editor_property("vertical_alignment", unreal.VerticalAlignment.V_ALIGN_CENTER)
+    icon_slot.set_editor_property("padding", unreal.Margin(8, 0, 0, 0))
     UTIL.commit_tree(wbp)
 
 
@@ -304,9 +314,11 @@ def place_footer_under_rows(wbp):
 def clickable_frames():
     """On a button and a list row built while their frame held the padding: the padding moves into the button, so the
     whole outline is clickable. Goes through asset_guard, so a frame padding changed by hand is kept and reported."""
-    for path, frame_name, content_name, padding in [(BUTTON_PATH, "Frame", "ButtonText", BUTTON_PADDING),
+    for path, frame_name, content_name, padding in [(BUTTON_PATH, "Frame", "ButtonContent", BUTTON_PADDING),
                                                     (ROW_PATH, "RowFrame", "ColumnsBox", ROW_PADDING)]:
         wbp = unreal.load_asset(path)
+        if not UTIL.find_widget(wbp, content_name):
+            continue  # a button from before ButtonContent: style_menu_button rebuilds it
         if asset_guard.write(path, UTIL.find_widget(wbp, frame_name), "padding", NO_PADDING,
                              earlier=(EARLIER_FRAME_PADDING[path],)):
             asset_guard.write(path, UTIL.find_widget(wbp, content_name).get_editor_property("slot"), "padding",

@@ -17,4 +17,7 @@ enum class EGeoMenuGuideGoal : uint8
 	ForgeChip,
 	/** No control to point at: dims the menu and refuses every click (the Cat is speaking, nothing to do yet). */
 	Hold,
+	/** Character sheet with an ability's description open: only that description and the window's close cross stay lit,
+	 * the description cannot be closed (the window can). */
+	AbilityDetail,
 };

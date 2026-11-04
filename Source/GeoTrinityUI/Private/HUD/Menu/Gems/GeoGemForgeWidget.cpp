@@ -28,7 +28,7 @@ FGeoMenuGuideTarget UGeoGemForgeWidget::GetGuideTarget(EGeoMenuGuideGoal const G
 			? FGeoMenuGuideTarget(TierTabBox ? TierTabBox->GetChildAt(GetTiers().Find(EGeoGemTier::Chip)) : nullptr,
 								  GuideChipTierHint)
 			: bGemChosen ? FGeoMenuGuideTarget(CraftButton, GuideCraftHint)
-						 : FGeoMenuGuideTarget(GemListBox, GuidePickGemHint);
+						 : FGeoMenuGuideTarget(GuidedRow.IsValid() ? Cast<UWidget>(GuidedRow.Get()) : Cast<UWidget>(GemListBox), GuidePickGemHint);
 	}
 
 	return Target;
@@ -254,6 +254,7 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 	bool const bHadFocus = GemListBox->HasFocusedDescendants();
 	UGeoListRowWidget* PickedRow = nullptr;
 	GemListBox->ClearChildren();
+	GuidedRow.Reset();
 	FGeoGemList const* List = Catalog.GemsByTier.Find(ShownTier);
 	for (FGeoGemInfo const& Gem : List ? List->Gems : TArray<FGeoGemInfo>())
 	{
@@ -261,6 +262,10 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 		UGeoListRowWidget* Row = MakeRow(GemId == PickedGem ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
 										 [this, GemId]
 										 {
+											 if (IsGemGuideLocked(GemId))
+											 {
+												 return;
+											 }
 											 PickedGem = GemId;
 											 bGemChosen = true;
 											 BreakQuantity = 1;
@@ -282,6 +287,7 @@ void UGeoGemForgeWidget::ShowGems(UGeoGemProfileSave const& Profile, UGeoGemCata
 				MakeText(EGeoTextRole::Mono, FText::Format(FreeCellFormat, Profile.GetBreakableCount(GemId))), 0.f);
 			GemListBox->AddChildToVerticalBox(Row)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 			PickedRow = GemId == PickedGem ? Row : PickedRow;
+			GuidedRow = GemId == GuidedGem ? Row : GuidedRow;
 		}
 	}
 
@@ -336,6 +342,7 @@ void UGeoGemForgeWidget::ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCa
 		BreakButton->SetLabel(
 			Breakable > 0 ? FText::Format(BreakFormat, BreakQuantity, BreakQuantity * Catalog.GetBreakDownShards(*Tier))
 						  : NoFreeCopyText);
+		BreakButton->SetIcon(Breakable > 0 ? ShardIcon.Get() : nullptr);
 	}
 
 	CraftQuantity = FMath::Max(CraftQuantity, 1);
@@ -350,6 +357,7 @@ void UGeoGemForgeWidget::ShowPicked(UGeoGemProfileSave const& Profile, UGeoGemCa
 		CraftButton->SetIsEnabled(bCanCraft);
 		CraftButton->SetLabel(bCanCraft ? FText::Format(CraftFormat, CraftQuantity, Cost)
 										: FText::Format(NeedShardsFormat, Cost));
+		CraftButton->SetIcon(bCanCraft ? ShardIcon.Get() : nullptr);
 	}
 }
 
@@ -479,6 +487,11 @@ void UGeoGemForgeWidget::HandleCraftQuantityCommitted(FText const& Text, ETextCo
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemForgeWidget::HandleCraft()
 {
+	if (IsGemGuideLocked(PickedGem))
+	{
+		return;
+	}
+
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	FGeoGemInfo const* Gem = Catalog ? Catalog->Find(PickedGem) : nullptr;

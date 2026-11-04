@@ -17,7 +17,7 @@ struct FGeoCatLineFile
 namespace GeoCatLines
 {
 	/** How fast a Cat line types out; the popup's typewriter and the timed-line data check share it. */
-	constexpr float TypingCharsPerSecond = 40.f;
+	constexpr float TypingCharsPerSecond = 48.f;
 
 	/** The parsed file, read again when its timestamp changed (every draw state dropped then). A missing file is a
 	 * packaging or path bug: ensures, and holds no category. */

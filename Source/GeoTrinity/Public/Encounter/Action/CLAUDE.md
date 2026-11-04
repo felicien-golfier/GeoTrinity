@@ -8,14 +8,13 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 | `GeoAddToCounterAction.h` | `AddToCounter(Name, Delta)` on its encounter | no |
 | `GeoStartEncounterAction.h` | Starts another `AGeoEncounter` through its arrival reset (`StartAfterSkippingChain`: aborts the other running encounters, replays the skipped chain, starts at step 0; `../CLAUDE.md`, "Arrival reset"). One already running starts over. Last in its list: it aborts the encounter it sits in, so nothing after it runs (`IsDataValid` error) | no |
 | `GeoSetTeleporterOpenAction.h` | `SetOpen(bool)` on the referenced `AGeoTeleporter` (a room's exit / entry pad) | no |
-| `GeoActivateAbilityAction.h` | Fires `AbilityClass` on the encounters' shared caster (`../CLAUDE.md`, "Shared caster"), in the room `ArenaTag`, with optional `PatternData` for a pattern ability | yes |
+| `GeoActivateAbilityAction.h` | Fires `AbilityClass` on the encounters' shared caster (`../CLAUDE.md`, "Shared caster"), in the room `ArenaTag`, with optional `PatternData` for a pattern ability; `bHeldUntilStepLeft` for a zone that lasts the step | yes; not when held |
 | `GeoCatSpeechAction.h` | Abstract base of the Cat's spoken actions: `ShowCatLine(text, OnEnded)` on the first local player's HUD; `bWaitForRespawn`: while that player is dead, shown on its `OnRevived`; finishes when the line ends (typed + read, or F twice, `HUD/Tutorial/CLAUDE.md`). Children give the text (`GetLineText`). `bTimed` / `Emotion` below | yes; not when timed |
 | `GeoCatLineAction.h` | Cat speech: `Line`, typed in place | yes |
 | `GeoCatLineFromFileAction.h` | Cat speech: a line of `Categories` from `Data/CatLines.txt`, `bRandom` true = shuffled, no repeat; false = file order, cycling (`Tool/CatLine/CLAUDE.md`) | yes |
 | `GeoUnlockAbilityAction.h` | Grants the local player's class ability `AbilityTag` (`GiveClassAbility`); nothing the second time. Never opens the page. `OnSkipped` = `Execute` | no |
 | `GeoShowAbilityPageAction.h` | `ShowAbilityPage(AbilityTag)` on the local HUD; placed after a Cat line, so the page never pops before the Cat speaks (`Tutorial/Steps.md`, "Unlock rule"). Finishes when the player closes the pause menu (`AGeoPlayerController::OnPauseMenuClosed`), at once with no HUD or no page; what follows never plays behind the page. `OnCancel` stops waiting only (the page stays open; its close no longer finishes the action). No-op when skipped | yes |
 | `GeoSpawnEnemiesAction.h` | Keeps `Count` of `EnemyClass` + `Setup` alive on the points tagged `PurposeTag` + `ArenaTag`: spawns them, replaces each dead one `RespawnDelay` s after its own death, where it died (0: never); `bKillOnStepExit` kills the living when the step is left | no (held until the step is left) |
-| `GeoSpawnZoneAction.h` | Spawns one effect zone (inline effects, size, colours, attitude, team) on the point tagged `PurposeTag` + `ArenaTag`; expires it when the step is left | no (held until the step is left) |
 | `GeoQuestCardAction.h` | Quest card on the local HUD: `Show` (title, max, `TimeLimitSeconds`: decorative countdown), `Count` (payload `Count`, or `Max` with `bShowMax`), `Hide` | no |
 | `GeoMenuGuideAction.h` | `StartMenuGuide(Goal)` on the local HUD; the guide runs until the step is left (held like the spawn actions: `OnCancel` = `StopMenuGuide`). Never opens a menu: the player does, the guide points. Goal `Hold` = dim and refuse every click (the Cat is finishing); `None` = stop the guide | no (held until the step is left) |
 | `GeoUnequipGemsAction.h` | `Tier` (Chip): empties every socket of that tier in the first local player's current build (`UnequipTier`, echo included) and saves (`CommitChanges`); the Gems step opens with it so the chip the player picks is never one already slotted. Lasting: nothing on cancel or skip | no |
@@ -51,14 +50,8 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 - Every spawn goes through `AEnemyCharacter::SpawnEnemy` (`Characters/CLAUDE.md`, "Enemy setup"). The variant (chaser, shooter, hurt ally, ally team) lives in `Setup` on the action, `EnemyClass` stays `BP_Dummy`.
 - A one-off character of a room (the hurt ally, the rude dummy) is spawned too, `Count` 1, never placed: its `Setup.Tag` is what its triggers watch (`FGeoActorFilter`, `Trigger/CLAUDE.md`).
 
-## GeoSpawnZoneAction
-- A zone that only teaches its colour or sits in a room: no ability, no pattern, no caster. A telegraphed or patterned hazard stays an ability fired by `GeoActivateAbilityAction`.
-- `DefaultZoneClass` (`UGameDataSettings`) through `GeoASLib::FullySpawnDeployable` with an `FDeployableData` filled from the action: `EffectDataArray`, `Params` (`Size`, `Color`, `SecondaryColors`, `Attitude`; `LifeDrainMaxDuration` 0 = lasts until cancelled), `TeamID` = `Team`, no `Owner`: self-owned, its own ASC is the effect source, like a hand-placed zone (`AbilitySystem/Lib/CLAUDE.md`).
-- `EnteredEvent` (optional tag, `Encounter.Event.*`): the spawned zone raises it on `UGeoEncounterSubsystem` (`Actor` = the player) whenever a player's capsule begins overlapping the zone's, and once at spawn for each player already inside. The trigger is the zone itself, so it exists exactly as long as the zone; the rule reads it with a `GeoEventTrigger`. Unbound in `OnCancel`. Zones need no placed box.
-- A growing zone is `Params.GrowToSize` + `GrowSeconds` (`GeoEffectZone` grows from `Size`; replicated start time); the action adds nothing. The zone stops at `GrowToSize` and stays until cancelled.
-- Several zones in one step: one action per zone in the step's `OnEnter`, each held until the step is left, so they all end together (the Zones room's colour step, `Tutorial/Steps.md` step 7).
-- Ground Z (0), like every zone. One zone per action: several zones on one step = a step per zone, or a Blueprint child spawning several.
-- `OnCancel`: `Recall()` on its zone (blink, then gone). Held like `GeoSpawnEnemiesAction`; run again while held, it recalls its previous zone first.
+## Zones in a room
+No zone action: a room's zone is a `UZonePattern` ability (`bZoneUntilStopped`, `Abilities/Pattern/Hazard/Zone/CLAUDE.md`) fired by `GeoActivateAbilityAction` with `bHeldUntilStepLeft`, so it telegraphs first like every zone. Several zones in one step = one such ability per zone, each held, all ending with the step.
 
 ## GeoActivateAbilityAction
 - Caster = `UGeoEncounterSubsystem::GetSharedCaster()`, ability = `AbilityClass`, granted on first use (`GrantSharedAbility`). No arena, no tag: every ability a room fires goes through it; a boss's or a dummy's own abilities run from their tree, never from this action.
@@ -66,6 +59,7 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 - `PatternData` (optional, `TInstancedStruct<FPatternData>`): a wave's safe spots live here (`FLateralWavePatternData`), so one wave ability serves every firing.
 - `bWaitForEnd` true: `Finish()` when the activated ability ends (ASC ability-ended delegate, matched by spec handle); false: `Finish()` right after activation (overlapping waves).
 - Refused activation (no caster on a client, a `RequiresArena()` class, blocked or already running): log to `LogGeoEncounter`, `Finish()`; the encounter never stalls on it. `IsDataValid` (editor) flags an empty `AbilityClass` and a `RequiresArena()` one.
+- `bHeldUntilStepLeft` (default false; ignores `bWaitForEnd`): not latent, `Finish()` right after activation and `AGeoEncounter::HoldUntilStepLeft`, like `GeoSpawnEnemiesAction`; `OnCancel` (step left, rewind, abort) cancels the ability, which force-stops its pattern. Run again while held: the previous firing is cancelled first. For an ability that lasts the step (a zone).
 - `OnCancel` (step left while waiting) cancels the ability and unbinds. One fired without waiting runs on past a step exit (overlapping waves); an abort (`IsAborting()`) cancels it too.
 
 - `Condition` (base, optional): lives on the base, an action never checks it itself; the encounter skips the action when it fails (`../CLAUDE.md`, "Model"). Skipped action: no `Execute`, no `Finish`; an abort still calls its `OnCancel` (safe by the contract, `../CLAUDE.md`, "Arrival reset").
@@ -78,7 +72,7 @@ Stock actions (base: `../GeoEncounterAction.h`). Each is a C++ class and a base 
 What `OnCancel` leaves behind on abort (`../CLAUDE.md`, "Arrival reset"); an action not listed has nothing to undo.
 | Action | `OnCancel` |
 |---|---|
-| Delay, Activate ability, Show ability page, Spawn enemies / zone | as written above |
+| Delay, Activate ability, Show ability page, Spawn enemies | as written above |
 | Cat line | on abort, ends its shown line while that line is still the shown one (also a line left standing by a normal step exit) |
 | Quest card | `Show` hides the card it showed (once); `Count` / `Hide` nothing |
 | Set actor hidden | a show hides the actor again (actors are placed hidden); a hide has nothing to undo |

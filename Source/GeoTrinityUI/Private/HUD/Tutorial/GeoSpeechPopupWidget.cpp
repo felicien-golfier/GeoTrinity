@@ -8,6 +8,7 @@
 #include "GeoTrinity/GeoTrinity.h"
 #include "HUD/HudFunctionLibrary.h"
 #include "InputAction.h"
+#include "Settings/GeoGameUserSettings.h"
 #include "Tool/CatLine/GeoCatLineBank.h"
 
 /** Reading time once the text is complete: a base plus the length of the line at this reading speed. */
@@ -82,7 +83,7 @@ EActiveTimerReturnType UGeoSpeechPopupWidget::WatchLine(double const CurrentTime
 	{
 		RevealUpTo(FMath::FloorToInt((CurrentTime - PhaseStartTime) * GeoCatLines::TypingCharsPerSecond), true);
 	}
-	else if (Phase == EPhase::Reading && TimedSeconds <= 0.f)
+	else if (Phase == EPhase::Reading && TimedSeconds <= 0.f && UGeoGameUserSettings::Get()->CatLineAutoSkip())
 	{
 		float const ReadingSeconds =
 			LineSeconds > 0.f ? LineSeconds : ReadingBaseSeconds + VisibleLength / ReadingCharsPerSecond;

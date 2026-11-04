@@ -15,7 +15,7 @@ Design docs of the tutorial: tone, lore, the Cat, the board of pages. Design onl
 
 ## Runtime
 Each step of `Steps.md` is a step of an `AGeoEncounter` (`Source/GeoTrinity/Public/Encounter/CLAUDE.md`), one encounter per room or step group: "Done when" = a rule's trigger + condition with `bCompletesStep`; "On fail" = another rule on the same step; what one rule needs from another (falls before the reach, colors visited, two goals met) goes through step counters. No tutorial-specific director.
-What a room holds is written on its encounter, not as assets: enemies = `BP_Dummy` + an inline setup on the spawn action, plain zones = `GeoSpawnZoneAction` (`Encounter/Action/CLAUDE.md`). A new Blueprint or ability only for real new behaviour (miniboss, summoned dummy, wave patterns).
+What a room holds is written on its encounter, not as assets: enemies = `BP_Dummy` + an inline setup on the spawn action, zones = a zone-pattern ability fired held by `GeoActivateAbilityAction` (`Encounter/Action/CLAUDE.md`, "Zones in a room"), telegraphed like every zone. A new Blueprint or ability only for real new behaviour (miniboss, summoned dummy, wave patterns).
 
 ## Artifacts (working surface)
 Two Claude.ai artifacts, editable by the user, listed in `AI/Artifacts.md`:

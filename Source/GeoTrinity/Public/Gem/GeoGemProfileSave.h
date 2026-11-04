@@ -160,6 +160,9 @@ public:
 	/** Dev: sets the shared echo level, clamped 0 .. Catalog.EchoMaxLevel; the echo XP restarts at 0. A level above 0
 	 * with no class at the max level first takes Triangle there. */
 	void SetEchoLevel(UGeoGemCatalog const& Catalog, int32 Level);
+
+	/** Dev: back to a fresh profile: no gems, no shards, every class at level 1 with its builds gone, echo 0. */
+	void ResetAll();
 #endif
 
 	/**

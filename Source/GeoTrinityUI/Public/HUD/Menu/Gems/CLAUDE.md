@@ -11,6 +11,8 @@ Gems menu over `UGeoGemSubsystem` (`GeoTrinity/Public/Gem/CLAUDE.md`). Opened fr
 | `GeoGemSocketButton.h` | Bare button drawn by its `UGeoGemGlyph`; says which socket it is on click |
 
 - Shard count (header, `ShardsFrame` key cap): `ShardIcon` = `DA_Icon_Gems_Shard`, the three-facet pink crystal of the design, 24 px, then the number and `SHARDS`.
+- Forge `BreakButton` / `CraftButton`: the same shard icon (`ShardIcon` on the page) sits after the `+Y` / `−X` of the label, through the button's `ButtonIcon` (`UGeoMenuButton::SetIcon`); hidden on the "no free copy" / "NEED n SHARDS" labels.
+- Loadout edits to the shown build's gems (slot, ALL, unequip, echo) go through `CommitSlotting`, not `CommitChanges`: save + server, then sockets, unequip button, stack rows, detail and totals update in place. Class / build / filter tabs and the stack rows are rebuilt only by `Refresh` (class, tier filter, build or owned gems changed). Stack rows are kept per gem id (`StackRows`: row, sub line, count, in-build mark) so `UpdateStacks` touches texts, tint and mark visibility only.
 - Glyph drawing and colours: `Style/Glyph/`; gem polygons and highlight from theme `GemStyle`.
 
 ## Unequip and tier filter (Loadout page)
@@ -27,10 +29,11 @@ Rules: `GeoTrinity/Public/Gem/CLAUDE.md` "Echo socket". The page only shows and 
 - Echo socket look (design: Gems Loadout (Echo) artboard): the board's focal point, far larger than any socket. A `UGeoEchoHalo` (`Style/Glyph/`) built with the board sits behind the echo button (`EchoHaloSize` tunable, about 3x `EchoSize`; `EchoHaloStyle` = the frame style it wears, `EchoHaloOpenColor`): dark disc, ring, a rosace of outline squares turned a step apart, a second smaller one turning the other way, small squares running the ring like frame runners. Colour: the echoed gem's, violet while open and empty, grey while locked.
 - Halo states: idle = slow turn, calm glow; a stack that can echo is picked, or the socket is picked / hovered = faster turn, brighter glow, runners faster (the frame style's active blend); locked = still, dim, no runners. Opening the socket (shared echo level 0 → 1) is a one-off flare (active blend held for a moment, `PlayFlare`), not a loop; shown once per session.
 - The halo never takes input (HitTestInvisible); the echo button on top stays the click target. The other sockets and the cluster rings are untouched.
-- No echo button: the click on the echo socket is the action (stack picked, then socket; or the reverse). The gem detail has two buttons only, EQUIP (the first empty socket the picked stack fits) and ALL (every socket it fits, replaces what is slotted); both always shown, hovering a stack or a socket included, and act on the picked stack (off with none). ALL wears the theme's normal button text role, the room the echo button took goes to it.
+- No echo button: the click on the echo socket is the action (stack picked, then socket; or the reverse). The gem detail has two buttons only, EQUIP (the first empty socket the picked stack fits; none empty → the first socket it fits, its gem is replaced) and ALL (every socket it fits, replaces what is slotted); both always shown, hovering a stack or a socket included, and act on the picked stack (off with none). ALL wears the theme's normal button text role, the room the echo button took goes to it.
 - One click echoes, even a type the build slots: those sockets empty at once (no confirmation step). Off for a Core / locked / no copy / already echoed (the note says why).
 - Slotting the echoed type into a socket is allowed: the echo empties, the socket fills. A Core already in another socket moves: the previous socket empties. Neither has a refusal note any more (`NoteCoreOnce` gone).
-- Stack tile of the echoed type: "ECHOED" mark, not "n FREE"; its sockets glow like any pickable socket.
+- Stack tile: big count = free copies (`×n`), sub line `TIER · n TOTAL` (owned).
+- Stack tile of the echoed type: "ECHOED" mark, not "n TOTAL"; its sockets glow like any pickable socket.
 - Totals table: a row for the echoed stat after the slotted ones, its count cell reads `ECHO` (`ECH` when the column is too narrow for it), where a slotted stat shows `×n`; the level is in the detail.
 - A stack picked, then the echo socket (or the reverse), echoes it, like a socket.
 
@@ -38,6 +41,7 @@ Rules: `GeoTrinity/Public/Gem/CLAUDE.md` "Echo socket". The page only shows and 
 Every refusal and every side effect the player did not ask for shows in the message strip (`Frame/CLAUDE.md`, "Message log"); texts are `FText` tunables of the widget (`GeoGem|Messages`), formats with the gem / tier / count. Clicks only, never hover. Disabled buttons post nothing (their note says why).
 - Refusal (`Damage`), from `EGeoGemRefusal` on a socket or stack click: already in this socket, wrong tier, socket locked (level), no free copy; echo: not unlocked (level 20), a Core, already the echo, no copy. Clicking the locked echo socket with nothing picked says when it opens.
 - Side effect (`Neutral`): a Core moved from its previous socket; echoing emptied n sockets of that gem; slotting the echoed type cleared the echo.
+- Every single-socket equip (`PostEquipEffects`) posts "slotted" (`Heal`) and, when it replaced a gem, "removed" (`Neutral`), before the Core-moved / echo-cleared notes.
 - Success (`Heal`): ALL filled n sockets; unequip emptied n; build created / deleted; build limit and last-build refusals (`Damage`).
 - Forge: broken / crafted lines (`Heal`).
 - Key bindings page: a rejected key (wrong device, or a conflict) says so. Server browser: a failed search says so.
@@ -46,7 +50,8 @@ Every refusal and every side effect the player did not ask for shows in the mess
 The menu guide (`Frame/CLAUDE.md`, "Menu guide") asks the pages for the next control; they only answer, they never draw or block. Hint texts are `FText` tunables (`GeoGem|Guide` on the Gems pages, `GeoMenuGuide` on the character sheet, pause menu and page base).
 - Character sheet: `GemLoadoutButton` for both Gems goals.
 - `UGeoGemsWidget`: the wrong page shown -> the page's tab (`PageTabBox` child 0 Loadout, 1 Forge); otherwise the shown page's answer.
+- Guide lock: under EquipChip / ForgeChip only the Power chip can be picked, slotted or crafted (`IsGemGuideLocked` on the page base, asks `AGeoHUD::GetMenuGuideGoal`); every other gem stays in the stack and Forge lists, the guide frames the Power row only (`GuidedGem`; shown on the refresh `PrepareForGuide` triggers), and a pick or craft of one is ignored. The lock ends with the guide.
 - `PrepareForGuide` (once per page shown under a goal): EquipChip sets the Loadout's tier filter to Chip; ForgeChip sets the Forge's shown tier to Chip with no gem chosen.
-- **EquipChip** (Loadout): a Chip stack picked -> the first target socket of the Chip tier (an empty one first); else the whole stack list (`StackGrid`): the player picks any chip (a stack of another tier, or a socket picked first, points at the list again). No such chip -> `UnequipTierButton` (frees copies; never a dead end). The tier filter hiding Chips -> its ALL tab. Stack rows are kept per gem id when `ShowStacks` builds them.
-- **ForgeChip** (Forge): shown tier not Chip -> the Chip tier tab; no gem clicked yet (`bGemChosen`; the default pick is not a choice) -> the whole gem list (`GemListBox`); else `CraftButton`.
+- **EquipChip** (Loadout): a Chip stack picked -> the first target socket of the Chip tier (an empty one first); else the Power stack row (`StackRows`; `StackGrid` if it is missing): the player picks it (a stack of another tier, or a socket picked first, points at it again). No such chip -> `UnequipTierButton` (frees copies; never a dead end). The tier filter hiding Chips -> its ALL tab. Stack rows are kept per gem id when `ShowStacks` builds them (`StackRows[...].Row`).
+- **ForgeChip** (Forge): shown tier not Chip -> the Chip tier tab; no gem clicked yet (`bGemChosen`; the default pick is not a choice) -> the Power row (`GuidedRow`; `GemListBox` if missing); else `CraftButton`.
 - Done is never decided here: the encounter's `GeoGemProfileTrigger` (equipped / crafted) ends the step, which stops the guide.

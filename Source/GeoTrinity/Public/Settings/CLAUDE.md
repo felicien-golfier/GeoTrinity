@@ -7,6 +7,7 @@
 
 - `GeoGameUserSettings` registered by `GameUserSettingsClassName` in `Config/DefaultEngine.ini`; `Get()` `checkf`s it.
 - `bTutorialPromptAnswered`: set when the first-launch tutorial prompt is answered either way, never reset (`AI/Tutorial/Flow.md`).
+- `bCatLineAutoSkip` (default false): a complete Cat line ends by itself after its reading time; false = it waits for the skip key (`GeoTrinityUI/Public/HUD/Tutorial/CLAUDE.md`).
 - `bUseFirstGamepadForSecondPlayer` is local only; applying it = `UGeoGameViewportClient::ApplyCouchCoopSetting()` after every write (done by `UGeoKeyBindingsWidget`).
 - `bWipeLeaderboardOnNewBuild` (`UGameDataSettings`, `DefaultGame.ini`, default false): true = the first launch of each new build empties the local leaderboard (`System/Stats/CLAUDE.md`, "Leaderboard").
 - Palette: `ColorPalette` is a single `ColorPalette=((Key,(R=..)),…)` line in `[/Script/GeoTrinity.GameDataSettings]`.

@@ -48,7 +48,11 @@ def main():
         json.dump({"rate_pcts": pcts, "resets": {k: v.get("resets_at") for k, v in d.get("rate_limits", {}).items() if isinstance(v, dict)},
                    "raw": d}, f)
     log_samples(pcts, d)
-    print(" · ".join(f"{k.split('.')[-1]} {v:.0f}%{reset_label(d, k)}" for k, v in pcts.items()) or "usage n/a")
+    try:
+        mode = open(os.path.join(OUT, "..", "mode.txt"), encoding="utf8").read().strip() or "normal"
+    except OSError:
+        mode = "normal"
+    print(" · ".join([mode] + [f"{k.split('.')[-1]} {v:.0f}%{reset_label(d, k)}" for k, v in pcts.items()]))
 
 if __name__ == "__main__":
     main()

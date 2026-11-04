@@ -124,6 +124,39 @@ void UGeoGemLoadoutWidget::Refresh()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::CommitSlotting()
+{
+	// TEMP-TIMING: remove once the slowdown is found.
+	double T = FPlatformTime::Seconds();
+	auto Lap = [&T](TCHAR const* Step)
+	{
+		double const Now = FPlatformTime::Seconds();
+		UE_LOG(LogGeoTrinity, Warning, TEXT("GemTiming %s: %.1f ms"), Step, (Now - T) * 1000.0);
+		T = Now;
+	};
+	UGeoGemProfileSave const* Profile = GetProfile();
+	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
+	CommitProfile();
+	Lap(TEXT("CommitProfile"));
+	if (Profile && Catalog)
+	{
+		ShowSockets(*Profile, *Catalog);
+		Lap(TEXT("ShowSockets"));
+		ShowUnequipTier(*Profile, *Catalog);
+		Lap(TEXT("ShowUnequipTier"));
+		UpdateStacks(*Profile, *Catalog);
+		Lap(TEXT("UpdateStacks"));
+		ShowDetail(*Profile, *Catalog);
+		Lap(TEXT("ShowDetail"));
+		ShowTotals(*Profile, *Catalog);
+		Lap(TEXT("ShowTotals"));
+	}
+
+	OnProfileChanged.Broadcast();
+	Lap(TEXT("OnProfileChanged"));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemLoadoutWidget::BuildBoard()
 {
 	TArray<FGeoGemSocket> const& Sockets = GeoGem::GetSockets();
@@ -658,8 +691,10 @@ FGeoMenuGuideTarget UGeoGemLoadoutWidget::GetGuideTarget(EGeoMenuGuideGoal const
 		}
 		else
 		{
-			// The whole stack list: the player picks the chip, any of them.
-			Target = FGeoMenuGuideTarget(StackGrid, GuideStackHint);
+			FGeoGemStackRow const* const Stack = StackRows.Find(GuidedGem);
+			Target = FGeoMenuGuideTarget(Stack && Stack->Row.IsValid() ? Cast<UWidget>(Stack->Row.Get())
+																	   : Cast<UWidget>(StackGrid),
+										 GuideStackHint);
 		}
 	}
 
@@ -815,8 +850,6 @@ void UGeoGemLoadoutWidget::ShowUnequipTier(UGeoGemProfileSave const& Profile, UG
 void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
 {
 	bool const bHadFocus = StackGrid->HasFocusedDescendants();
-	FGeoGemLoadout const Loadout = Profile.GetLoadout(ShownClass);
-	UGeoListRowWidget* PickedRow = nullptr;
 	HoveredGem = NAME_None;
 	StackGrid->ClearChildren();
 	StackRows.Reset();
@@ -828,16 +861,13 @@ void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGem
 		FGeoGemList const* List = Catalog.GemsByTier.Find(Tier);
 		for (FGeoGemInfo const& Gem : TierFilter.Get(Tier) == Tier && List ? List->Gems : TArray<FGeoGemInfo>())
 		{
-			int32 const Owned = Profile.GetOwnedCount(Gem.Id);
 			FName const GemId = Gem.Id;
-			bool const bEchoed = Loadout.Echo == GemId;
-			UGeoListRowWidget* Row = Owned > 0
-				? MakeRow(GemId == PickedGem ? EGeoListRowTint::Selected : EGeoListRowTint::Normal,
-						  [this, GemId]
-						  {
-							  PickStack(GemId);
-						  })
-				: nullptr;
+			UGeoListRowWidget* Row = Profile.GetOwnedCount(GemId) > 0 ? MakeRow(EGeoListRowTint::Normal,
+																				[this, GemId]
+																				{
+																					PickStack(GemId);
+																				})
+																	  : nullptr;
 			if (Row)
 			{
 				Row->OnHoverChanged.AddWeakLambda(this,
@@ -845,37 +875,59 @@ void UGeoGemLoadoutWidget::ShowStacks(UGeoGemProfileSave const& Profile, UGeoGem
 												  {
 													  Hover(bHovered ? GemId : NAME_None, INDEX_NONE);
 												  });
+				FGeoGemStackRow& Stack = StackRows.Add(GemId);
+				Stack.Row = Row;
 				Row->AddColumn(MakeGemGlyph(Catalog, GemId, StackGlyphSize), 0.f);
 				UVerticalBox* Names = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 				Names->AddChildToVerticalBox(MakeText(EGeoTextRole::Body, Gem.DisplayName.ToUpper()));
-				Names->AddChildToVerticalBox(MakeText(EGeoTextRole::Label,
-													  bEchoed
-														  ? FText::Format(StackEchoedFormat, GetTierName(Tier, false))
-														  : FText::Format(StackSubFormat, GetTierName(Tier, false),
-																		  Profile.GetFreeCount(GemId, ShownClass))));
+				Stack.SubText = MakeText(EGeoTextRole::Label, FText::GetEmpty());
+				Names->AddChildToVerticalBox(Stack.SubText.Get());
 				Row->AddColumn(Names, 1.f);
-				Row->AddColumn(MakeText(EGeoTextRole::Mono, FText::Format(CountFormat, Owned)), 0.f);
-				if (Loadout.Sockets.Contains(GemId) || bEchoed)
-				{
-					UGeoShape* Mark = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
-					Mark->Sides = 4;
-					Mark->Rotation = 45.f;
-					Mark->Size = InBuildMarkSize;
-					Mark->bFilled = true;
-					Mark->Color = InBuildMarkColor;
-					Row->AddColumn(Mark, 0.f);
-				}
+				Stack.CountText = MakeText(EGeoTextRole::Mono, FText::GetEmpty());
+				Row->AddColumn(Stack.CountText.Get(), 0.f);
+				UGeoShape* Mark = WidgetTree->ConstructWidget<UGeoShape>(UGeoShape::StaticClass());
+				Mark->Sides = 4;
+				Mark->Rotation = 45.f;
+				Mark->Size = InBuildMarkSize;
+				Mark->bFilled = true;
+				Mark->Color = InBuildMarkColor;
+				Stack.Mark = Mark;
+				Row->AddColumn(Mark, 0.f);
 				StackGrid->AddChildToUniformGrid(Row, StackIndex / StackColumns, StackIndex % StackColumns);
-				StackRows.Add(GemId, Row);
-				PickedRow = GemId == PickedGem ? Row : PickedRow;
 				++StackIndex;
 			}
 		}
 	}
 
-	if (bHadFocus && PickedRow)
+	UpdateStacks(Profile, Catalog);
+	FGeoGemStackRow const* const PickedStack = StackRows.Find(PickedGem);
+	if (bHadFocus && PickedStack && PickedStack->Row.IsValid())
 	{
-		PickedRow->FocusRow();
+		PickedStack->Row->FocusRow();
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemLoadoutWidget::UpdateStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog)
+{
+	FGeoGemLoadout const Loadout = Profile.GetLoadout(ShownClass);
+	for (TPair<FName, FGeoGemStackRow> const& Entry : StackRows)
+	{
+		FName const GemId = Entry.Key;
+		FGeoGemStackRow const& Stack = Entry.Value;
+		TOptional<EGeoGemTier> const Tier = Catalog.FindTier(GemId);
+		if (Tier && Stack.Row.IsValid() && Stack.SubText.IsValid() && Stack.CountText.IsValid() && Stack.Mark.IsValid())
+		{
+			bool const bEchoed = Loadout.Echo == GemId;
+			Stack.Row->SetTint(GemId == PickedGem ? EGeoListRowTint::Selected : EGeoListRowTint::Normal);
+			Stack.SubText->SetText(
+				bEchoed ? FText::Format(StackEchoedFormat, GetTierName(*Tier, false))
+						: FText::Format(StackSubFormat, GetTierName(*Tier, false), Profile.GetOwnedCount(GemId)));
+			Stack.CountText->SetText(FText::Format(CountFormat, Profile.GetFreeCount(GemId, ShownClass)));
+			Stack.Mark->SetVisibility(Loadout.Sockets.Contains(GemId) || bEchoed
+										  ? ESlateVisibility::SelfHitTestInvisible
+										  : ESlateVisibility::Collapsed);
+		}
 	}
 }
 
@@ -929,7 +981,6 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 										 bool const bPreview)
 {
 	FGeoGemLoadout const Loadout = Profile.GetLoadout(ShownClass);
-	TArray<FName> const& Slotted = Loadout.Sockets;
 	bool const bFromSocket = ShownSocket != INDEX_NONE;
 	bool const bFromEcho = ShownSocket == GetEchoIndex();
 	bool const bEchoed = Loadout.Echo == Gem.Id;
@@ -972,15 +1023,10 @@ void UGeoGemLoadoutWidget::ShowGemDetail(UGeoGemProfileSave const& Profile, UGeo
 	int32 const FillCount = GetFillCount(Profile, Catalog);
 	SetShown(EquipButton, true);
 	SetShown(FillButton, true);
-	bool const bEmptyTarget = Algo::AnyOf(GetTargetSockets(Profile, Catalog),
-										  [&Slotted](int32 const Index)
-										  {
-											  return Slotted[Index].IsNone();
-										  });
 	if (EquipButton)
 	{
 		EquipButton->SetLabel(EquipText);
-		EquipButton->SetIsEnabled(FillCount > 0 && bEmptyTarget);
+		EquipButton->SetIsEnabled(FillCount > 0);
 	}
 	if (FillButton)
 	{
@@ -1090,8 +1136,8 @@ void UGeoGemLoadoutWidget::PickSocket(int32 const SocketIndex)
 		&& Profile->Equip(*Catalog, ShownClass, SocketIndex, PickedGem);
 	if (bEquip)
 	{
-		PostEquipEffects(*Catalog, Before, PickedGem);
-		CommitChanges();
+		PostEquipEffects(*Catalog, Before, PickedGem, SocketIndex);
+		CommitSlotting();
 	}
 	else if (bEcho && Profile && Catalog && Profile->CanEcho(*Catalog, ShownClass, PickedGem))
 	{
@@ -1128,6 +1174,11 @@ void UGeoGemLoadoutWidget::Hover(FName const GemId, int32 const SocketIndex)
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemLoadoutWidget::PickStack(FName const GemId)
 {
+	if (IsGemGuideLocked(GemId))
+	{
+		return;
+	}
+
 	UGeoGemProfileSave* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 	bool const bEcho = PickedSocket == GetEchoIndex();
@@ -1137,8 +1188,8 @@ void UGeoGemLoadoutWidget::PickStack(FName const GemId)
 	bool const bEchoIt = Profile && Catalog && bEcho && Profile->CanEcho(*Catalog, ShownClass, GemId);
 	if (bEquip)
 	{
-		PostEquipEffects(*Catalog, Before, GemId);
-		CommitChanges();
+		PostEquipEffects(*Catalog, Before, GemId, PickedSocket);
+		CommitSlotting();
 	}
 	else
 	{
@@ -1236,10 +1287,18 @@ void UGeoGemLoadoutWidget::PostRefusal(UGeoGemCatalog const& Catalog, EGeoGemRef
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemLoadoutWidget::PostEquipEffects(UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Before,
-											FName const GemId) const
+											FName const GemId, int32 const SocketIndex) const
 {
 	FGeoGemInfo const* Gem = Catalog.Find(GemId);
 	FText const GemName = Gem ? Gem->DisplayName.ToUpper() : FText::GetEmpty();
+	UGeoMessageSubsystem::Post(this, FText::Format(MsgSlotted, GemName), EGeoColor::Heal);
+
+	FName const Replaced = Before.Sockets.IsValidIndex(SocketIndex) ? Before.Sockets[SocketIndex] : NAME_None;
+	if (FGeoGemInfo const* Old = Replaced.IsNone() ? nullptr : Catalog.Find(Replaced))
+	{
+		UGeoMessageSubsystem::Post(this, FText::Format(MsgReplaced, Old->DisplayName.ToUpper()), EGeoColor::Neutral);
+	}
+
 	if (Before.Echo == GemId)
 	{
 		UGeoMessageSubsystem::Post(this, FText::Format(MsgEchoCleared, GemName), EGeoColor::Neutral);
@@ -1273,16 +1332,21 @@ void UGeoGemLoadoutWidget::HandleEquip()
 
 	TArray<FName> const Slotted = Profile->GetLoadout(ShownClass).Sockets;
 	TArray<int32> const Targets = GetTargetSockets(*Profile, *Catalog);
-	int32 const* EmptyTarget = Targets.FindByPredicate(
+	// First empty socket; when the tier is full, the first socket of another gem (it is replaced).
+	int32 const* Target = Targets.FindByPredicate(
 		[&Slotted](int32 const Index)
 		{
 			return Slotted[Index].IsNone();
 		});
-	FGeoGemLoadout const Before = Profile->GetLoadout(ShownClass);
-	if (EmptyTarget && Profile->Equip(*Catalog, ShownClass, *EmptyTarget, PickedGem))
+	if (!Target && !Targets.IsEmpty())
 	{
-		PostEquipEffects(*Catalog, Before, PickedGem);
-		CommitChanges();
+		Target = &Targets[0];
+	}
+	FGeoGemLoadout const Before = Profile->GetLoadout(ShownClass);
+	if (Target && Profile->Equip(*Catalog, ShownClass, *Target, PickedGem))
+	{
+		PostEquipEffects(*Catalog, Before, PickedGem, *Target);
+		CommitSlotting();
 	}
 }
 
@@ -1296,7 +1360,7 @@ void UGeoGemLoadoutWidget::HandleFill()
 	if (Filled > 0 && Gem)
 	{
 		UGeoMessageSubsystem::Post(this, FText::Format(MsgFilled, Filled, Gem->DisplayName.ToUpper()), EGeoColor::Heal);
-		CommitChanges();
+		CommitSlotting();
 	}
 }
 
@@ -1323,7 +1387,7 @@ void UGeoGemLoadoutWidget::HandleUnequipTier()
 		}
 
 		ClearPick();
-		CommitChanges();
+		CommitSlotting();
 	}
 }
 
@@ -1343,6 +1407,6 @@ void UGeoGemLoadoutWidget::HandleEcho()
 									   EGeoColor::Neutral);
 		}
 
-		CommitChanges();
+		CommitSlotting();
 	}
 }

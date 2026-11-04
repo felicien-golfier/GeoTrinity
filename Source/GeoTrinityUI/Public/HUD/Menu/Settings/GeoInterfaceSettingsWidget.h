@@ -28,7 +28,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UCheckBox> CombatStatsCheckBox;
 
+	/** Cat lines end by themselves after their reading time (off: they wait for the skip key). Optional in the BP. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UCheckBox> CatLineAutoSkipCheckBox;
+
 private:
 	UFUNCTION()
 	void HandleCombatStatsChanged(bool bIsChecked);
+
+	UFUNCTION()
+	void HandleCatLineAutoSkipChanged(bool bIsChecked);
 };

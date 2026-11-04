@@ -197,6 +197,17 @@ void UGeoGemProfileSave::AddShards(int32 const Count)
 	Shards += Count;
 }
 
+#if !UE_BUILD_SHIPPING
+void UGeoGemProfileSave::ResetAll()
+{
+	OwnedGems.Empty();
+	Shards = 0;
+	Classes.Empty();
+	EchoLevel = 0;
+	EchoXp = 0;
+}
+#endif
+
 void UGeoGemProfileSave::SetClassLevel(EPlayerClass const PlayerClass, int32 const Level)
 {
 	FGeoGemClassProgress& Progress = FindOrAddClass(PlayerClass);

@@ -5,12 +5,14 @@
 #include "AbilitySystem/Abilities/Pattern/Hazard/SafeSpot/SafeSpotMask.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
 #include "AbilitySystem/Lib/GeoAbilitySystemLibrary.h"
+#include "Actor/Deployable/Zones/GeoEffectZone.h"
 #include "Characters/PlayableCharacter.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "GameClasses/Match/GeoGameState.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/AutomationTest.h"
+#include "Settings/GameDataSettings.h"
 #include "Tests/Gameplay/Fake/GeoTestEncounter.h"
 #include "Tests/Gameplay/Fake/GeoTestPatternAbility.h"
 #include "Tests/Gameplay/Fake/GeoTestWorld.h"
@@ -283,6 +285,91 @@ bool FGeoSpawnPillarPatternTest::RunTest(FString const& /*Parameters*/)
 		TestFalse(TEXT("Force-stop: expired"), Expired[0]->IsActive());
 	}
 
+	DestroyTestWorld(World);
+	return true;
+}
+
+/** How many of the test zones in World are still up. */
+static int32 CountActiveZones(UWorld& World)
+{
+	int32 Count = 0;
+	for (TActorIterator<AGeoTestReadableZone> It(&World); It; ++It)
+	{
+		Count += It->IsActive() ? 1 : 0;
+	}
+
+	return Count;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoZoneUntilStoppedTest, "GeoTrinity.Pattern.ZoneUntilStopped", GeoPatternTestFlags)
+
+bool FGeoZoneUntilStoppedTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AEnemyCharacter* const Boss = PrepareZoneWorld(*this, *World)->GetBoss();
+	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoTestReadableZone::StaticClass();
+	UGeoTestLingeringZonePattern* const Pattern =
+		CastChecked<UGeoTestLingeringZonePattern>(GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(
+			UGeoTestLingeringZonePattern::StaticClass(), FGameplayTag()));
+
+	TestFalse(TEXT("Held until stopped with no life drain: not a burst"), Pattern->IsBurst());
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(1000.f, 0.f)});
+	TickTestTimers(*World, 0.f);
+	TickTestTimers(*World, 2.f);
+	World->TimeSeconds += 2.f;
+	TestEqual(TEXT("During the wind-up: no zone yet"), CountActiveZones(*World), 0);
+	TestTrue(TEXT("During the wind-up: the pattern is alive"), Pattern->IsPatternActive());
+
+	World->TimeSeconds += 3.01f;
+	TickTestTimers(*World, 3.01f);
+	TestEqual(TEXT("At the landing: the zone is up"), CountActiveZones(*World), 1);
+	TestTrue(TEXT("At the landing: the pattern stays alive"), Pattern->IsPatternActive());
+
+	static_cast<UPattern*>(Pattern)->EndPattern(true);
+	TestEqual(TEXT("Force-stop recalls the zone"), CountActiveZones(*World), 0);
+	TestFalse(TEXT("Force-stop ends the pattern"), Pattern->IsPatternActive());
+
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoZoneJudgedAtLandingTest, "GeoTrinity.Pattern.ZoneJudgedAtLanding",
+								 GeoPatternTestFlags)
+
+bool FGeoZoneJudgedAtLandingTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	AEnemyCharacter* const Boss = PrepareZoneWorld(*this, *World)->GetBoss();
+	TSoftClassPtr<AGeoEffectZone> const ProjectZoneClass = GetDefault<UGameDataSettings>()->DefaultZoneClass;
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = AGeoTestReadableZone::StaticClass();
+	UGeoTestLingeringZonePattern* const Pattern =
+		CastChecked<UGeoTestLingeringZonePattern>(GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(
+			UGeoTestLingeringZonePattern::StaticClass(), FGameplayTag()));
+
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(1000.f, 0.f)});
+	TickTestTimers(*World, 0.f);
+	World->TimeSeconds += 4.f;
+	TickTestTimers(*World, 4.f);
+	TActorIterator<AGeoTestReadableZone> const DuringWindUp(World);
+	TestFalse(TEXT("During the wind-up: no zone exists to judge anything"), static_cast<bool>(DuringWindUp));
+
+	float const LandingTime = World->TimeSeconds + 1.01f;
+	World->TimeSeconds = LandingTime;
+	TickTestTimers(*World, 1.01f);
+	TActorIterator<AGeoTestReadableZone> const Landed(World);
+	if (TestTrue(TEXT("After the landing: the zone exists"), static_cast<bool>(Landed)))
+	{
+		TestTrue(TEXT("After the landing: it judges"), Landed->GetJudgedCount() > 0);
+		TestEqual(TEXT("Its growth clock starts at the landing, not at the firing"), Landed->GetGrowthStartServerTime(),
+				  LandingTime, 0.01f);
+	}
+
+	static_cast<UPattern*>(Pattern)->EndPattern(true);
+	GetMutableDefault<UGameDataSettings>()->DefaultZoneClass = ProjectZoneClass;
 	DestroyTestWorld(World);
 	return true;
 }

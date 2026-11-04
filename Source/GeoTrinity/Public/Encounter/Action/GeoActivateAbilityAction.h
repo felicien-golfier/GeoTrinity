@@ -51,6 +51,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
 	bool bWaitForEnd = true;
 
+	/** Finish right after activation and hold the firing until the step is left (rewind, abort too), then cancel the
+	 * ability: for one that lasts the step (a zone). Run again while held: the previous firing is cancelled first.
+	 * Needs bWaitForEnd false. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GeoEncounter")
+	bool bHeldUntilStepLeft = false;
+
 	/** Pattern data a pattern ability launches this firing with (a lateral wave's safe spots). Unset: the ability's
 	 * own.
 	 */

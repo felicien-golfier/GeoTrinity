@@ -42,6 +42,15 @@ struct FGeoGemRing
 	float SocketSize = 30.f;
 };
 
+/** The parts of one stack row that follow the profile, kept so a slotting updates them in place. */
+struct FGeoGemStackRow
+{
+	TWeakObjectPtr<UGeoListRowWidget> Row;
+	TWeakObjectPtr<UTextBlock> SubText;
+	TWeakObjectPtr<UTextBlock> CountText;
+	TWeakObjectPtr<UGeoShape> Mark;
+};
+
 /** One cluster of the socket board: where it sits and where its name is written. */
 USTRUCT(BlueprintType)
 struct FGeoGemCluster
@@ -92,7 +101,8 @@ public:
 	 * totals. */
 	virtual void Refresh() override;
 
-	/** EquipChip: a free Chip stack, then an open Chip socket for the picked one (`Gems/CLAUDE.md`, "Guide targets"). */
+	/** EquipChip: a free Chip stack, then an open Chip socket for the picked one (`Gems/CLAUDE.md`, "Guide targets").
+	 */
 	virtual FGeoMenuGuideTarget GetGuideTarget(EGeoMenuGuideGoal Goal) const override;
 
 	/** EquipChip: the Chip tier filter, so the stacks shown are the chips. */
@@ -390,9 +400,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
 	FText UnequipAllText = INVTEXT("UNEQUIP ALL");
 
-	/** {0} is the tier, {1} the free copies. */
+	/** {0} is the tier, {1} the owned copies (the tile's big count is the free ones). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
-	FText StackSubFormat = INVTEXT("{0} \u00B7 {1} FREE");
+	FText StackSubFormat = INVTEXT("{0} \u00B7 {1} TOTAL");
 
 	/** {0} is the tier's number, {1} its name. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Text")
@@ -515,6 +525,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
 	FText MsgNoCopy = INVTEXT("You own no {0} to echo.");
 
+	/** {0} is the gem slotted. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgSlotted = INVTEXT("{0} slotted.");
+
+	/** {0} is the gem the slotted one replaced. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
+	FText MsgReplaced = INVTEXT("{0} removed.");
+
 	/** {0} is the Core. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoGem|Messages")
 	FText MsgCoreMoved = INVTEXT("{0} moved from its previous socket.");
@@ -612,7 +630,13 @@ private:
 	void ShowFilters();
 	/** UnequipTierButton's label from the tier filter; off when the build holds nothing of it. */
 	void ShowUnequipTier(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
+	/** Rebuilds the stack rows (class, tier filter or owned gems changed), then updates them. */
 	void ShowStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
+	/** The built rows' counts, in-build marks, echo line and pick tint, nothing rebuilt. */
+	void UpdateStacks(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
+	/** Saves and sends the profile after a change to the shown build's gems only (slot, fill, unequip, echo): updates
+	 * the sockets, stacks, detail and totals in place, without Refresh's rebuilds of the tabs and stack rows. */
+	void CommitSlotting();
 	/** The stack or filled socket under the cursor, else the picked stack or filled socket, else the hint for what is
 	 * picked. */
 	void ShowDetail(UGeoGemProfileSave const& Profile, UGeoGemCatalog const& Catalog);
@@ -651,9 +675,10 @@ private:
 	/** Posts Refusal's message to the strip; GemId and SocketIndex fill in the gem and the socket's tier or lock. */
 	void PostRefusal(UGeoGemCatalog const& Catalog, EGeoGemRefusal Refusal, FName GemId, int32 SocketIndex) const;
 
-	/** Posts what slotting GemId moved, from Before, the loadout as it was: a Core leaving its socket, the echo
-	 * cleared. */
-	void PostEquipEffects(UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Before, FName GemId) const;
+	/** Posts what slotting GemId into SocketIndex did, from Before, the loadout as it was: the gem slotted, the gem it
+	 * replaced removed, a Core leaving its socket, the echo cleared. */
+	void PostEquipEffects(UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Before, FName GemId,
+						  int32 SocketIndex) const;
 
 	/** Sockets and echo of Loadout holding a gem. */
 	static int32 CountFilled(FGeoGemLoadout const& Loadout);
@@ -698,7 +723,7 @@ private:
 	TArray<TObjectPtr<UGeoGemSocketButton>> SocketButtons;
 
 	/** The stack rows ShowStacks built, by gem: what the menu guide points at. */
-	TMap<FName, TWeakObjectPtr<UGeoListRowWidget>> StackRows;
+	TMap<FName, FGeoGemStackRow> StackRows;
 
 	/** Behind the echo socket's button; built with the board. */
 	UPROPERTY(Transient)

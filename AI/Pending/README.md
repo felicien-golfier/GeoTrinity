@@ -39,6 +39,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later, none
 | 1 | `SpawnEnemyAbility.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |
+| 1 | `ZoneTelegraph.md` |
 | 2 | `ArenaCenterPoint.md` |
 | 2 | `HexDeployAnims.md` |
 | 2 | `DashVoidEdge.md` |

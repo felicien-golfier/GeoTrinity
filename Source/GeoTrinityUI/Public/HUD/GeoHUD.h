@@ -242,6 +242,9 @@ public:
 	virtual void StartMenuGuide(EGeoMenuGuideGoal Goal) override;
 	virtual void StopMenuGuide() override;
 
+	/** The menu guide goal running, None when no guide runs. */
+	EGeoMenuGuideGoal GetMenuGuideGoal() const;
+
 	/** Binds Health and Shield attribute delegates on ASC so deltas feed OwnerActor's floating-number buffer. */
 	void RegisterASCForDamageNumbers(UAbilitySystemComponent* ASC, AActor* OwnerActor);
 	/** Finds or creates a pooled UGeoDamageNumberWidget and activates it at the projected screen position. */

@@ -4,7 +4,7 @@ the Miniboss room step 10): the placed content of each room (void line and far p
 zone spots and wave start, the miniboss arena and its points) and one AGeoEncounter per room, chained: a
 room's last step opens its exit pad; the next room's encounter starts when the player lands in it. Cat lines are the
 Tutorial Board text; the player keys come through {Key:...}. The Miniboss room ends on the Gems and Forge steps (a menu guide each, AI/Tutorial/Steps.md steps 11-12).
-Run after tutorial_map.py, tutorial_assets.py, tutorial_waves.py and tutorial_miniboss.py. Idempotent: actors keyed by label, the encounters' steps rewritten.
+Run after tutorial_map.py, tutorial_assets.py, tutorial_waves.py, tutorial_zones.py and tutorial_miniboss.py. Idempotent: actors keyed by label, the encounters' steps rewritten.
 Report: AI/Output/tutorial_encounters_report.txt. Usage: headless (AI/Commands.md), editor closed.
 """
 import sys
@@ -65,8 +65,6 @@ PAGE_LINE = "An ability page is about to pop up. Read it. Or don't, I'm a cat, n
 
 ZONE_X = 150.0  # from the room's centre
 ZONE_SPOTS = {"Damage": (0.0, 0.0), "Shield": (ZONE_X, -200.0), "Heal": (ZONE_X, 200.0)}  # from the room's centre: Damage always there, the others where a missing point is created
-ZONE_RADIUS = 300.0  # more than half the Shield-Heal distance: the two zones overlap
-DAMAGE_ZONE_START_SIZE = 10.0
 ZONE_BOX_HALF_Z = 80.0  # a standing capsule is inside it
 PAD_BOX_HALF = 50.0  # the exit pad's footprint
 WAVE_START_INSET = 650.0  # the Miniboss room's wave point, from the room's centre
@@ -79,30 +77,11 @@ MINIBOSS_POINTS = [(150.0, -890.0), (350.0, 0.0), (150.0, 790.0)]  # from the ro
 MINIBOSS_WALK_SPEED_MULTIPLIER = 0.5  # the boss walks between its points at half BP_Dummy's speed
 MINIBOSS_ALLY_TAG ="TutorialMinibossAlly"  # GA_TutorialSpawnAlly's Setup.Tag
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
-ZONE_ATTITUDE = 7  # ETeamAttitudeBitflag: Neutral | Friendly | Hostile, a zone acts on everyone
 TUTORIAL_AGGRO_RADIUS = 500.0  # every tutorial enemy, like the miniboss
 DEATH_TIME = 3.0  # AGeoGameState::DeathTime
+ZONE_ABILITY = "/Game/AbilitySystem/Abilities/Enemy/TutorialZones/GA_Tutorial_Zone%s"  # tutorial_zones.py: one held zone ability per colour
 WAVE_ABILITY = "/Game/AbilitySystem/Abilities/Enemy/LateralWave/GA_LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
 SAFE_WAVE_LANES = [[-650.0, 0.0, 650.0], [-300.0, 500.0], [250.0]]  # Y of each safe lane from the wave start, per wave
-def row_value(row):
-    """A scalable float read from a CT_Tutorial row, in import_text form."""
-    return "(Value=1.000000,Curve=(CurveTable=\"/Script/Engine.CurveTable'%s.CT_Tutorial'\",RowName=\"%s\"))" % (
-        CURVE_TABLE, row)
-
-
-HEAL_EFFECT = ('/Script/GeoTrinity.HealEffectData(bSuppressHealProvided=False,Amount=%s,bIsPerSecond=True,'
-               'bLimitGameplayCue=True)' % row_value("ColorZoneHeal"))
-SHIELD_EFFECT = ('/Script/GeoTrinity.GameplayEffectData(GameplayEffect="/Script/Engine.BlueprintGeneratedClass\'/Game/'
-                 'AbilitySystem/GameplayEffects/Buffs/GE_DamageReductionBuff.GE_DamageReductionBuff_C\'",'
-                 'DataTag=(TagName="Status.Buff.DamageReduction"),Magnitude=%s,bInfiniteDuration=True,'
-                 'Icon="/Script/GeoTrinity.GeoIcon\'/Game/HUD/Icons/DA_Icon_Status_DamageReduction.'
-                 'DA_Icon_Status_DamageReduction\'")' % row_value("ColorZoneShieldShare"))
-DAMAGE_EFFECT = "/Script/GeoTrinity.DamageEffectData(Amount=%s,bIsPerSecond=True,bLimitGameplayCue=True)" % row_value(
-    "ColorZoneDamage")
-ZONE_EFFECTS = {"Heal": HEAL_EFFECT, "Shield": SHIELD_EFFECT, "Damage": DAMAGE_EFFECT}
-ZONE_COLORS = {"Heal": "Heal", "Shield": "DamageReduction", "Damage": "Damage"}  # EGeoColor of each zone
-ZONE_TEAMS = {"Heal": unreal.Team.PLAYER, "Shield": unreal.Team.ENEMY, "Damage": unreal.Team.ENEMY}
-
 REPORT = []
 
 
@@ -382,19 +361,11 @@ class Builder:
         return self.make(unreal.GeoQuestCardAction, Operation=operation, **props)
 
     def zone(self, color):
-        """The colour's zone on its point, until the step is left. Damage grows from the point to cover the room; every
-        amount reads a CT_Tutorial row."""
-        effect = unreal.InstancedStruct()
-        effect.import_text(ZONE_EFFECTS[color])
-        params = unreal.DeployableDataParams()
-        size = DAMAGE_ZONE_START_SIZE if color == "Damage" else ZONE_RADIUS
-        params.import_text("(Size=%f,Color=(Color=%s),Attitude=%d)" % (size, ZONE_COLORS[color], ZONE_ATTITUDE))
-        if color == "Damage":
-            params.set_editor_property("GrowToSize", self.scalable("ColorZoneMaxRadius"))
-            params.set_editor_property("GrowSeconds", self.scalable("ColorZoneGrowSeconds"))
-        return self.make(unreal.GeoSpawnZoneAction, PurposeTag=tag("TargetPoint.Tutorial.Zone" + color),
-                         ArenaTag=tag("Arena.Tutorial.Zones"), EffectDataArray=[effect], Params=params,
-                         Team=ZONE_TEAMS[color])
+        """The colour's zone ability (tutorial_zones.py), held until the step is left: telegraph, then the zone. Damage
+        grows from the point to cover the room; every amount reads a CT_Tutorial row."""
+        return self.make(unreal.GeoActivateAbilityAction,
+                         AbilityClass=unreal.load_asset(ZONE_ABILITY % color).generated_class(),
+                         ArenaTag=tag("Arena.Tutorial.Zones"), bHeldUntilStepLeft=True)
 
     def wave(self, lanes=()):
         """The encounters' shared caster fires the wave in the Zones room, one safe spot per lane (Y from the wave
