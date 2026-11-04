@@ -2,8 +2,8 @@
 The ability drawer, after the Rail design's A-AbilityDetail board: picking an ability on the character sheet slides it
 in from the right over a scrim (character_sheet.py puts both on the sheet).
 - WBP_AbilityDetail (UGeoAbilityDetailWidget), in /Game/HUD/InGameMenu, built once: DrawerWidth > DrawerFrame > icon
-  tile, name, key cap and timing; the spell clip's place (WIP); then, scrolling, the description, Reload buff lines and
-  StatGrid. StatFrameStyle set. An existing drawer loses the CLOSE / PREVIOUS / NEXT buttons of its first version
+  tile, name, type cap, input key cap and timing; the spell clip's place (WIP); then, scrolling, the description,
+  Reload buff lines and StatGrid. StatFrameStyle set. An existing drawer loses the CLOSE / PREVIOUS / NEXT buttons of its first version
   (a click outside closes it now) and takes the current DRAWER_WIDTH.
 
 Never overwrites a hand edit: every value goes through asset_guard.write (kept values are listed in
@@ -108,6 +108,7 @@ def update_detail(wbp):
         if UTIL.find_widget(wbp, name):
             UTIL.remove_widget(wbp, name)
     asset_guard.write(path, UTIL.find_widget(wbp, "DrawerWidth"), "width_override", DRAWER_WIDTH, earlier=(544.0,))
+    wings_hud.add_input_key(wbp, path, 8.0)
     wings_hud.finish(wbp)
 
 

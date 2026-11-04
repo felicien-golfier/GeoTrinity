@@ -35,6 +35,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later, none
 
 | Priority | File |
 |---|---|
+| 0 | `GemMenuFreeze.md` |
 | 1 | `MenuGuide.md` |
 | 1 | `SpawnEnemyAbility.md` |
 | 1 | `TutorialMinibossRework.md` |

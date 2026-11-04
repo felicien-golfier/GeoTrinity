@@ -10,6 +10,7 @@
 #include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Algo/StableSort.h"
 #include "Blueprint/WidgetTree.h"
+#include "Characters/PlayableCharacter.h"
 #include "Components/Border.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
@@ -18,11 +19,11 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
-#include "Characters/PlayableCharacter.h"
 #include "Framework/Application/SlateApplication.h"
+#include "HUD/HudFunctionLibrary.h"
 #include "HUD/Style/Frame/GeoFrame.h"
-#include "HUD/Style/Glyph/GeoIconImage.h"
 #include "HUD/Style/GeoUITheme.h"
+#include "HUD/Style/Glyph/GeoIconImage.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoAbilityCardWidget::SetAbility(FPlayersGameplayAbilityInfo const& Info, int32 const AbilityLevel,
@@ -44,18 +45,24 @@ void UGeoAbilityCardWidget::SetAbility(FPlayersGameplayAbilityInfo const& Info, 
 	NameText->SetText(FText::FromString(Info.AbilityDisplayName));
 
 	KeyText->SetText(GetSlotLabel(Info));
-	if (bPassive)
+
+	if (InputKeyFrame && InputKeyText)
 	{
-		KeyText->SetColorAndOpacity(FSlateColor(PassiveColor));
+		FKey const InputKey =
+			bPassive ? FKey() : UHudFunctionLibrary::GetMappedKey(GetOwningLocalPlayer(), Info.InputAction);
+		InputKeyText->SetText(InputKey.IsValid() ? InputKey.GetDisplayName(false) : FText::GetEmpty());
+		InputKeyText->SetColorAndOpacity(FSlateColor(InputKeyColor));
+		InputKeyFrame->SetVisibility(InputKey.IsValid() ? ESlateVisibility::HitTestInvisible
+														: ESlateVisibility::Collapsed);
 	}
 
 	float const Cooldown = AbilityCDO ? AbilityCDO->GetCooldown(AbilityLevel) : 0.f;
-	float const FireDelay = AbilityCDO ? AbilityCDO->GetFireDelay() : 0.f;
+	float const FireDelay = AbilityCDO && !bPassive ? AbilityCDO->GetFireDelay() : 0.f;
 	FText const TimingLabel = Cooldown > 0.f ? CooldownLabel : DelayLabel;
 	float const Timing = Cooldown > 0.f ? Cooldown : FireDelay;
-	TimingText->SetText(Timing > 0.f ? FText::FromString(FString::Printf(TEXT("%s <Value>%gs</>"),
-																		 *TimingLabel.ToString(), Timing))
-									 : FText::GetEmpty());
+	TimingText->SetText(
+		Timing > 0.f ? FText::FromString(FString::Printf(TEXT("%s <Value>%gs</>"), *TimingLabel.ToString(), Timing))
+					 : FText::GetEmpty());
 
 	FString Description = Info.GetResolvedDescription(AbilityLevel, true);
 
@@ -191,8 +198,8 @@ FText UGeoAbilityCardWidget::GetSlotLabel(FPlayersGameplayAbilityInfo const& Inf
 
 // ---------------------------------------------------------------------------------------------------------------------
 TArray<UGeoAbilityCardWidget*> UGeoAbilityCardWidget::CreateClassCards(UUserWidget& Owner,
-																		TSubclassOf<UGeoAbilityCardWidget> CardClass,
-																		APlayableCharacter const& PlayableCharacter)
+																	   TSubclassOf<UGeoAbilityCardWidget> CardClass,
+																	   APlayableCharacter const& PlayableCharacter)
 {
 	TArray<UGeoAbilityCardWidget*> Cards;
 	UAbilityInfo const* AbilityInfo = GeoASLib::GetAbilityInfo();
@@ -205,7 +212,8 @@ TArray<UGeoAbilityCardWidget*> UGeoAbilityCardWidget::CreateClassCards(UUserWidg
 	EPlayerClass const PlayerClass = PlayableCharacter.GetPlayerClass();
 	FGeoClassStyle const* ClassStyle = Theme->FindClassStyle(PlayerClass);
 	FLinearColor const ClassColor = ClassStyle ? ClassStyle->Color : FLinearColor::White;
-	UGeoAbilitySystemComponent const* ASC = Cast<UGeoAbilitySystemComponent>(PlayableCharacter.GetAbilitySystemComponent());
+	UGeoAbilitySystemComponent const* ASC =
+		Cast<UGeoAbilitySystemComponent>(PlayableCharacter.GetAbilitySystemComponent());
 
 	FGameplayTag const PassiveTag = FGeoGameplayTags::Get().Ability_Type_Passive;
 	TArray<FPlayersGameplayAbilityInfo> ClassAbilities = AbilityInfo->GetAbilitiesForClass(PlayerClass);

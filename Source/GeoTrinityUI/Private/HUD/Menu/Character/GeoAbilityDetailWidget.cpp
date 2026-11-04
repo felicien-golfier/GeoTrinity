@@ -9,7 +9,6 @@
 #include "Components/UniformGridSlot.h"
 #include "Components/VerticalBox.h"
 #include "Framework/Application/SlateApplication.h"
-#include "HUD/HudFunctionLibrary.h"
 #include "HUD/Style/Frame/GeoFrame.h"
 #include "HUD/Style/GeoUITheme.h"
 
@@ -18,13 +17,6 @@ void UGeoAbilityDetailWidget::SetAbility(FPlayersGameplayAbilityInfo const& Info
 										 FLinearColor const& ClassColor)
 {
 	Super::SetAbility(Info, AbilityLevel, ClassColor);
-
-	FKey const Key = UHudFunctionLibrary::GetMappedKey(GetOwningLocalPlayer(), Info.InputAction);
-	if (Key.IsValid())
-	{
-		KeyText->SetText(FText::FromString(
-			FString::Printf(TEXT("%s  [%s]"), *KeyText->GetText().ToString(), *Key.GetDisplayName(false).ToString())));
-	}
 
 	StatGrid->ClearChildren();
 	TArray<FGeoAbilityStat> const Stats = Info.GetResolvedStats(AbilityLevel, true);

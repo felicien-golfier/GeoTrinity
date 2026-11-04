@@ -19,7 +19,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGeoAbilityCardSelectedSignature, UG
 
 /**
  * One ability on the abilities page: its icon on a tile glowing in the class colour (passives in PassiveColor), its
- * name, its key or a passive tag, its cooldown or fire delay, and its token-resolved description. The Reload's buffs
+ * name, its slot name, its key in a frame of its own (none on a passive), its cooldown or fire delay (a passive only a
+ * cooldown), and its token-resolved description. The Reload's buffs
  * get one line each under it, with the buff's colour swatch. Layout, fonts and colours live in WBP_AbilityCard; the
  * rich texts take their styles from the data table set on them (DT_AbilityText: Default and Value rows).
  * A click, or Accept while focused, fires OnSelected.
@@ -72,11 +73,19 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> NameText;
 
-	/** The ability's slot name, one of the labels below. */
+	/** The ability's slot name, one of the labels below, in the colour authored on the widget for every ability. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> KeyText;
 
-	/** Cooldown or fire delay, "COOLDOWN <Value>3s</>". */
+	/** Holds InputKeyText; collapsed when the ability has no key: a passive, an unmapped action. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UGeoFrame> InputKeyFrame;
+
+	/** The key the player presses for the ability, in InputKeyColor. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> InputKeyText;
+
+	/** Cooldown or fire delay, "COOLDOWN <Value>3s</>"; a passive only ever shows a cooldown. */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<URichTextBlock> TimingText;
 
@@ -87,7 +96,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
 	TObjectPtr<UVerticalBox> BuffBox;
 
-	/** Glow of a passive's icon tile, and the colour of its passive tag. */
+	/** Colour of InputKeyText: the colour of the key under the ability bar's slots (WBP_AbilitySlot). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
+	FLinearColor InputKeyColor = FLinearColor(1.f, .3252f, .3073f, 1.f);
+
+	/** Glow of a passive's icon tile. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GeoAbilityCard")
 	FLinearColor PassiveColor = FLinearColor(0.2f, 0.5f, 1.f);
 

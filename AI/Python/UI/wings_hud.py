@@ -129,6 +129,22 @@ def text(role, value, **extra):
     return dict(role=role, text=unreal.Text(value), **extra)
 
 
+def add_input_key(wbp, path, gap):
+    """InputKeyFrame, a key cap holding InputKeyText, right after KeyFrame and gap away from it; the card widget gives
+    the text its colour."""
+    if not UTIL.find_widget(wbp, "InputKeyFrame"):
+        key_frame = UTIL.find_widget(wbp, "KeyFrame")
+        parent = key_frame.get_parent()
+        UTIL.construct_widget_in_tree(wbp, unreal.GeoFrame, "InputKeyFrame", True)
+        UTIL.attach_widget(wbp, parent.get_name(), "InputKeyFrame", parent.get_child_index(key_frame) + 1)
+    input_frame = UTIL.find_widget(wbp, "InputKeyFrame")
+    for key, value in dict(frame_style=frame("DA_Frame_KeyCap"), padding=ability_page.KEY_PADDING).items():
+        asset_guard.write(path, input_frame, key, value)
+    write_slot(path, input_frame.get_editor_property("slot"),
+               {"padding": unreal.Margin(gap, 0, 0, 0), "vertical_alignment": CENTER})
+    add(wbp, path, unreal.GeoText, "InputKeyText", "InputKeyFrame", text(ROLE.LABEL, "KEY"))
+
+
 def scrolled(wbp, path, content, scroll):
     """Puts content in a GeoScrollBox named scroll that fills the room content's parent leaves, so whatever grows with
     data scrolls inside its own area instead of spilling over its neighbours. Content's padding moves to the scroll box."""

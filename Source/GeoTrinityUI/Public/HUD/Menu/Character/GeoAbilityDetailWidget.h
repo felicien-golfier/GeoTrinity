@@ -23,7 +23,7 @@ class GEOTRINITYUI_API UGeoAbilityDetailWidget : public UGeoAbilityCardWidget
 	GENERATED_BODY()
 
 public:
-	/** Also fills StatGrid with Info's stats, and appends the key mapped to the ability, "[Key]", to the type label. */
+	/** Also fills StatGrid with Info's stats. */
 	virtual void SetAbility(FPlayersGameplayAbilityInfo const& Info, int32 AbilityLevel,
 							FLinearColor const& ClassColor) override;
 

@@ -120,6 +120,9 @@ def build_ability_row():
         write_slot(path, description_slot, {"padding": unreal.Margin(0, 4, 0, 0)})
         add(wbp, path, unreal.VerticalBox, "BuffBox", "TextColumn")
         wings_hud.finish(wbp)
+    wbp = unreal.load_asset(path)
+    wings_hud.add_input_key(wbp, path, 6.0)
+    wings_hud.finish(wbp)
     return unreal.load_asset(path)
 
 

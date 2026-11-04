@@ -55,17 +55,29 @@ void UGeoGemComponent::ApplyGems()
 		return;
 	}
 
+	// TEMP-TIMING: remove once the slowdown is found.
+	double T = FPlatformTime::Seconds();
+	auto Lap = [&T](TCHAR const* Step)
+	{
+		double const Now = FPlatformTime::Seconds();
+		UE_LOG(LogTemp, Warning, TEXT("GemTiming     ApplyGems %s: %.1f ms"), Step, (Now - T) * 1000.0);
+		T = Now;
+	};
 	UGeoAbilitySystemComponent* ASC = PlayerState->GetGeoAbilitySystemComponent();
 	ASC->RemoveActiveGameplayEffect(StatsEffectHandle);
+	Lap(TEXT("RemoveStatsEffect"));
 	FGameplayEffectSpecHandle const SpecHandle =
 		UGeoGemStatsEffect::MakeSpec(*ASC, *Catalog, Loadouts.FindRef(PlayerState->GetPlayerClass()));
+	Lap(TEXT("MakeSpec"));
 	StatsEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	Lap(TEXT("ApplyStatsEffect"));
 
 	for (FGameplayAbilitySpecHandle const& Handle : GrantedAbilityHandles)
 	{
 		ASC->ClearAbility(Handle);
 	}
 	GrantedAbilityHandles.Reset();
+	Lap(TEXT("ClearAbilities"));
 
 	for (FName const GemId : Loadouts.FindRef(PlayerState->GetPlayerClass()).Sockets)
 	{
@@ -75,8 +87,10 @@ void UGeoGemComponent::ApplyGems()
 			FGameplayAbilitySpecHandle const Handle = ASC->GiveAbility(FGameplayAbilitySpec(Gem->GrantedAbility, 1));
 			ASC->TryActivateAbility(Handle);
 			GrantedAbilityHandles.Add(Handle);
+			Lap(*Gem->DisplayName.ToString());
 		}
 	}
+	Lap(TEXT("end"));
 }
 
 TArray<FActiveGameplayEffectHandle> UGeoGemComponent::GetSurvivingEffectHandles() const
