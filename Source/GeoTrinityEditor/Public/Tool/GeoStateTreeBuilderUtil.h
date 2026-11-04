@@ -82,6 +82,10 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void ReplaceFireAbilityTagInState(UStateTree* StateTree, FName StateName, FName NewAbilityTagName);
 
+	/** Whether a state of that name exists (searches recursively). */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
+	static bool HasState(UStateTree* StateTree, FName StateName);
+
 	/** Removes a state by name (searches recursively). Compiles and saves. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "GeoTrinity|Editor")
 	static void RemoveState(UStateTree* StateTree, FName StateName);

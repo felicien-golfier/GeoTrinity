@@ -40,7 +40,7 @@ AGeoCharacter            ASC interface + team agent
 - Body material swaps go through `SetBodyMaterial` (re-initialises MIDs).
 
 ## Death / revive
-- `Death()` (server) sets replicated `bIsDead`, broadcasts `AGeoGameState::OnCharacterDied` (every character, not only players), runs `DeathLogic()`: `StopCharacter()`, then `AGeoGameState::NotifyPlayerDied`. Policy = GameState's (`GameClasses/Match/CLAUDE.md`).
+- `Death()` (server) sends `Event.Character.Dying` to its own ASC (owner still alive, for an ability reacting to its own owner's death, `Abilities/Boss/CLAUDE.md`), sets replicated `bIsDead`, broadcasts `AGeoGameState::OnCharacterDied` (every character, not only players), runs `DeathLogic()`: `StopCharacter()`, then `AGeoGameState::NotifyPlayerDied`. Policy = GameState's (`GameClasses/Match/CLAUDE.md`).
 - `OnRep_IsDead` runs the same `DeathLogic()` / `ReviveLogic()`; `RemoveActiveEffects` is server-guarded inside both.
 - Death keeps the gems: `DeathLogic()` → `ASC->HandleOwnerDeath(GemComponent->GetSurvivingEffectHandles())`. Gem stats GE stays (a dead player's deployables, zones and passives still read their stats); every other GE goes. Each ability's `OnOwnerDeath()` decides if it ends (`Abilities/Base/CLAUDE.md`); Core passives stay active.
 - `Revive()`: `ResetAbilitiesAndEffects()` (full reset: cancel every ability but the uncancellable Core passives, remove every GE), `StopAllSpawnedElements()`, re-apply class visuals + `OnRevived`, `GiveLife()` (`ApplyGems` re-grants stats + Core passives), `RestartCharacter()`. `ChangeClass` uses the same full reset.
@@ -63,7 +63,7 @@ AGeoCharacter            ASC interface + team agent
 - `AggroRadius` is kept on the enemy by `ApplySetup`; its controller reads it when the aggro watch starts (`AI/CLAUDE.md`).
 - `AEnemyCharacter::SpawnEnemy(World, Class, Location, Owner, Arena*, Setup*)` (static, server): the one spawn of an enemy, arena bosses included: `ArbitraryCharacterZ`, unit scale, deferred spawn, `Arena` (null = none) and `ApplySetup` (when a setup is given) before `FinishSpawning`. Both run before `FinishSpawning`, so the controller's `OnPossess` and `InitGAS` (BeginPlay) already see the StateTree, team and abilities; never on a live enemy.
 - Health: `MaxHealth` and `StartHealthRatio` set after `DefaultAttributes` in `InitGAS`. The `MaxHealth` override is kept on the enemy and re-applied after every `InitializeDefaultAttributes` (reset at zero, `ResetForNewAttempt`), always at full; `StartHealthRatio` is the spawn only.
-- Callers of `SpawnEnemy`: `AGeoArena::ResetBoss` (`BossSetup`), `GeoSpawnEnemiesAction` (`Encounter/Action/CLAUDE.md`), `AGeoArena::SpawnAdd` (`Actor/Arena/CLAUDE.md`, owner and `Arena` = the arena; registers the add after; `Arena` goes in before `FinishSpawning` because the StateTree starts on possession and `STTask_SelectNextFiringPoint` reads it), so a summon's ally too (`Abilities/Boss/CLAUDE.md`, "GeoSpawnOnDeathAbility").
+- Callers of `SpawnEnemy`: `AGeoArena::ResetBoss` (`BossSetup`), `GeoSpawnEnemiesAction` (`Encounter/Action/CLAUDE.md`), `AGeoArena::SpawnAdd` (`Actor/Arena/CLAUDE.md`, owner and `Arena` = the arena; registers the add after; `Arena` goes in before `FinishSpawning` because the StateTree starts on possession and `STTask_SelectNextFiringPoint` reads it), so `UGeoSpawnEnemyCharacterAbility` too (`Abilities/Boss/CLAUDE.md`).
 
 ## Friendly dummy
 - A dummy on the player team (hurt ally, summoned dummy's ally, shooting ally) looks different from an enemy one by being another Blueprint: `BP_DummyAlly`, child of `BP_Dummy` (mesh `SKM_SoftStar`, material 0 `MI_SoftStar_Body`; the mesh's own Core slot keeps the pale disc; `AI/ArtDirection.md` "Dummies"). No code: the spawner picks the class, the team stays the setup's.
@@ -77,7 +77,7 @@ AGeoCharacter            ASC interface + team agent
 - Counts as a live enemy: a `GeoActorDiedTrigger` watching `AEnemyCharacter` sees it alive forever; watch the dummy's own class.
 
 ## Summoned dummy
-- No class, no Blueprint of its own: a summoned add is `BP_Dummy` + the `AddSetup` of `USpawnAddPattern`; it never shoots, no tree. Its `AbilityTags`, both passive: a `UGeoPlaceDeployableAbility` (the growing zone, `Abilities/Common/CLAUDE.md`, `Target` `Self`; the zone takes the dummy as instigator and sits in its `UGeoDeployableManagerComponent`, which `StopAllSpawnedElements` empties on death and on `EndPlay`, so it dies with the dummy) and `UGeoSpawnOnDeathAbility` (ally, `Abilities/Boss/CLAUDE.md`, "Summon").
+- No class, no Blueprint of its own: a summoned add is `BP_Dummy` + the `Setup` of a `UGeoSpawnEnemyCharacterAbility`; it never shoots, no tree. Its `AbilityTags`: a passive `UGeoPlaceDeployableAbility` (the growing zone, `Abilities/Common/CLAUDE.md`, `Target` `Self`; the zone takes the dummy as instigator and sits in its `UGeoDeployableManagerComponent`, which `StopAllSpawnedElements` empties on death and on `EndPlay`, so it dies with the dummy) and a `UGeoSpawnEnemyCharacterAbility` with `bSpawnOnOwnerDying` (ally, `Abilities/Boss/CLAUDE.md`, "Summon").
 - The ally (`BP_DummyAlly`) keeps its own StateTree for shooting at every difficulty; a difficulty-gated state is a later tool (`AI/Pending/DifficultyCondition.md`).
 
 ## Enemy Blueprint defaults

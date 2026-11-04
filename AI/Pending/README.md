@@ -36,7 +36,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later, none
 | Priority | File |
 |---|---|
 | 1 | `MenuGuide.md` |
-| 1 | `SummonPattern.md` |
+| 1 | `SpawnEnemyAbility.md` |
 | 1 | `TutorialMinibossRework.md` |
 | 1 | `Tutorial.md` |
 | 2 | `ArenaCenterPoint.md` |
@@ -52,6 +52,7 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later, none
 | 2 | `TrainingCat.md` |
 | 2 | `TestAim.md` |
 | 2 | `PendingSweep.md` |
+| 2 | `EncounterHandEdits.md` |
 | 2 | `GemShapes3D.md` |
 | 2 | `GemEcho.md` |
 | 2 | `SoundConcurrency.md` |
@@ -78,4 +79,3 @@ Every Pending file carries `Priority:` (0 first, 1 high, 2 normal, 3 later, none
 | 3 | `MessageLog.md` |
 | 3 | `PatternDescriptionTokens.md` |
 | 3 | `RemoveZoneGrowth.md` |
-| none | `EncounterHandEdits.md` |

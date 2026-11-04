@@ -1,6 +1,7 @@
 #include "Characters/GeoCharacter.h"
 
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
+#include "AbilitySystem/Lib/GeoGameplayTags.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/Component/FX/GeoIndicatorComponent.h"
@@ -266,6 +267,15 @@ void AGeoCharacter::Death()
 	{
 		return;
 	}
+	if (GeoLib::IsServer(this))
+	{
+		FGameplayEventData EventData;
+		EventData.EventTag = FGeoGameplayTags::Get().Event_Character_Dying;
+		EventData.Instigator = this;
+		EventData.Target = this;
+		AbilitySystemComponent->HandleGameplayEvent(EventData.EventTag, &EventData);
+	}
+
 	DeathServerTime = GeoLib::GetServerTime(GetWorld());
 	bIsDead = true;
 	AGeoGameState* const GameState = GetWorld()->GetGameState<AGeoGameState>();

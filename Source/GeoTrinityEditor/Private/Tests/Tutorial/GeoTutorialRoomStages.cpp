@@ -1391,6 +1391,19 @@ namespace GeoTutorialStages
 	{
 		Bot.WatchHealth(MinibossAllyTag);
 		Bot.AddLineStage(TEXT("Miniboss: the intro line"), MinibossIntroLine);
+		// The boss wakes within 500 cm of a player (the entry pad is farther): walk up to it, on the entry side.
+		Bot.AddStage(TEXT("Miniboss: the player walks up to the boss"),
+					 [&Bot](bool)
+					 {
+						 AEnemyCharacter const* const Boss = FindMiniboss(Bot);
+						 if (!Boss)
+						 {
+							 return false;
+						 }
+
+						 Bot.MovePawn(FVector2D(Boss->GetActorLocation()) - FVector2D(200.f, 0.f));
+						 return true;
+					 });
 		Bot.AddStage(TEXT("Miniboss: the boss stands and fires the salve"),
 					 [&Bot](bool)
 					 {

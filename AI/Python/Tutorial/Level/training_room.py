@@ -77,6 +77,7 @@ REST = ZONE_LIFE + ZONE_BLINK
 # Room: 2600 x 3800, walled, reachable only through the teleporter pair.
 CX, CY = -6000.0, 0.0
 HALF_X, HALF_Y = 1300.0, 1900.0
+WALL_CORNER_OVERLAP = 0.6  # scale: each wall runs past both corners
 
 # Screen rows, top (highest X) to bottom.
 ROW_TITLE = -4850.0
@@ -270,10 +271,11 @@ def sign(label, location, text, size=55.0, color=GREY):
 def build_room():
     log("-- geometry")
     dup_actor("Floor", "Tuto_Floor", (CX, CY, 0.0), scale=(HALF_X / 500.0, HALF_Y / 500.0, 1.0))
-    dup_actor("Cube", "Tuto_Wall_N", (CX, CY + HALF_Y, 100.0), scale=(HALF_X / 50.0, 0.7, 2.0))
-    dup_actor("Cube", "Tuto_Wall_S", (CX, CY - HALF_Y, 100.0), scale=(HALF_X / 50.0, 0.7, 2.0))
-    dup_actor("Cube4", "Tuto_Wall_W", (CX - HALF_X, CY, 100.0), scale=(0.35, HALF_Y / 50.0, 2.0))
-    dup_actor("Cube4", "Tuto_Wall_E", (CX + HALF_X, CY, 100.0), scale=(0.35, HALF_Y / 50.0, 2.0))
+    length_x, length_y = HALF_X / 50.0 + WALL_CORNER_OVERLAP, HALF_Y / 50.0 + WALL_CORNER_OVERLAP
+    dup_actor("Cube", "Tuto_Wall_N", (CX, CY + HALF_Y, 100.0), scale=(length_x, 0.7, 2.0), rotation=(0.0, 0.0, 0.0))
+    dup_actor("Cube", "Tuto_Wall_S", (CX, CY - HALF_Y, 100.0), scale=(length_x, 0.7, 2.0), rotation=(0.0, 0.0, 180.0))
+    dup_actor("Cube4", "Tuto_Wall_W", (CX - HALF_X, CY, 100.0), scale=(length_y, 0.7, 2.0), rotation=(0.0, 0.0, 90.0))
+    dup_actor("Cube4", "Tuto_Wall_E", (CX + HALF_X, CY, 100.0), scale=(length_y, 0.7, 2.0), rotation=(0.0, 0.0, -90.0))
     for label, offset in (("Tuto_Light", 0.0), ("Tuto_Light_W", -1250.0), ("Tuto_Light_E", 1250.0)):
         dup_actor("PointLight", label, (CX, CY + offset, 900.0))
 

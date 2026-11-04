@@ -145,10 +145,14 @@ local-player-only bindings before `AddDynamic`. Exception: a binding made in `On
 - A bug fix asks: can it come back silently? Yes (logic, ordering, replication, data wiring, tutorial flow) → a
   regression test that fails on the old code, added to the existing test of that area when one fits, else a new one;
   a `TroobleshootingLogs.md` entry only if the user asks for one (root `CLAUDE.md`). No (typo, one-off asset, cannot be automated) → say why.
-- Test behaviour, never tunable data. No test pins a value a designer retunes (curve table rows, drop chances, socket
-  counts, costs, asset paths, a Blueprint's configured default). A test that needs a number builds its own fixture
-  (test catalog, fake curve) or derives its expectation from the same data (first CT value → result of the empowerment).
-  Reading a real asset is for structure only (loads, ids unique, wiring resolves), never for its numbers.
+- Test behaviour, never content. No test holds a copy of a value someone can change: curve table rows, durations,
+  drop chances, socket counts, costs, asset paths, a Blueprint's configured default, a Cat line's text, any scene or
+  script value. Changing one to another valid value leaves every test green, with no test edit.
+  A test that needs such a value builds its own fixture (test catalog, fake curve) or reads it from the same data it
+  checks (first CT value → result of the empowerment; the line a step holds → the line shown).
+  The one check on a real value is its limit: what breaks gameplay outside it, asserted as that outcome (the wave lands
+  before a dash leaves the room), never as the number.
+  Reading a real asset is otherwise for structure only (loads, ids unique, wiring resolves).
 - Never `Sleep()`; wait on an observable condition. Layers, paths and flags: `AI/Testing.md`.
 
 ## Grouping

@@ -1,9 +1,10 @@
 """Runs an editor script file over the editor bridge's HTTP route, for when the mcp-unreal client is down.
 
 Host-side: run with the engine's bundled Python, not inside the editor.
-    python.exe AI/Python/Runtime/run_via_bridge.py <script.py> [port]
-The script runs as __main__ in the open editor. The route reports success even when the script raises, so the
-source is wrapped in a handler that writes OK or the traceback to AI/Output/bridge_run_result.txt, printed here after.
+    python.exe AI/Python/Runtime/run_via_bridge.py <script.py> [port] [script arguments...]
+The script runs as __main__ in the open editor, its arguments in sys.argv. The route reports success even when the
+script raises, so the source is wrapped in a handler that writes OK or the traceback to AI/Output/bridge_run_result.txt,
+printed here after.
 """
 import json
 import os
@@ -14,12 +15,14 @@ PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."
 RESULT = os.path.join(PROJECT_DIR, "AI", "Output", "bridge_run_result.txt").replace("\\", "/")
 
 
-def run(script_path, port=8090, timeout=600):
+def run(script_path, port=8090, timeout=600, arguments=()):
     """Execute script_path in the editor and return what it reported: OK, or its traceback."""
     # The editor's working directory is not the project, so the path handed over is absolute.
     script_path = os.path.abspath(script_path).replace("\\", "/")
     wrapper = "\n".join([
+        "import sys",
         "import traceback",
+        f"sys.argv = {[script_path] + list(arguments)!r}",
         "try:",
         f"    exec(compile(open(r'{script_path}', encoding='utf-8').read(), r'{script_path}', 'exec'),"
         " {'__name__': '__main__'})",
@@ -42,4 +45,4 @@ def run(script_path, port=8090, timeout=600):
 
 
 if __name__ == "__main__":
-    print(run(sys.argv[1], int(sys.argv[2]) if len(sys.argv) > 2 else 8090))
+    print(run(sys.argv[1], int(sys.argv[2]) if len(sys.argv) > 2 else 8090, arguments=sys.argv[3:]))

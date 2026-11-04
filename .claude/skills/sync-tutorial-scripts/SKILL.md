@@ -5,7 +5,7 @@ description: Read the whole Tutorial as it is in the editor (map, hierarchy, enc
 
 # Sync Tutorial Scripts
 
-The editor is the truth, the scripts follow (`AI/Python/Tutorial/CLAUDE.md`, "Read the scene first"). Goal: running the Tutorial scripts on a clean project gives exactly what is in the editor now: every actor, transform, folder, tag, volume extent, encounter step, and every asset the tutorial owns. Work autonomously; the user asked for this sync, so scripts are edited without the workflow gate. No PIE, no focus, no editor launch/quit (`CLAUDE.md` "Rules"): the user's editor must already be open with the bridge up (`AI/MCP/MCP_LiveCodingAndConnect.md`); if not, say so and stop.
+The editor is the truth, the scripts follow (`AI/Python/Level/CLAUDE.md`, "Map gate"). Goal: running the Tutorial scripts on a clean project gives exactly what is in the editor now: every actor, transform, folder, tag, volume extent, encounter step, and every asset the tutorial owns. Work autonomously; the user asked for this sync, so scripts are edited without the workflow gate. No PIE, no focus, no editor launch/quit (`CLAUDE.md` "Rules"): the user's editor must already be open with the bridge up (`AI/MCP/MCP_LiveCodingAndConnect.md`); if not, say so and stop.
 
 ## Steps
 
@@ -24,9 +24,9 @@ The editor is the truth, the scripts follow (`AI/Python/Tutorial/CLAUDE.md`, "Re
    - `tutorial_assets.py`, `tutorial_waves.py`, `tutorial_miniboss.py`, `training_room.py`, `UI/tutorial_*.py`: every value read in step 3.
    A value that is hand-placed (a free location, a table of points) becomes a literal in a named table at the top of the script, with the scene's exact numbers (3 decimals of the dump, not rounded further). A value that is derived (room centre, inset) stays a formula only if it reproduces the scene's number exactly; otherwise store the scene's number.
 
-5. **Edit the scripts** so the `+` side equals the `-` side. Smallest edit that makes it exact; keep each file's style, tunables block at the top, one-line docstrings. A new action property → add it to `PROPS` in `encounters_diff.py` (and to `scene_dump.py` if it is not editor-visible by default). Hand-edit ledger (`AI/Python/UI/asset_values.json`): a value the script now writes equal to the scene needs no ledger change; never edit the ledger to hide a difference.
+5. **Edit the scripts** so the `+` side equals the `-` side. Smallest edit that makes it exact; keep each file's style, tunables block at the top, one-line docstrings. A new action property → add it to `PROPS` in `encounters_diff.py` (and to `scene_dump.py` if it is not editor-visible by default).
 
-6. **Prove it.** Re-run `encounters_diff.py`: every section empty. Re-run `scene_dump.py` and compare with step 2's dump only when a script was re-executed. To prove the map script itself, rebuild into a throwaway map copy (never overwrite the user's `Tutorial.umap`: ask first) and diff its dump against the real one; if that is not possible, say the map script was reviewed, not replayed. Python changed in `Source`-free files only, so no build is needed (the tutorial gate concerns `Source/`, `Tutorial.umap` and tutorial content: do not modify those).
+6. **Prove it.** Re-run `encounters_diff.py`: every section empty. When a script was re-executed, `map_guard.py after <Map>` holds only intended lines. Proven: `map_guard.py commit <Map>`. A map script not re-executed: say it was reviewed, not replayed. Python changed in `Source`-free files only, so no build is needed (the tutorial gate concerns `Source/`, `Tutorial.umap` and tutorial content: do not modify those).
 
 7. **Update docs** that drifted (`AI/Python/Tutorial/CLAUDE.md` rows, `AI/Tutorial/*.md` for design facts) per `CLAUDE.md` "Where a fact goes".
 

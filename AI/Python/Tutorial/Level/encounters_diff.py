@@ -1,5 +1,5 @@
 """Reads the tutorial scene as it is today and diffs it against what tutorial_encounters.py would write, changing nothing.
-Run first, before editing tutorial_encounters.py or re-running it: every line is a hand edit to carry into the script
+The readable side of the map gate (AI/Python/Level/CLAUDE.md): every line is a hand edit to carry into the script
 (or a script change about to overwrite the scene). Covers each room's steps (actions, triggers, conditions) and the spawn
 points. Host: python AI/Python/Runtime/run_via_bridge.py AI/Python/Tutorial/Level/encounters_diff.py
 Report: AI/Output/encounters_diff.txt ('-' = scene, '+' = script; empty section = identical).

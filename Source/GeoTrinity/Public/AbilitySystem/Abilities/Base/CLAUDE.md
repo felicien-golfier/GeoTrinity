@@ -30,7 +30,7 @@
 - Players' abilities run on the client too: `Forward` is local; seeded modes read the payload's seed, so client and server agree. A remote cosmetic shot (`SpawnRemoteProjectiles`) rolls its own seed: a seeded mode picks differently there, cosmetic only.
 
 ### RequiresArena
-- `RequiresArena() const` virtual, false: true = needs the caster's arena itself, beyond a room tag (`FPatternAbilityParams`; hex tiles, adds): `GeoSpawnOnTileAbility`, `GeoTileBombAbility`; `UPatternAbility` is true when its `PatternToLaunch` CDO's `UPattern::RequiresArena()` is (`UTileCarveRayPattern`, `USpawnAddPattern`).
+- `RequiresArena() const` virtual, false: true = needs the caster's arena itself, beyond a room tag (`FPatternAbilityParams`; hex tiles, adds): `GeoSpawnOnTileAbility`, `GeoTileBombAbility`, `GeoSpawnEnemyCharacterAbility`; `UPatternAbility` is true when its `PatternToLaunch` CDO's `UPattern::RequiresArena()` is (`UTileCarveRayPattern`).
 - Read on the CDO by the encounters' shared caster only (`Encounter/CLAUDE.md`, "Shared caster"), its one `ensureMsgf`; the ability never checks it itself.
 - `ESafeSpotSource::Adds` reads the caster's arena too (`Pattern/Hazard/SafeSpot/CLAUDE.md`): pattern data, not class, so it never refuses; an encounter firing just has no add spots.
 

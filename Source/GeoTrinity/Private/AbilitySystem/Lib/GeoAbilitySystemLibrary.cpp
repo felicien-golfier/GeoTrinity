@@ -6,6 +6,7 @@
 #include "AbilitySystem/Abilities/Base/AbilityPayload.h"
 #include "AbilitySystem/Abilities/Base/GeoGameplayAbility.h"
 #include "AbilitySystem/Abilities/Common/GeoDeployAbility.h"
+#include "AbilitySystem/Abilities/Pattern/Pattern.h"
 #include "AbilitySystem/AttributeSet/GeoAttributeSetBase.h"
 #include "AbilitySystem/AttributeSet/GeoGemAttributeSet.h"
 #include "AbilitySystem/Components/GeoAbilitySystemComponent.h"
@@ -879,6 +880,21 @@ TArray<FGeoTargetPick> UGeoAbilitySystemLibrary::PickTargets(FGeoTarget const& T
 						   *Target.TargetPointTag.ToString(), *Context.ArenaTag.ToString()))
 			{
 				Picks.Add({nullptr, FVector2D::ZeroVector, FVector2D(Points[0]->GetActorLocation())});
+			}
+			break;
+		}
+
+	case EGeoTarget::PatternTargets:
+		{
+			UGeoAbilitySystemComponent* const CasterASC = GetGeoAscFromActor(Context.Caster);
+			UPattern* Pattern = nullptr;
+			if (ensureMsgf(Target.PatternClass, TEXT("%hs: no PatternClass set"), __FUNCTION__) && CasterASC
+				&& CasterASC->FindPatternByClass(Target.PatternClass, Pattern))
+			{
+				for (FVector2D const& Location : Pattern->GetTargetLocations())
+				{
+					Picks.Add({nullptr, FVector2D::ZeroVector, Location});
+				}
 			}
 			break;
 		}

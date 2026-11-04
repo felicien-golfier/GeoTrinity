@@ -52,6 +52,6 @@ Motion rules in `MCP_Animation.md` before authoring an animation. Script index: 
 - **Registry after save**: a re-saved asset still lists its old references until `scan_files_synchronous([file], True)`; rescan between save and a delete-if-unreferenced check.
 - **Blueprint node deletion**: `delete_node` over the bridge is blocked by the permission classifier; dump the graph, write the C++, hand the user the exact nodes to delete.
 - **Server RPCs run locally** from editor Python: `MCP_PIE.md`.
-- **Hand edits**: scripts never overwrite what the user changed by hand (`AI/UI.md`, `asset_guard`).
+- **Hand edits**: scripts never overwrite what the user changed by hand: widgets and assets `AI/UI.md` (`asset_guard`), maps the map gate (`AI/Python/Level/CLAUDE.md`). Read a value before a direct MCP write; report it if strangely different.
 - **Scripts are CRLF**: scripted text edits open with `newline=''`, or multi-line matches silently miss.
 - **MCP client down**: probe the bridge port before reporting automation unavailable (`MCP_LiveCodingAndConnect.md`).

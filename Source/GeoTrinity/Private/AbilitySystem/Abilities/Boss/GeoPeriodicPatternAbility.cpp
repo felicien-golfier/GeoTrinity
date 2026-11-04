@@ -64,11 +64,13 @@ void UGeoPeriodicPatternAbility::SizeBurst()
 
 	TimeBetweenSalves = RoundDuration / SalvesPerRound;
 	RemainingSalveCount = RoundCount * SalvesPerRound;
-
-	ensureMsgf(GetFireDelay() <= TimeBetweenSalves,
-			   TEXT("GeoPeriodicFireAbility: FireDelay (%f) is longer than the time between two salves (%f) — the "
-					"pattern instance is shared, so a salve still winding up is dropped by the next one"),
-			   GetFireDelay(), TimeBetweenSalves);
+	if (SalvesPerRound > 1)
+	{
+		ensureMsgf(GetFireDelay() <= TimeBetweenSalves,
+				   TEXT("GeoPeriodicFireAbility: FireDelay (%f) is longer than the time between two salves (%f) — the "
+						"pattern instance is shared, so a salve still winding up is dropped by the next one"),
+				   GetFireDelay(), TimeBetweenSalves);
+	}
 }
 
 void UGeoPeriodicPatternAbility::LaunchPattern()

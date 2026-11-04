@@ -32,9 +32,10 @@ ACTOR_DIR = "/Game/Actors/Tutorial"
 TREE_DIR = "/Game/AI/Tutorial"
 CURVE_TABLE = "/Game/AbilitySystem/Data/CurveTables/CT_Tutorial"
 BP_DUMMY = "/Game/Characters/Enemies/Training/BP_Dummy"
-BP_DUMMY_ALLY = "/Game/Characters/Enemies/Training/BP_DummyAlly"  # BP_Dummy with the friendly body (AI/Pending/SummonPattern.md)
+BP_DUMMY_ALLY = "/Game/Characters/Enemies/Training/BP_DummyAlly"  # BP_Dummy with the friendly body
 SALVE_ABILITY_SRC = "/Game/AbilitySystem/Abilities/Enemy/ProjectileToAll/GA_FireProjectileToAllPlayers"
 SALVE_PATTERN_SRC = "/Game/AbilitySystem/Abilities/Enemy/ProjectileToAll/BP_ProjectileToAll_Pattern"
+SUMMON_PATTERN_BP = ABILITY_DIR + "/BP_TutorialPattern_Summon"
 SUMMON_PATTERN = "/Game/AbilitySystem/Abilities/Enemy/Training/BP_ZonePattern_BurstDamage"
 TREE_SRC = "/Game/AI/ST_StarBossBehaviour"
 SHOOTER_TREE = "/Game/AI/Dummy/ST_Dummy_Shooter"
@@ -44,7 +45,8 @@ SALVE_TAG = "Ability.Spell.TutorialSalve"
 ALLY_SALVE_TAG = SALVE_TAG + ".Ally"  # a child tag: the shooter tree firing SALVE_TAG fires the ally's salve too
 SUMMON_TAG = "Ability.Spell.TutorialMinibossSummon"
 SUMMON_ZONE_TAG = "Ability.Spell.TutorialSummonZone"  # passive of the dummy: its growing zone
-SUMMON_ALLY_TAG = "Ability.Spell.TutorialSummonAlly"  # passive of the dummy: its ally where it dies
+SPAWN_DUMMY_TAG = "Ability.Spell.TutorialSpawnDummy"  # sibling of SUMMON_TAG (a child would be fired with it): lands the dummy
+SUMMON_ALLY_TAG = "Ability.Spell.TutorialSummonAlly"  # the dummy's ally where it dies (spawn ability, not a passive)
 PASSIVE_TAG = "Ability.Type.Passive"
 DEFAULT_ZONE_CLASS = "/Game/Actors/BP_Zone.BP_Zone_C"  # Game Data Settings' DefaultZoneClass
 SUMMON_ACTOR_TAG = "TutorialMinibossSummon"  # the dummy's actor tag: how the bot and the tests find it
@@ -132,7 +134,7 @@ def enemy_setup(team, health_row, salve_tag, actor_tag=""):
     setup = unreal.GeoEnemySetup()
     setup.set_editor_property("Team", team)
     setup.set_editor_property("bResetToFullLife", False)
-    setup.set_editor_property("AggroRadius", 100.0)
+    setup.set_editor_property("AggroRadius", 500.0)
     setup.set_editor_property("MaxHealth", scalable_row(health_row))
     setup.set_editor_property("StateTree", unreal.load_asset(SALVE_SHOOTER_TREE))
     setup.set_editor_property("AbilityTags", [waves.tag(salve_tag)])
@@ -210,35 +212,44 @@ def native_child(name, parent_path):
     return blueprint, created
 
 
-def build_summon_pattern(add_class):
-    """The look of the Training Room's burst (SUMMON_PATTERN), the Pillar clip, and the dummy landing with its AddSetup."""
-    pattern_bp, _ = native_child("BP_TutorialPattern_Summon", "/Script/GeoTrinity.SpawnAddPattern")
+def build_summon_pattern():
+    """The look of the Training Room's burst (SUMMON_PATTERN) and the Pillar clip: telegraph and hit only."""
+    pattern_bp, _ = native_child("BP_TutorialPattern_Summon", "/Script/GeoTrinity.ZonePattern")
     cdo = unreal.get_default_object(pattern_bp.generated_class())
     look = unreal.get_default_object(unreal.load_asset(SUMMON_PATTERN).generated_class())
     for name in ("ZoneParams", "TeamAttitude", "StartCue"):
         cdo.set_editor_property(name, look.get_editor_property(name))
     cdo.set_editor_property("AnimMontage", unreal.load_asset(SUMMON_MONTAGE))
-    cdo.set_editor_property("AddClass", add_class)
-    cdo.set_editor_property("AddSetup", summon_setup())
     waves.commit_bp(pattern_bp)
     return pattern_bp
 
 
-def build_summon(add_class):
-    """Telegraphs a player's place in the Damage colour, hits there, then the dummy lands (build_summon_pattern)."""
-    pattern_bp = build_summon_pattern(add_class)
+def build_summon():
+    """Telegraphs a player's place in the Damage colour and hits there (build_summon_pattern)."""
+    pattern_bp = build_summon_pattern()
     ability_bp, created = native_child("GA_TutorialMinibossSummon", "/Script/GeoTrinity.PatternAbility")
     cdo = unreal.get_default_object(ability_bp.generated_class())
-    tags = unreal.GameplayTagContainer()
-    tags.import_text('(GameplayTags=((TagName="%s")))' % SUMMON_TAG)
-    cdo.set_editor_property("AbilityTags", tags)
+    cdo.set_editor_property("AbilityTags", tag_container([SUMMON_TAG]))
     cdo.set_editor_property("PatternToLaunch", pattern_bp.generated_class())
     set_target(cdo, "(Mode=RandomPlayers,Count=1)")
     cdo.set_editor_property("FireDelay", SUMMON_WIND_UP)
     cdo.set_editor_property("EffectDataInstances", [damage_effect("DummyLandingDamage")])
     waves.commit_bp(ability_bp)
-    waves.register(ability_bp, SUMMON_TAG, "Tutorial miniboss summon", "Telegraphs a damage hit near a player, then a dummy lands there.")
+    waves.register(ability_bp, SUMMON_TAG, "Tutorial miniboss summon", "Telegraphs a damage hit near a player.")
     log("summon", "created" if created else "updated")
+
+
+def build_spawn_dummy():
+    """Lands the summoned dummy (BP_Dummy + summon_setup) on the spot the summon telegraphed."""
+    ability_bp, created = native_child("GA_TutorialSpawnDummy", "/Script/GeoTrinity.GeoSpawnEnemyCharacterAbility")
+    cdo = unreal.get_default_object(ability_bp.generated_class())
+    cdo.set_editor_property("AbilityTags", tag_container([SPAWN_DUMMY_TAG]))
+    cdo.set_editor_property("EnemyClass", unreal.load_asset(BP_DUMMY).generated_class())
+    cdo.set_editor_property("Setup", summon_setup())
+    set_target(cdo, '(Mode=PatternTargets,PatternClass="%s.%s_C")' % (SUMMON_PATTERN_BP, SUMMON_PATTERN_BP.rsplit("/", 1)[1]))
+    waves.commit_bp(ability_bp)
+    waves.register(ability_bp, SPAWN_DUMMY_TAG, "Tutorial spawn dummy", "Lands the miniboss's summoned dummy on the telegraphed spot.")
+    log("spawn dummy", "created" if created else "updated")
 
 
 # ---------------------------------------------------------------- characters and trees
@@ -278,12 +289,14 @@ def build_summon_zone():
 
 
 def build_summon_ally():
-    """Passive of the dummy: leaves the salve-shooting ally (BP_DummyAlly) where it dies."""
-    ability_bp, created = native_child("GA_TutorialSpawnAlly", "/Script/GeoTrinity.GeoSpawnOnDeathAbility")
+    """The dummy's ability: leaves the salve-shooting ally (BP_DummyAlly) where it dies. No Passive tag: it would spawn the ally at once."""
+    ability_bp, created = native_child("GA_TutorialSpawnAlly", "/Script/GeoTrinity.GeoSpawnEnemyCharacterAbility")
     cdo = unreal.get_default_object(ability_bp.generated_class())
-    cdo.set_editor_property("AbilityTags", tag_container([SUMMON_ALLY_TAG, PASSIVE_TAG]))
-    cdo.set_editor_property("AllyClass", unreal.load_asset(BP_DUMMY_ALLY).generated_class())
-    cdo.set_editor_property("AllySetup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_SALVE_TAG, ALLY_ACTOR_TAG))
+    cdo.set_editor_property("AbilityTags", tag_container([SUMMON_ALLY_TAG]))
+    cdo.set_editor_property("EnemyClass", unreal.load_asset(BP_DUMMY_ALLY).generated_class())
+    cdo.set_editor_property("Setup", enemy_setup(unreal.Team.PLAYER, "AllyDummyHealth", ALLY_SALVE_TAG, ALLY_ACTOR_TAG))
+    cdo.set_editor_property("bSpawnOnOwnerDying", True)
+    set_target(cdo, "(Mode=Self)")
     waves.commit_bp(ability_bp)
     waves.register(ability_bp, SUMMON_ALLY_TAG, "Tutorial summon ally", "Leaves an ally where the summoned dummy dies.")
     log("summon ally", "created" if created else "updated")
@@ -306,7 +319,7 @@ def build_salve_shooter_tree():
 
 
 def build_tree():
-    """Start (the salve begins, keeps firing) -> Move -> Summon -> CountSummons -> [Wave] -> Move ..."""
+    """Start (the salve begins, keeps firing) -> Move -> Summon -> Land -> CountSummons -> [Wave] -> Move ..."""
     tree, created = dup_asset(TREE_SRC, TREE_DIR + "/ST_TutorialMiniboss")
     builder = unreal.GeoStateTreeBuilderUtil.get_default_object()
     if created:
@@ -316,7 +329,7 @@ def build_tree():
         builder.remove_state(tree, "Behaviour")
 
         completed = unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED
-        for name in ("Start", "Move", "Summon", "CountSummons", "Wave"):
+        for name in ("Start", "Move", "Summon", "Land", "CountSummons", "Wave"):
             builder.add_state(tree, name, "Root", -1)
 
         builder.add_fire_ability_task_to_state(tree, "Start", SALVE_TAG)
@@ -325,6 +338,7 @@ def build_tree():
         builder.set_tasks_completion(tree, "Start", unreal.StateTreeTaskCompletionType.ANY)
         builder.add_task_to_state(tree, "Move", "STTask_MoveToTargetPoint")
         builder.add_fire_ability_task_to_state(tree, "Summon", SUMMON_TAG)
+        builder.add_fire_ability_task_to_state(tree, "Land", SPAWN_DUMMY_TAG)
         builder.add_send_event_after_n_cycles_task(tree, "CountSummons", SUMMONS_PER_WAVE, WAVE_EVENT_TAG)
         builder.add_fire_ability_task_to_state(tree, "Wave", WAVE_TAG)
         builder.set_required_event_to_enter(tree, "Wave", WAVE_EVENT_TAG)
@@ -332,11 +346,18 @@ def build_tree():
         # A transition into Wave fails without the event and falls through to the next one.
         builder.add_transition(tree, "Start", "Move", completed)
         builder.add_transition(tree, "Move", "Summon", completed)
-        builder.add_transition(tree, "Summon", "CountSummons", completed)
+        builder.add_transition(tree, "Summon", "Land", completed)
+        builder.add_transition(tree, "Land", "CountSummons", completed)
         builder.add_transition(tree, "CountSummons", "Wave", completed)
         builder.add_transition(tree, "CountSummons", "Move", completed)
         builder.add_transition(tree, "Wave", "Move", completed)
     else:
+        if not builder.has_state(tree, "Land"):
+            builder.add_state(tree, "Land", "Root", -1)
+            builder.add_fire_ability_task_to_state(tree, "Land", SPAWN_DUMMY_TAG)
+            builder.clear_transitions(tree, "Summon")
+            builder.add_transition(tree, "Summon", "Land", unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED)
+            builder.add_transition(tree, "Land", "CountSummons", unreal.StateTreeTransitionTrigger.ON_STATE_COMPLETED)
         builder.replace_fire_ability_tag_in_state(tree, "Start", SALVE_TAG)
         builder.replace_fire_ability_tag_in_state(tree, "Wave", WAVE_TAG)
     # The wave's direction is rolled per firing (one of the 4 basic ones); its lanes come from the living adds.
@@ -368,7 +389,8 @@ def run():
         build_salve_shooter_tree()
         build_summon_zone()
         build_summon_ally()
-        build_summon(unreal.load_asset(BP_DUMMY).generated_class())
+        build_summon()
+        build_spawn_dummy()
         build_tree()
         delete_old_assets()
         log("OK")

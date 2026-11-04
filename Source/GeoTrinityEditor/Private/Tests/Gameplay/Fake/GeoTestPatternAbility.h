@@ -4,10 +4,9 @@
 
 #include "AbilitySystem/Abilities/Base/PatternAbility.h"
 #include "AbilitySystem/Abilities/Boss/GeoPeriodicPatternAbility.h"
-#include "AbilitySystem/Abilities/Boss/GeoSpawnOnDeathAbility.h"
+#include "AbilitySystem/Abilities/Boss/GeoSpawnEnemyCharacterAbility.h"
 #include "AbilitySystem/Abilities/Common/GeoPlaceDeployableAbility.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/BeamPattern.h"
-#include "AbilitySystem/Abilities/Pattern/Hazard/Zone/SpawnAddPattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/Zone/SpawnPillarPattern.h"
 #include "AbilitySystem/Abilities/Pattern/Hazard/Zone/ZonePattern.h"
 #include "AbilitySystem/Abilities/Pattern/Pattern.h"
@@ -321,30 +320,6 @@ public:
 	}
 };
 
-/** Add pattern of a test: brings a plain enemy, tagged "Summoned" with 300 max health and a StateTree by AddSetup, with
- * a 10 s wind-up the test never waits for. */
-UCLASS(NotPlaceable, Transient)
-class UGeoTestSpawnAddPattern : public USpawnAddPattern
-{
-	GENERATED_BODY()
-
-public:
-	UGeoTestSpawnAddPattern()
-	{
-		AddClass = AEnemyCharacter::StaticClass();
-		AddSetup.Tag = TEXT("Summoned");
-		AddSetup.MaxHealth = FScalableFloat(300.f);
-		AddSetup.StateTree = CreateDefaultSubobject<UStateTree>(TEXT("AddStateTree"));
-	}
-
-	virtual void OnCreate(FGameplayTag, AActor&) override
-	{
-		StartDelay = 10.f;
-		bHasHazard = true;
-		ZoneParams.Color.Color = EGeoColor::Damage;
-	}
-};
-
 /** Passive of a test dummy that places a test deployable on its own feet. The passive tag is set once granted: native
  * tags do not exist yet in a constructor. */
 UCLASS(NotPlaceable, Transient)
@@ -369,26 +344,48 @@ protected:
 #endif
 };
 
-/** Passive of a test dummy that leaves a plain player-team enemy tagged "Ally" where it dies. */
+/** Spawn ability of a test: a plain enemy tagged "Summoned", with 300 max health and a StateTree by Setup, on each
+ * location of the last launch of UGeoTestZonePattern. */
 UCLASS(NotPlaceable, Transient)
-class UGeoTestSpawnOnDeathAbility : public UGeoSpawnOnDeathAbility
+class UGeoTestSpawnEnemyAbility : public UGeoSpawnEnemyCharacterAbility
 {
 	GENERATED_BODY()
 
 public:
-	UGeoTestSpawnOnDeathAbility()
+	UGeoTestSpawnEnemyAbility()
 	{
-		AllyClass = AEnemyCharacter::StaticClass();
-		AllySetup.Team = ETeam::Player;
-		AllySetup.Tag = TEXT("Ally");
+		EnemyClass = AEnemyCharacter::StaticClass();
+		Setup.Tag = TEXT("Summoned");
+		Setup.MaxHealth = FScalableFloat(300.f);
+		Setup.StateTree = CreateDefaultSubobject<UStateTree>(TEXT("SetupStateTree"));
+		Target.Mode = EGeoTarget::PatternTargets;
+		Target.PatternClass = UGeoTestZonePattern::StaticClass();
 	}
+};
 
-protected:
-#if WITH_EDITOR
-	virtual void OnGiveAbility(FGameplayAbilityActorInfo const* ActorInfo, FGameplayAbilitySpec const& Spec) override
+/** Ability of a test dummy that leaves a plain player-team enemy tagged "Ally" where it dies. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestSpawnAllyAbility : public UGeoSpawnEnemyCharacterAbility
+{
+	GENERATED_BODY()
+
+public:
+	UGeoTestSpawnAllyAbility()
 	{
-		EditorGetAssetTags().AddTag(FGeoGameplayTags::Get().Ability_Type_Passive);
-		Super::OnGiveAbility(ActorInfo, Spec);
+		EnemyClass = AEnemyCharacter::StaticClass();
+		Setup.Team = ETeam::Player;
+		Setup.Tag = TEXT("Ally");
+		Target.Mode = EGeoTarget::Self;
+		bSpawnOnOwnerDying = true;
 	}
-#endif
+};
+
+/** Same as UGeoTestSpawnAllyAbility, without listening to its owner's death. */
+UCLASS(NotPlaceable, Transient)
+class UGeoTestSpawnAllyOffAbility : public UGeoTestSpawnAllyAbility
+{
+	GENERATED_BODY()
+
+public:
+	UGeoTestSpawnAllyOffAbility() { bSpawnOnOwnerDying = false; }
 };

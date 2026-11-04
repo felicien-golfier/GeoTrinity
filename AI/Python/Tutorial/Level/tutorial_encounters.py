@@ -72,15 +72,15 @@ PAD_BOX_HALF = 50.0  # the exit pad's footprint
 WAVE_START_INSET = 650.0  # the Miniboss room's wave point, from the room's centre
 ZONES_WAVE_START_INSET = ROOM_HALF_X  # tutorial_waves.py: the Zones front starts on the near wall and crosses the whole room (TRAVEL) along +X
 MINIBOSS_TREE = "/Game/AI/Tutorial/ST_TutorialMiniboss"  # tutorial_miniboss.py: its spells, in BP_Dummy's base tree
-MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon", "Ability.Spell.LateralWave"]
+MINIBOSS_ABILITIES = ["Ability.Spell.TutorialSalve", "Ability.Spell.TutorialMinibossSummon",
+                     "Ability.Spell.TutorialSpawnDummy", "Ability.Spell.LateralWave"]
 MINIBOSS_TAG = "TutorialMiniboss"  # the boss's BossSetup.Tag: the kill line watches it
-MINIBOSS_POINTS = [(150.0, -890.0), (350.0, 0.0), (150.0, 790.0)]  # from the room's centre; the boss spawns on the middle one and waits to be hit (setup AggroRadius -1)
+MINIBOSS_POINTS = [(150.0, -890.0), (350.0, 0.0), (150.0, 790.0)]  # from the room's centre; the boss spawns on the middle one
 MINIBOSS_WALK_SPEED_MULTIPLIER = 0.5  # the boss walks between its points at half BP_Dummy's speed
-MINIBOSS_ALLY_TAG ="TutorialMinibossAlly"  # GA_TutorialSpawnAlly's AllySetup.Tag
+MINIBOSS_ALLY_TAG ="TutorialMinibossAlly"  # GA_TutorialSpawnAlly's Setup.Tag
 MINIBOSS_CHIPS = ["Power", "Guard", "Vigor", "Mend", "Swift", "Precision", "Edge"]  # Data/gems.csv, tier Chip
 ZONE_ATTITUDE = 7  # ETeamAttitudeBitflag: Neutral | Friendly | Hostile, a zone acts on everyone
-NO_AGGRO_RADIUS = -1.0  # GeoEnemySetup default: the enemy waits to be hit
-DUMMIES_AGGRO_RADIUS = 100.0  # the Dummies room's three
+TUTORIAL_AGGRO_RADIUS = 500.0  # every tutorial enemy, like the miniboss
 DEATH_TIME = 3.0  # AGeoGameState::DeathTime
 WAVE_ABILITY = "/Game/AbilitySystem/Abilities/Enemy/LateralWave/GA_LateralWave"  # tutorial_waves.py: the one wave, its safe spots given per firing
 SAFE_WAVE_LANES = [[-650.0, 0.0, 650.0], [-300.0, 500.0], [250.0]]  # Y of each safe lane from the wave start, per wave
@@ -356,7 +356,7 @@ class Builder:
         return value
 
     def enemy_setup(self, enemy_tag, health_row, team=unreal.Team.ENEMY, state_tree=None, ability=None,
-                    start_health=1.0, aggro_radius=NO_AGGRO_RADIUS):
+                    start_health=1.0, aggro_radius=TUTORIAL_AGGRO_RADIUS):
         """The variant of BP_Dummy: tutorial enemies die at zero, their health reads a CT_Tutorial row."""
         setup = unreal.GeoEnemySetup()
         setup.set_editor_property("Team", team)
@@ -727,10 +727,9 @@ def special_steps(b):
 
 
 def dummies_steps(b):
-    chaser = b.enemy_setup("TutorialChaser", "DummyHealth", state_tree=CHASER_TREE, aggro_radius=DUMMIES_AGGRO_RADIUS)
-    shooter = b.enemy_setup("TutorialShooter", "DummyHealth", state_tree=SHOOTER_TREE, ability=SHOOT_ABILITY_TAG,
-                            aggro_radius=DUMMIES_AGGRO_RADIUS)
-    mover = b.enemy_setup("TutorialMover", "DummyHealth", state_tree=MOVER_TREE, aggro_radius=DUMMIES_AGGRO_RADIUS)
+    chaser = b.enemy_setup("TutorialChaser", "DummyHealth", state_tree=CHASER_TREE)
+    shooter = b.enemy_setup("TutorialShooter", "DummyHealth", state_tree=SHOOTER_TREE, ability=SHOOT_ABILITY_TAG)
+    mover = b.enemy_setup("TutorialMover", "DummyHealth", state_tree=MOVER_TREE)
 
     def spawner(setup, purpose):
         return b.spawn(setup, 1, purpose, "Dummies")
@@ -787,8 +786,7 @@ def miniboss_steps(b):
                         "used to it.")])
     forge = b.step("Forge", [b.rule(b.gem_event(unreal.GeoGemProfileEvent.CRAFTED), open_with_last_line(b, "Miniboss", [
         b.guide(unreal.GeoMenuGuideGoal.NONE),  # done: the menu is free while the Cat finishes
-        b.say("Chip made. You are now a craftspurrson. Your parents must be proud."),
-        b.say("Crafted. You've mastered consumerism."),
+        b.say("Chip made. You are now a craftspurrson. Your parents must be proud. You've mastered consumerism."),
         b.say("The exit is open. Training Room next: nothing at stake, and everyone pretending.")]), completes=True)],
         on_enter=[b.guide(hold),  # the lines first, the next tip after them
                   b.say("Look, just enough shards for one chip. Total coincidence. Absolutely not planned."),
@@ -804,8 +802,7 @@ def zones_steps(b):
     DeathTime it rewinds into itself (StepAfter ZoneColors), the whole script replayed with a ZoneDeath pun as its opening
     (step visit above 1) instead of the welcome.
     No line names a colour (zone colours are params).
-    Then the lethal wave (the player's death leaves), then the safe-spot waves; a death rewinds SafeSpots after
-    DeathTime."""
+    Then the lethal wave (the player's death leaves), then the safe-spot waves; a death rewinds SafeSpots."""
     steps = [b.step("ZoneColors", [
         b.rule(b.player_died(), [b.delay(DEATH_TIME)], completes=True, step_after="ZoneColors"),
         b.rule(b.counter("Survived"), [], completes=True, step_after="LethalWave"),
@@ -831,23 +828,22 @@ def zones_steps(b):
             b.say("Okay, that was a bit unfair. Yes, on purpose. I'm sorry. A little."),
             b.say("Look, I added safe spots in the wave. For you. Out of the goodness of my heart. Don't tell the other "
                   "cats."),
-        ], completes=True),
-    ], on_enter=[b.say("The color tells you what the floor will do before it does it. Remember that. It is the whole "
-                       "game.", seconds="ColorLineRememberSeconds"),
-                 b.delay("ColorLineRememberSeconds"), b.delay(0.5),
+        ], completes=True, step_after="SafeSpots"),
+    ], on_enter=[b.make(unreal.GeoCatLineAction, Line="The color tells you what the floor will do before it does it. "
+                                                      "Remember that. It is the whole game.",
+                        Seconds=b.scalable("ColorLineRememberSeconds")),  # not timed: a plain line, its row kept
                  b.say("Big wave is coming! Avoid it! Quick, quick, you can do it!"), b.wave()]))
-    # A death rewinds the step; its OnExit (after the running waves are cancelled) says the death line and waits DeathTime, skipped when
-    # the series was done. The exit pad opens from the finishing rule, not OnExit: a death leaves this step too.
+    # A death rewinds the step; its OnExit (after the running waves are cancelled) says the death line, skipped when the
+    # series was done. The exit pad opens from the finishing rule, not OnExit: a death leaves this step too.
     died = b.counter_is("WavesDone", EQUAL, 0)
     steps.append(b.step("SafeSpots", [
         b.rule(b.player_died(), [], completes=True, step_after="SafeSpots"),
         b.rule(b.counter("WavesDone"), open_with_last_line(b, "Zones", [
-            b.say("Survived? Don't get cocky: this wave was nicely labeled. The real ones are not.")]),
+            b.say("Concatulations ! You got the sea dancer trophee !")]),
                condition=b.payload_count(EQUAL, 1), completes=True),
     ], on_enter=[b.wave(lanes) for lanes in SAFE_WAVE_LANES] + [b.count("WavesDone")],
         on_exit=[b.say("Get into a spot before the wave lands. Then another wave. The spots move, so you move. It's like "
-                       "dancing, but you die.", True, condition=died),
-                 b.delay(DEATH_TIME, condition=died)]))
+                       "dancing, but you die.", True, condition=died)]))
     return steps
 
 

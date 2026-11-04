@@ -355,16 +355,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|GameFeel", meta = (ClampMin = "0"))
 	float RecoilDistance = 0.f;
 
-private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility")
 	bool bUseGeneralChargeTimeForFireDelay = true;
 
 	// We consider the ability to Fire at the end of the FireDelay delay.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility",
 			  meta = (EditCondition = "!bUseGeneralChargeTimeForFireDelay", EditConditionHides, ClampMin = "0",
-					  UIMin = "0", AllowPrivateAccess = true))
+					  UIMin = "0"))
 	float FireDelay = 0.5f;
 
+private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))
 	TArray<TSoftObjectPtr<UEffectDataAsset>> EffectDataAssets;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoAbility|Effects", meta = (AllowPrivateAccess = true))

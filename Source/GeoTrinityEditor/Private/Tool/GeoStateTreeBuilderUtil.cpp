@@ -299,6 +299,12 @@ void UGeoStateTreeBuilderUtil::ReplaceFireAbilityTagInState(UStateTree* StateTre
 		});
 }
 
+bool UGeoStateTreeBuilderUtil::HasState(UStateTree* StateTree, FName StateName)
+{
+	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);
+	return EditorData && FindStateRecursive(EditorData->SubTrees, StateName);
+}
+
 void UGeoStateTreeBuilderUtil::RemoveState(UStateTree* StateTree, FName StateName)
 {
 	UStateTreeEditorData* EditorData = GetEditorData(StateTree, __FUNCTION__);

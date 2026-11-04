@@ -71,17 +71,18 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
-	auto const SpawnDummy = [Arena](float const X)
+	FGameplayAbilitySpecHandle FirstAllyHandle;
+	auto const SpawnDummy =
+		[Arena, &FirstAllyHandle](float const X, TSubclassOf<UGeoSpawnEnemyCharacterAbility> const AllyAbility)
 	{
 		AEnemyCharacter* const Dummy =
 			Arena->SpawnAdd(AEnemyCharacter::StaticClass(), FTransform(FVector(X, 0.f, 0.f)));
 		UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Dummy);
 		FGameplayAbilitySpecHandle const Zone =
 			ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSelfZoneAbility::StaticClass(), 1));
-		FGameplayAbilitySpecHandle const Ally =
-			ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSpawnOnDeathAbility::StaticClass(), 1));
+		FGameplayAbilitySpecHandle const Ally = ASC->GiveAbility(FGameplayAbilitySpec(AllyAbility, 1));
+		FirstAllyHandle = FirstAllyHandle.IsValid() ? FirstAllyHandle : Ally;
 		ASC->TryActivateAbility(Zone);
-		ASC->TryActivateAbility(Ally);
 		return Dummy;
 	};
 	auto const FindAllies = [World]()
@@ -97,9 +98,15 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 
 		return Allies;
 	};
+	int32 AlliesSeenByListener = 0;
+	World->GetGameState<AGeoGameState>()->OnCharacterDied.AddLambda(
+		[&AlliesSeenByListener, &FindAllies](AGeoCharacter&)
+		{
+			AlliesSeenByListener = FindAllies().Num();
+		});
 
-	AEnemyCharacter* const Dummy = SpawnDummy(300.f);
-	AEnemyCharacter* const OtherDummy = SpawnDummy(-300.f);
+	AEnemyCharacter* const Dummy = SpawnDummy(300.f, UGeoTestSpawnAllyAbility::StaticClass());
+	AEnemyCharacter* const OtherDummy = SpawnDummy(-300.f, UGeoTestSpawnAllyAbility::StaticClass());
 	TickTestTimers(*World, 0.f);
 	TickTestTimers(*World, 5.f); // The zone is placed when the ability's fire delay ends.
 	TActorIterator<AGeoTestDeployable> const FirstZone(World);
@@ -110,6 +117,9 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 	}
 
 	TestEqual(TEXT("Alive: no ally yet"), FindAllies().Num(), 0);
+	FGameplayAbilitySpec const* const AllySpec =
+		GeoASLib::GetGeoAscFromActor(Dummy)->FindAbilitySpecFromHandle(FirstAllyHandle);
+	TestFalse(TEXT("The ally ability is not active while it waits"), AllySpec && AllySpec->IsActive());
 	Dummy->Death();
 	TArray<AEnemyCharacter*> const Allies = FindAllies();
 	if (TestEqual(TEXT("A dead dummy leaves one ally"), Allies.Num(), 1))
@@ -120,34 +130,42 @@ bool FGeoSummonedDummyTest::RunTest(FString const& /*Parameters*/)
 		TestEqual(TEXT("In its place"), Allies[0]->GetActorLocation().X, 300.0, 1.0);
 	}
 
+	TestEqual(TEXT("A death listener already sees the ally"), AlliesSeenByListener, 1);
 	OtherDummy->Death();
 	TestEqual(TEXT("Each dummy leaves its own ally"), FindAllies().Num(), 2);
 
-	AEnemyCharacter* const Wiped = SpawnDummy(0.f);
+	AEnemyCharacter* const Wiped = SpawnDummy(0.f, UGeoTestSpawnAllyAbility::StaticClass());
 	Wiped->Destroy();
 	TestEqual(TEXT("Destroyed without dying: no ally"), FindAllies().Num(), 2);
+
+	AEnemyCharacter* const Silent = SpawnDummy(100.f, UGeoTestSpawnAllyOffAbility::StaticClass());
+	Silent->Death();
+	TestEqual(TEXT("Without bSpawnOnOwnerDying: no ally"), FindAllies().Num(), 2);
 
 	DestroyTestWorld(World);
 	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSummonAddSetupTest, "GeoTrinity.Abilities.SummonAddSetup", GeoCharactersTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoSpawnEnemyCharacterTest, "GeoTrinity.Abilities.SpawnEnemyCharacter",
+								 GeoCharactersTestFlags)
 
-bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
+bool FGeoSpawnEnemyCharacterTest::RunTest(FString const& /*Parameters*/)
 {
 	UWorld* World = CreateTestWorld();
 	AddExpectedError(TEXT("The State Tree schema is not ready to run"), EAutomationExpectedErrorFlags::Contains, 0);
 	AGeoTestCasterArena* const Arena = SpawnCasterArena(*this, *World);
 	AEnemyCharacter* const Boss = Arena->GetBoss();
-	UPattern* const Pattern = GeoASLib::GetGeoAscFromActor(Boss)->CreatePatternInstance(
-		UGeoTestSpawnAddPattern::StaticClass(), FGameplayTag());
-	auto const FindAdds = [World](FName const Tag)
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Boss);
+	UPattern* const Pattern = ASC->CreatePatternInstance(UGeoTestZonePattern::StaticClass(), FGameplayTag());
+	FGameplayAbilitySpecHandle const Spawn =
+		ASC->GiveAbility(FGameplayAbilitySpec(UGeoTestSpawnEnemyAbility::StaticClass(), 1));
+	auto const FindAdds = [World]()
 	{
 		TArray<AEnemyCharacter*> Adds;
 		for (TActorIterator<AEnemyCharacter> It(World); It; ++It)
 		{
-			if (It->ActorHasTag(Tag))
+			if (It->ActorHasTag(TEXT("Summoned")))
 			{
 				Adds.Add(*It);
 			}
@@ -156,15 +174,11 @@ bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
 		return Adds;
 	};
 
-	LaunchTestPattern(*Pattern, Boss, {FVector2D(400.f, 0.f)});
-	TestEqual(TEXT("No add before the hit"), FindAdds(TEXT("Summoned")).Num(), 0);
-	Pattern->EndPattern(true);
-	TestEqual(TEXT("Force-stop: nothing spawned"), FindAdds(TEXT("Summoned")).Num(), 0);
-
 	LaunchTestPattern(*Pattern, Boss, {FVector2D(400.f, 0.f), FVector2D(-400.f, 0.f)});
-	Pattern->EndPattern();
-	TArray<AEnemyCharacter*> const Adds = FindAdds(TEXT("Summoned"));
-	if (TestEqual(TEXT("Natural end: one add per location, with AddSetup"), Adds.Num(), 2))
+	Pattern->EndPattern(true);
+	ASC->TryActivateAbility(Spawn);
+	TArray<AEnemyCharacter*> const Adds = FindAdds();
+	if (TestEqual(TEXT("One enemy per target location"), Adds.Num(), 2))
 	{
 		TestTrue(TEXT("Adds of the caster's arena"), Arena->GetLiveAdds().Contains(Adds[0]));
 		TestEqual(TEXT("With the setup's max health"),
@@ -173,6 +187,45 @@ bool FGeoSummonAddSetupTest::RunTest(FString const& /*Parameters*/)
 				  300.f);
 		TestEqual(TEXT("On their locations"), FMath::Abs(Adds[0]->GetActorLocation().X), 400.0, 1.0);
 		TestEqual(TEXT("Each its own"), Adds[0]->GetActorLocation().X + Adds[1]->GetActorLocation().X, 0.0, 1.0);
+	}
+
+	FGameplayAbilitySpec const* const Spec = ASC->FindAbilitySpecFromHandle(Spawn);
+	TestFalse(TEXT("The ability ended in the same call"), Spec && Spec->IsActive());
+
+	DestroyTestWorld(World);
+	return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeoPatternTargetsTest, "GeoTrinity.Abilities.PatternTargets", GeoCharactersTestFlags)
+
+bool FGeoPatternTargetsTest::RunTest(FString const& /*Parameters*/)
+{
+	UWorld* World = CreateTestWorld();
+	PrepareEnemyWorld(*this, *World);
+	AGeoTestCasterArena* const Arena = World->SpawnActor<AGeoTestCasterArena>();
+	AEnemyCharacter* const Boss = Arena->GetBoss();
+	UGeoAbilitySystemComponent* const ASC = GeoASLib::GetGeoAscFromActor(Boss);
+	UPattern* const Pattern = ASC->CreatePatternInstance(UGeoTestZonePattern::StaticClass(), FGameplayTag());
+	UPattern* const OtherPattern = ASC->CreatePatternInstance(UGeoTestPillarPattern::StaticClass(), FGameplayTag());
+	FGeoTarget Target;
+	Target.Mode = EGeoTarget::PatternTargets;
+	Target.PatternClass = UGeoTestZonePattern::StaticClass();
+	FGeoTargetContext Context;
+	Context.Caster = Boss;
+
+	TestEqual(TEXT("Never launched: no target"), GeoASLib::GetTargetLocations(Target, Context).Num(), 0);
+
+	LaunchTestPattern(*Pattern, Boss, {FVector2D(400.f, 0.f), FVector2D(0.f, 300.f)});
+	Pattern->EndPattern(true);
+	LaunchTestPattern(*OtherPattern, Boss, {FVector2D(0.f, -900.f)});
+	OtherPattern->EndPattern(true);
+	Boss->SetActorLocation(FVector(-800.f, 0.f, Boss->GetActorLocation().Z));
+	TArray<FVector2D> const Locations = GeoASLib::GetTargetLocations(Target, Context);
+	if (TestEqual(TEXT("After the pattern ended: its launch's locations"), Locations.Num(), 2))
+	{
+		TestEqual(TEXT("Fixed, the caster moved"), Locations[0].X, 400.0, 1.0);
+		TestEqual(TEXT("Another pattern does not interfere"), Locations[1].Y, 300.0, 1.0);
 	}
 
 	DestroyTestWorld(World);

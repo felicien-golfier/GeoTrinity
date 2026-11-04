@@ -2,7 +2,7 @@
 Per actor: class, label, outliner folder, parent, tags, transform, hidden, components (transform, box extents) and every
 editable property that differs from the class default. Companion of encounters_diff.py (rooms' steps); together they hold
 all the scene. Host: python AI/Python/Runtime/run_via_bridge.py AI/Python/Tutorial/Level/scene_dump.py
-Compare to the previous dump (git) or to what the scripts place; the scene is the truth (Tutorial/CLAUDE.md).
+Compare to what the scripts place; the scene is the truth (AI/Python/Level/CLAUDE.md, "Map gate").
 """
 import re
 

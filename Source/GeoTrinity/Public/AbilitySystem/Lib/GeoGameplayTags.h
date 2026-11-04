@@ -77,6 +77,9 @@ struct GEOTRINITY_API FGeoGameplayTags
 	FGameplayTag Gem_Core_Leverage;
 	FGameplayTag Gem_Core_Surplus;
 
+	/** Gameplay event a character sends its own ASC in Death(), owner still alive. */
+	FGameplayTag Event_Character_Dying;
+
 	// AI
 	FGameplayTag AI_Boss_AggroEvent;
 	/** Tags the linked-asset state an enemy's StateTree runs its BehaviourStateTree in. */

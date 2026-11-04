@@ -113,6 +113,10 @@ void FGeoGameplayTags::InitializeNativeGameplayTags()
 					  "Center of the arena; mandatory, one per arena.");
 	AddTargetPointTag(GameplayTags.TargetPoint_FiringPoint, "FiringPoint", "Where the AI can fire from.");
 
+	// EVENTS //
+	CreateAndAssignGameplayTag(GameplayTags.Event_Character_Dying, "Event.Character.Dying",
+							   "Gameplay event a character sends its own ASC in Death(), owner still alive.");
+
 	// AI //
 	CreateAndAssignGameplayTag(GameplayTags.AI_Boss_AggroEvent, "AI.Boss.AggroEvent",
 							   "StateTree event sent when the boss is aggroed.");

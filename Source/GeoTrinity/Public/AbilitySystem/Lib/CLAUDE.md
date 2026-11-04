@@ -39,6 +39,7 @@ The one targeting code of every ability: projectiles, salves, beams, zones, pill
 | `RandomPlayers` | `Count`, `ExtraBelowHealth`, `MinScatterRadius`, `MaxScatterRadius` | Live players from a seeded start. Total = `Count` + one per `ExtraBelowHealth` ratio above the caster's health ratio, never the number of players; one per player, those beyond the alive count scattered around a player within the radii |
 | `Boss` | — | Live boss of `AGeoArena::GetFightingArena`; none outside a fight |
 | `TargetPoint` | `TargetPointTag` | First point tagged it in `Context.ArenaTag` (`GeoLib::GetTargetPoints`); none, with an ensure, when no room or no point |
+| `PatternTargets` | `PatternClass` | Fixed locations of the last launch of the caster's `PatternClass` instance, so an ability follows a pattern onto its spots with no link between the two; none when never launched. Read after the pattern ended (instances stay on the ASC). A launch with no target keeps the previous locations: only with no live player, so a wipe clears what lands there |
 
 - The middle of a room = `TargetPoint` with tag `TargetPoint.FightCenter` (every arena has one, `Actor/Arena/CLAUDE.md` "Center"); no mode reads an arena actor's location.
 - `ExtraBelowHealth`: the condition (the caster's health ratio) is fixed in code; a ramp-up system owning the conditions (steps) comes later, inside this targeting.

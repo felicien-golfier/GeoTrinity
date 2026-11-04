@@ -29,7 +29,7 @@ or buried in a graph.
   the user tuned in a style asset.
 
 ## A script never overwrites a hand edit
-General rule for every builder script: a script may overwrite a value only while it still holds what a script last
+General rule for every builder script of an asset (maps: the map gate, `AI/Python/Level/CLAUDE.md`): a script may overwrite a value only while it still holds what a script last
 wrote there; a value changed by hand since is kept. Scripts set values through `asset_guard.write`, which records each
 written value (`AI/Python/UI/asset_values.json`), skips a value that no longer matches, and lists it in
 `asset_guard.report()` — carry it into the script or ask the user. A value with no record is written only on an asset

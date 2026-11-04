@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
+class UPattern;
+
 #include "GeoTarget.generated.h"
 
 /** How an ability chooses its target locations (GeoASLib::PickTargets). A new way of choosing is a new value. */
@@ -24,6 +26,8 @@ enum class EGeoTarget : uint8
 	Boss,
 	/** The first point tagged TargetPointTag in the context's room. */
 	TargetPoint,
+	/** Where the caster's last launch of PatternClass was aimed, fixed: none when never launched. */
+	PatternTargets,
 };
 
 /** What an ability targets: a mode and the params of every mode, each shown only for its own. */
@@ -65,6 +69,11 @@ struct GEOTRINITY_API FGeoTarget
 			  meta = (EditCondition = "Mode == EGeoTarget::TargetPoint", EditConditionHides,
 					  Categories = "TargetPoint"))
 	FGameplayTag TargetPointTag;
+
+	/** The pattern whose last launch locations are targeted. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GeoTarget",
+			  meta = (EditCondition = "Mode == EGeoTarget::PatternTargets", EditConditionHides))
+	TSubclassOf<UPattern> PatternClass;
 };
 
 /** What targeting reads from the ability firing: built by the ability (UGeoGameplayAbility::MakeTargetContext). */

@@ -19,7 +19,7 @@
 - Caller finalizes the sequence afterwards and keeps channels of equal key count on the same frames (`AI/MCP/MCP_Animation.md`).
 
 ## StateTree builder
-- `AddState` (taskless), `AddFireAbilityStateByTagName`, `ReplaceFireAbilityTagInState`, `RemoveState`.
+- `AddState` (taskless), `AddFireAbilityStateByTagName`, `ReplaceFireAbilityTagInState`, `HasState`, `RemoveState`.
 - `ClearTransitions` / `AddTransition` (trigger + event tag), `AddFloatEnterCondition`, `ClearEnterConditions`.
 - `BindConditionPropertyToPropertyFunction`, `AddTaskToState` (any struct by name, auto-binds context), `AddSendEventAfterNCyclesTask`.
 - `SetRequiredEventToEnter` / `ClearRequiredEventToEnter`, `ListStates` / `ListEnterConditions`.

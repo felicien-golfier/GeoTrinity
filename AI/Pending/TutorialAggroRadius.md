@@ -1,6 +1,6 @@
 # TutorialAggroRadius — pending
 
-Goal: tutorial enemies have no distance aggro, they wait to be hit (radius 100 instead of 1000).
+Goal: tutorial enemies aggro at 500 (like the miniboss), not the controller's 1000. Scripts + bot updated; map rebuild and test run left.
 Priority: 2
 Docs written: `Source/GeoTrinity/Public/Characters/CLAUDE.md` ("Enemy setup", "EnemyCharacter"), `Source/GeoTrinity/Public/AI/CLAUDE.md`.
 
