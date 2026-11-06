@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Blueprint/UserWidget.h"
+#include "Characters/PlayerClassTypes.h"
 #include "CoreMinimal.h"
 #include "Gem/GeoGemTypes.h"
 #include "HUD/Interface/GeoMenuGuideGoal.h"
@@ -21,8 +22,8 @@ DECLARE_MULTICAST_DELEGATE(FGeoGemProfileChangedSignature);
 
 /**
  * A page of the Gems menu (UGeoGemsWidget): what both the Loadout and the Forge build their rows with, and the one way
- * they change the local player's gem profile, through CommitChanges, which saves it, sends it to the server and tells
- * the menu so the shard count follows.
+ * they change the local player's gem profile, through CommitChanges (build edits: saves, sends that class's loadout to the
+ * server) or SaveChanges (Forge: saves only), which then tell the menu so the shard count follows.
  */
 UCLASS(Abstract)
 class GEOTRINITYUI_API UGeoGemPageWidget : public UUserWidget
@@ -56,11 +57,19 @@ protected:
 
 	static FName const GuidedGem;
 
-	/** Saves and sends the profile, then refreshes the page and broadcasts OnProfileChanged. */
-	void CommitChanges();
+	/** Saves the profile and sends PlayerClass's loadout, then refreshes the page and broadcasts OnProfileChanged. */
+	void CommitChanges(EPlayerClass PlayerClass);
 
-	/** Saves and sends the profile alone, for a change only the part of the page that made it shows. */
-	void CommitProfile();
+	/** Saves the profile and sends PlayerClass's loadout alone, for a change only the part of the page that made it
+	 *  shows. */
+	void CommitProfile(EPlayerClass PlayerClass);
+
+	/** Saves the profile only (the server reads nothing of the change), then refreshes the page and broadcasts
+	 *  OnProfileChanged. */
+	void SaveChanges();
+
+	/** Saves the profile alone: no send, no refresh, no broadcast. */
+	void SaveProfile();
 
 	/** A row of Class in Tint, OnClicked calling Picked; a null Picked makes a row that only reads. A null Class is the
 	 * page's RowClass. */

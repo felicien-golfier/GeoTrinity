@@ -7,17 +7,21 @@ Per-class gem progression: loot, class XP, Forge, sockets, loadouts. Values live
 | `GeoGemTypes.h` | `EGeoGemTier` (Chip / Cut / Prism / Core), `FGeoGemInfo`, `FGeoGemDropTable`, `FGeoBossLoot`, `FGeoGemReward`, `FGeoGemLoadout`, `GeoGem::GetSockets()` |
 | `GeoGemCatalog.h` | `UGeoGemCatalog` primary data asset (`GameDataSettings` points at it): gems per tier, drop tables per `EGeoBossType`, class XP, Forge rates |
 | `GeoGemProfileSave.h` | `UGeoGemProfileSave` SaveGame per local player: owned gems, shards, per-class level / XP / builds |
-| `GeoGemSubsystem.h` | `ULocalPlayerSubsystem` owning the profile; `CommitChanges()` saves and sends loadouts to the server |
+| `GeoGemSubsystem.h` | `ULocalPlayerSubsystem` owning the profile; `SaveChanges()` / `CommitChanges(Class)` / `CommitAll()` save and send what changed to the server |
 | `GeoGemComponent.h` | On `AGeoPlayerState`: server half, applies the current class's loadout to the ASC |
 | `GeoGemMeshes.h` | `GeoGem::GetTierMesh(Tier)` / `GetShardMesh(Variant)`: soft paths of the drop meshes ("3D gems", "Shards"); built from strings, so `/Game/Art/Meshes/Gem` must stay in `DirectoriesToAlwaysCook` (`DefaultGame.ini`) or builds drop invisible gems |
 | `GeoGemStatsEffect.h` | Native infinite GE carrying all slotted gem stats as SetByCaller modifiers |
 
 ## Flow
-- Kill → `FGeoGemReward` (class XP for the class played + the boss's kill loot: gems and shards, "Boss loot") → profile → `CommitChanges()`.
-- `CommitChanges()` → disk + `UGeoGemComponent::ServerSetLoadout` → server applies `UGeoGemStatsEffect` spec + Core passive abilities on the ASC (`APlayableCharacter::ResetAttributes`).
+- Kill → `FGeoGemReward` (class XP for the class played + the boss's kill loot: gems and shards, "Boss loot") → profile → `CommitAll()`.
+- Three commit entry points on `UGeoGemSubsystem`, each saves to disk and broadcasts `OnProfileCommitted`; the caller says what it edited:
+  - `SaveChanges()`: nothing the server reads changed (Forge craft / break: owned counts and shards only).
+  - `CommitChanges(PlayerClass)`: also sends that class's loadout (`ServerSetLoadout`). Menu edits to a build's gems.
+  - `CommitAll()`: also sends the echo level (`ServerSetEchoLevel`) and every class's loadout. Rewards, class / echo level changes, joins, dev commands.
+- Server `SetLoadout` stores the loadout; for the current class, with no fight running, it re-applies the gems (`ApplyGems`: `UGeoGemStatsEffect` spec + Core passives) and refills Health / Ammo; it never re-applies the class's default attributes. Spawn, revive and class change keep the full `APlayableCharacter::ResetAttributes`.
 - Server trusts the client loadout; owned counts are never sent.
 - Death never removes gems: the stats GE stays on the ASC (`GetSurvivingEffectHandles()` = the stats handle; any future gem-granted effect handle is appended there) and Core passives stay active. Revive and class change re-run `ApplyGems`, which replaces both.
-- `FGeoGemLoadout::Level` rides with each sent loadout (filled by `GetLoadout`); the server reads it with `UGeoGemComponent::GetClassLevel` (leaderboard stamps it on each player); `FGeoGemLoadout::EchoLevel` likewise via `GetEchoLevel`, 0 until sent.
+- `FGeoGemLoadout::Level` rides with each sent loadout (filled by `GetLoadout`); the server reads it with `UGeoGemComponent::GetClassLevel` (leaderboard stamps it on each player). The echo level is account data, not class data: it is sent alone (`ServerSetEchoLevel`) and read with `UGeoGemComponent::GetEchoLevel()`, 0 until sent; no loadout carries it.
 
 ## Invariants
 - Lowering a class level empties every locked-again socket of all its builds (`SetClassLevel`); fill (`FillSockets`) replaces slotted gems.
@@ -91,7 +95,7 @@ Design: "GeoTrinity — Gem System" doc, "Echo socket". One extra socket per bui
 - Endless to the player: `EchoMaxLevel` and the XP kept past it are never shown. No "n / max", no pips, no "MAX" label, no "next level" text that ends; the echo level reads as a bare number that always can grow.
 - Share per tier: each echo level adds `EchoPercentPerLevel` (1%) to ONE tier, cycling `EchoTierOrder` (Chip, Cut, Prism). Level 1 = Chip 1%, level 2 = Cut 1%, level 3 = Prism 1%, level 4 = Chip 2%… Level 100 = Chip 34%, Cut 33%, Prism 33%.
 - Value: the echo is worth `Catalog.GetEchoCopies(Tier, EchoLevel)` slotted copies = the tier's socket count in `GetSockets()` × its share; times `MagnitudePerGem`, same attribute / operation as a slotted copy. The one formula: the stats GE (`UGeoGemStatsEffect::MakeSpec`) and the menus (`GetMagnitudeText(Copies)`) both read it.
-- Echo level rides with the sent loadout like `Level` (`FGeoGemLoadout::EchoLevel`, filled by `GetLoadout`).
+- Echo level is sent apart from the loadouts (see Flow): `UGeoGemStatsEffect::MakeSpec` takes it as a parameter next to the loadout.
 - Last placed wins, per build: a type is in the echo socket or in sockets, never both. Echoing a type the build slots empties those sockets (`SetEcho`, no confirmation), so `CanEcho` needs one owned copy, not a free one. Slotting the echoed type clears the echo and fills the socket (`Equip`; the echo's copy moves, no free copy needed). Echoing the gem already there is refused.
 - Copies: the echoed gem takes one copy like a socket; `GetFreeCount` and `GetBreakableCount` count it (`CountSlotted`).
 - The echo follows class levels, not a past moment: while no class is at 20 the echo level and XP are 0 and every build's echo gem is emptied (`SyncEchoWithClassLevels`, run by `SetClassLevel`, `AddClassXp`, `Load`); any class at 20 lifts it to 1. Lowering one class while another stays at 20 changes nothing.

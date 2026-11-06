@@ -58,11 +58,12 @@ void AGeoPlayerState::BeginPlay()
 		if (IsValid(LocalPlayer) && IsValid(PlayerController))
 		{
 			UGeoGemProfileSave const* Profile = LocalPlayer->GetSubsystem<UGeoGemSubsystem>()->GetProfile();
+			GemComponent->SetEchoLevel(Profile->GetEchoLevel());
 
 			for (uint8 i = static_cast<uint8>(EPlayerClass::None) + 1; i < static_cast<uint8>(EPlayerClass::All); i++)
 			{
 				EPlayerClass const PlayerClassIt = static_cast<EPlayerClass>(i);
-				GemComponent->UpdateLoadoutAndResetAttributes(PlayerClassIt, Profile->GetLoadout(PlayerClassIt));
+				GemComponent->SetLoadout(PlayerClassIt, Profile->GetLoadout(PlayerClassIt));
 			}
 		}
 	}
@@ -75,7 +76,7 @@ void AGeoPlayerState::ClientInitialize(class AController* Controller)
 	APlayerController const* PlayerController = Cast<APlayerController>(Controller);
 	if (ULocalPlayer const* LocalPlayer = PlayerController ? PlayerController->GetLocalPlayer() : nullptr)
 	{
-		GemComponent->SendLoadoutsToServer(*LocalPlayer->GetSubsystem<UGeoGemSubsystem>()->GetProfile());
+		GemComponent->SendAllToServer(*LocalPlayer->GetSubsystem<UGeoGemSubsystem>()->GetProfile());
 	}
 }
 

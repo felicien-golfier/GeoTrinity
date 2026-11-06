@@ -138,7 +138,7 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 	Loadout.Sockets[54] = "Surplus";
 
 	FActiveGameplayEffectHandle Handle =
-		ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+		ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout, 0).Data);
 	TestTrue(TEXT("Gem effect applied"), Handle.IsValid());
 	TestEqual(TEXT("20 Power: damage +4%"), Value(UCharacterAttributeSet::GetDamageMultiplierAttribute()), 1.04f,
 			  KINDA_SMALL_NUMBER);
@@ -167,7 +167,7 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 
 	ASC->RemoveActiveGameplayEffect(Handle);
 	Loadout.Sockets[54] = "Critical";
-	Handle = ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+	Handle = ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout, 0).Data);
 	TestTrue(TEXT("Critical slotted: crit tag held"),
 			 ASC->HasMatchingGameplayTag(FGeoGameplayTags::Get().Gem_Core_Critical));
 	TestEqual(TEXT("Critical: crit chance +10%"), Value(UGeoGemAttributeSet::GetCritChanceAttribute()), 0.1f,
@@ -184,7 +184,7 @@ bool FGeoGemStatsTest::RunTest(FString const& /*Parameters*/)
 	{
 		Loadout.Sockets[i] = "Guard";
 	}
-	Handle = ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+	Handle = ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout, 0).Data);
 	TestEqual(TEXT("Respec: damage back to base"), Value(UCharacterAttributeSet::GetDamageMultiplierAttribute()), 1.f,
 			  KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("Respec: max health back to base"), Value(UCharacterAttributeSet::GetMaxHealthAttribute()), 100.f,
@@ -262,7 +262,7 @@ bool FGeoGemStatsSurviveDeathTest::RunTest(FString const& /*Parameters*/)
 		Loadout.Sockets[i] = "Power";
 	}
 	FActiveGameplayEffectHandle const StatsHandle =
-		ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+		ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout, 0).Data);
 
 	UGameplayEffect* OtherEffect = NewObject<UGameplayEffect>(GetTransientPackage());
 	OtherEffect->DurationPolicy = EGameplayEffectDurationType::Infinite;

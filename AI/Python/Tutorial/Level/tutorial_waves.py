@@ -25,7 +25,7 @@ MASK_COLLECTION = "/Game/Art/VFX/Abilities/Enemies/PillarsAOE/MPC_MaskedArea"
 WAVE_START_TAG ="TargetPoint.Tutorial.WaveStart"
 WAVE_TAG = "Ability.Spell.LateralWave"
 LETHAL_EFFECT = ("/Script/GeoTrinity.LethalEffectData(OneShotCue=(CueTag=(TagName=\"\"),Color=Neutral,"
-                 "SecondaryColors=,SoundTag=(TagName=\"\")),Difficulties=7)")
+                 "SecondaryColors=,SoundTag=(TagName=\"\")),Difficulties=15)")  # all four bits: a mask without Nightmare (8) drops the kill at level 8
 
 # The zone room is 1400 long (X) and 2200 wide (Y): the front starts on the wave point at the near wall and crosses
 # the room along +X to the far wall; safe spots are offsets from that point (tutorial_encounters.py).

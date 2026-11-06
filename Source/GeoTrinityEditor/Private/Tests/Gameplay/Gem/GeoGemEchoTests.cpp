@@ -115,8 +115,14 @@ bool FGeoGemEchoTest::RunTest(FString const& /*Parameters*/)
 	TestEqual(TEXT("Bar fill is echo XP over its cost"), Fill, 500.f / XpNeeded, KINDA_SMALL_NUMBER);
 	TestEqual(TEXT("The class level stays"), Profile->GetClassLevel(PlayerClass), GeoGem::MaxClassLevel);
 	TestEqual(TEXT("The loadout carries the echo"), Profile->GetLoadout(PlayerClass).Echo, FName("Power"));
-	TestEqual(TEXT("The loadout carries the echo level"), Profile->GetLoadout(PlayerClass).EchoLevel, 4);
-	TestEqual(TEXT("A class under 20 sees the shared level"), Profile->GetLoadout(EPlayerClass::Circle).EchoLevel, 4);
+	TestEqual(TEXT("The echo level is not in the loadout"), Profile->GetLoadout(PlayerClass).Sockets.Num(),
+			  GeoGem::GetSockets().Num());
+	FGeoGemLoadout const Before = Profile->GetLoadout(EPlayerClass::Circle);
+	Profile->SetEchoLevel(Catalog, 6);
+	TestTrue(TEXT("An echo level change leaves every class's loadout as it was"),
+			 Profile->GetLoadout(EPlayerClass::Circle).Sockets == Before.Sockets
+				 && Profile->GetLoadout(EPlayerClass::Circle).Echo == Before.Echo
+				 && Profile->GetLoadout(EPlayerClass::Circle).Level == Before.Level);
 
 	Profile->SetClassLevel(PlayerClass, GeoGem::EchoUnlockLevel - 1);
 	TestTrue(TEXT("No class at 20 empties the echo"), Profile->GetEcho(PlayerClass).IsNone());
@@ -186,8 +192,7 @@ bool FGeoGemEchoStatsTest::RunTest(FString const& /*Parameters*/)
 	auto Apply = [&](FName const Echo, int32 const EchoLevel)
 	{
 		Loadout.Echo = Echo;
-		Loadout.EchoLevel = EchoLevel;
-		return ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout).Data);
+		return ASC->ApplyGameplayEffectSpecToSelf(*UGeoGemStatsEffect::MakeSpec(*ASC, Catalog, Loadout, EchoLevel).Data);
 	};
 
 	FActiveGameplayEffectHandle Handle = Apply("Power", 1);

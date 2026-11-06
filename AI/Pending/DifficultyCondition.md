@@ -10,5 +10,5 @@ Docs written: none yet (design open, workflow steps 2-3 when picked up). Owner d
 
 ## Read map
 - `Source/GeoTrinity/Public/Tool/GeoDifficulty.h`, `Source/GeoTrinity/Public/Tool/CLAUDE.md` ("Difficulty").
-- `Source/GeoTrinity/Public/AI/StateTree/CLAUDE.md`, `Ability/STTask_FireAbility`.
-- `Source/GeoTrinityEditor` StateTree builder (`GeoStateTreeBuilderUtil`, `AI/MCP/MCP_StateTree.md`) — how a condition is added from a script.
+- `Source/GeoTrinity/Public/AI/StateTree/CLAUDE.md`, `Source/GeoTrinity/Public/AI/StateTree/Ability/STTask_FireAbility.h`, `Source/GeoTrinity/Private/AI/StateTree/Ability/STTask_FireAbility.cpp`.
+- `AI/MCP/MCP_StateTree.md` — StateTree builder (`GeoStateTreeBuilderUtil` in `Source/GeoTrinityEditor`) — how a condition is added from a script.

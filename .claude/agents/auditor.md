@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: Audits one feature with fresh eyes and reports findings. Read-only. Two modes. Approach (end of workflow step 2, when the user accepts) - the prompt gives Goal, Approach (the design as discussed, decisions taken), Touches (code it expects to change), Known (accepted trade-offs). Code (workflow step 4, after test-fixer is green) - the prompt gives Goal, Docs (Pending file, CLAUDE.md paths), Changed (files of this change, test-fixer's fixes included), Known (issues already there, accepted trade-offs); it leaves out the implementation's reasoning, as the docs carry the intent.
+description: Audits one feature with fresh eyes and reports findings. Read-only. Two modes. Approach (end of workflow step 2, when the user accepts) - the prompt gives Goal, Approach (the design as discussed, decisions taken), Touches (code it expects to change), Known (accepted trade-offs). Code (workflow step 4, after /test is green) - the prompt gives Goal, Docs (Pending file, CLAUDE.md paths), Changed (files of this change, test-fixer's fixes included, if it ran), Known (issues already there, accepted trade-offs); it leaves out the implementation's reasoning, as the docs carry the intent.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: medium

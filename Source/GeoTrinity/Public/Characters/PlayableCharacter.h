@@ -78,10 +78,12 @@ public:
 
 	/**
 	 * Server-only. Sets every attribute to its fresh value: the current class's DefaultAttributes, its gem loadout's stats
-	 * on top, then Health and Ammo full at their new maximum. Called by GiveLife, and by UGeoGemComponent on a loadout
-	 * change outside a fight.
+	 * on top, then Health and Ammo full at their new maximum. Called by GiveLife.
 	 */
 	void ResetAttributes();
+
+	/** Server-only. Health and Ammo set to their current maximum. */
+	void RefillHealthAndAmmo();
 
 	/** The DefaultAttributes effect of the current class (FPlayerClassData), or null with an ensure when the class has
 	 * none. The single answer to "which effect gives this player its base stats?". */

@@ -403,7 +403,7 @@ void AGeoArena::RecordAttempt()
 		Player.PlayerName = GeoPlayerState->GetPlayerName();
 		Player.PlayerClass = GeoPlayerState->GetPlayerClass();
 		Player.Level = GeoPlayerState->GetGemComponent()->GetClassLevel(Player.PlayerClass);
-		Player.EchoLevel = GeoPlayerState->GetGemComponent()->GetEchoLevel(Player.PlayerClass);
+		Player.EchoLevel = GeoPlayerState->GetGemComponent()->GetEchoLevel();
 		Player.DamageDealt = GeoPlayerState->GetTotalDamageDealt();
 		Player.HealingDealt = GeoPlayerState->GetTotalHealingDealt();
 		Player.DamageTaken = GeoPlayerState->GetTotalDamageReceived();

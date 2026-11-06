@@ -445,7 +445,11 @@ void UGeoCharacterSheetWidget::ShowStats()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoCharacterSheetWidget::HandleStatChanged(FOnAttributeChangeData const& /*Data*/)
 {
-	ShowStats();
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+	if (!TimerManager.IsTimerActive(StatsRefreshTimer))
+	{
+		StatsRefreshTimer = TimerManager.SetTimerForNextTick(this, &UGeoCharacterSheetWidget::ShowStats);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

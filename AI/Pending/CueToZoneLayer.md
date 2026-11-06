@@ -16,12 +16,12 @@ Behaviour: none. Same circles, colours, times.
 ## Read map
 - `Source/GeoTrinity/Public/World/ZoneLayer/CLAUDE.md` — what the layer draws (`Circle`, `Beam`, `Ring`, fills, layers)
 - `Source/GeoTrinity/Public/Characters/Component/FX/GeoIndicatorComponent.h/.cpp` — `FGeoIndicatorState`, `SpawnIndicator` (the one local draw path)
-- `Source/GeoTrinity/Public/World/ZoneLayer/GeoZoneVisualComponent.h` + `GeoZoneShape.h` — `UCLASS(ClassGroup = (Geo))` only today: no Blueprint exposure
+- `Source/GeoTrinity/Public/World/ZoneLayer/GeoZoneVisualComponent.h`, `Source/GeoTrinity/Public/World/ZoneLayer/GeoZoneShape.h` — `UCLASS(ClassGroup = (Geo))` only today: no Blueprint exposure
 - `Source/GeoTrinity/Private/AbilitySystem/Abilities/Common/GeoZoneIndicatorCue.cpp` — the cue today (round only, Telegraph layer, colour mask from cue params)
 - `Source/GeoTrinity/Private/Actor/Deployable/GeoDeployableBase.cpp` ~742-777 — `GetGenericCueParams` (location, `RawMagnitude` = `Params.Size`), spawn / blink params (`Normal.X` = `LifeDrainMaxDuration` / `BlinkDuration`)
 - `Source/GeoTrinity/Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp` ~480-500 — `ExecuteGeoCue`, `SetCueMeaningColors`, `GetCueColors`
 - `Source/GeoTrinity/Private/AbilitySystem/Abilities/Pattern/Hazard/Zone/ZonePattern.cpp` `InitPattern`, `RemoveIndicators`, `ExecuteGameplayCue` override — a sibling already launching indicators
-- `Source/GeoTrinity/Private/AbilitySystem/Abilities/Common/GeoDeployTargetCue.cpp`, `GeoDeployAbility.cpp` ~221, ~280 — landing marker
+- `Source/GeoTrinity/Private/AbilitySystem/Abilities/Common/GeoDeployTargetCue.cpp`, `Source/GeoTrinity/Private/AbilitySystem/Abilities/Common/GeoDeployAbility.cpp` (~221, ~280) — landing marker
 - `Source/GeoTrinity/Private/AbilitySystem/Abilities/Base/PatternAbility.cpp` ~93-190 — `PreLaunchCue` on marked actors
 - `AI/VFX.md` "Meaning Colours" — says the devastating wave "keeps its own system": stale (zone-layer only, `Hazard/CLAUDE.md`); fix in this change
 

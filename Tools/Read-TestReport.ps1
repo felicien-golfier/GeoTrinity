@@ -7,9 +7,12 @@
 .DESCRIPTION
     The editor's own exit code cannot be trusted: it exits 0 when tests failed, and "succeeds" when the filter
     matched nothing. This report is the only source of truth for a run.
+    -Filters: test path prefixes that must each match at least one test of the run (a new test that never
+    registered fails the run instead of being silently absent).
 #>
 param(
-    [Parameter(Mandatory)] [string] $ReportDir
+    [Parameter(Mandatory)] [string] $ReportDir,
+    [string[]] $Filters = @()
 )
 
 $MaxErrorsPerTest = 10
@@ -41,5 +44,10 @@ if ($total -eq 0) {
     Write-Host 'No test matched the filter.'
 }
 
-if ($total -gt 0 -and $report.failed -eq 0 -and $report.notRun -eq 0 -and $report.inProcess -eq 0) { exit 0 }
+$unmatched = @($Filters | Where-Object { $prefix = $_; -not ($report.tests | Where-Object { $_.fullTestPath.StartsWith($prefix) }) })
+foreach ($filter in $unmatched) {
+    Write-Host "No test matched $filter."
+}
+
+if ($total -gt 0 -and $unmatched.Count -eq 0 -and $report.failed -eq 0 -and $report.notRun -eq 0 -and $report.inProcess -eq 0) { exit 0 }
 exit 1

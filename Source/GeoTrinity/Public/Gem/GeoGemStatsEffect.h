@@ -27,10 +27,10 @@ public:
 	/** Lists the gem attributes, UGeoGemAttributeSet's included, with their Add and Percent modifiers. */
 	UGeoGemStatsEffect();
 
-	/** Spec giving ASC the summed stats of Loadout's gems, neutral on every attribute no slotted gem raises, and the
-	 * tag of every slotted gem that grants one. */
+	/** Spec giving ASC the summed stats of Loadout's gems (its echo gem worth what EchoLevel gives), neutral on every
+	 * attribute no slotted gem raises, and the tag of every slotted gem that grants one. */
 	static FGameplayEffectSpecHandle MakeSpec(UAbilitySystemComponent const& ASC, UGeoGemCatalog const& Catalog,
-											  FGeoGemLoadout const& Loadout);
+											  FGeoGemLoadout const& Loadout, int32 EchoLevel);
 
 	/** True when Gem raises no stat, or one of the attributes this effect lists with Gem's operation. */
 	static bool Supports(FGeoGemInfo const& Gem);

@@ -98,6 +98,18 @@ public:
 	}
 
 	UMaterialParameterCollection* GetMask() const { return MaskMaterialParameterCollection; }
+
+	/** The hit test at Location, SpentTime seconds after the front left. */
+	bool IsHitAt(FVector2D const Location, float const SpentTime) const
+	{
+		return IsInHazard(nullptr, Location, SpentTime);
+	}
+
+	/** How long the hazard lasts, from the front leaving to the band leaving the travel. */
+	float GetDuration() const { return GetHazardDuration(); }
+
+	/** Stops the firing, as the ability ending does. */
+	void StopFiring() { EndPattern(true); }
 };
 
 /** Devastating wave of a test: same set-up as UGeoTestLateralWavePattern. */

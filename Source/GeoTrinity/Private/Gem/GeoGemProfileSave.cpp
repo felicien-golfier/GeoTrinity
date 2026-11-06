@@ -133,7 +133,6 @@ FGeoGemLoadout UGeoGemProfileSave::GetLoadout(EPlayerClass const PlayerClass) co
 
 	Loadout.Sockets.SetNum(GeoGem::GetSockets().Num());
 	Loadout.Level = GetClassLevel(PlayerClass);
-	Loadout.EchoLevel = EchoLevel;
 	return Loadout;
 }
 

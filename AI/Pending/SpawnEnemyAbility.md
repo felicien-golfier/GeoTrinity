@@ -6,15 +6,15 @@ Replaces `SummonPattern.md` (deleted: built by commit 8c42ad08; its open checks 
 Docs written: `Abilities/Boss/CLAUDE.md` ("Summon", "GeoSpawnEnemyCharacterAbility"), `Abilities/Pattern/Hazard/Zone/CLAUDE.md`, `Abilities/Base/CLAUDE.md` (`RequiresArena`), `AbilitySystem/Lib/CLAUDE.md` (`PatternTargets`), `Characters/CLAUDE.md` (`Death()`, "Enemy setup", "Summoned dummy"), `AI/Tutorial/Steps.md`, `AI/Python/Tutorial/CLAUDE.md`, `Tests/Gameplay/Characters/CLAUDE.md`.
 
 ## Read map
-- `Source/GeoTrinity/Private/AbilitySystem/Abilities/Boss/GeoSpawnOnDeathAbility.cpp`, `.../Pattern/Hazard/Zone/SpawnAddPattern.cpp`, `.../Abilities/Common/GeoPlaceDeployableAbility.cpp` — what goes; the `Fire` shape to copy.
+- `Source/GeoTrinity/Private/AbilitySystem/Abilities/Common/GeoPlaceDeployableAbility.cpp` — the `Fire` shape to copy. `GeoSpawnOnDeathAbility.cpp` and `SpawnAddPattern.cpp` (what goes) are already gone from the code.
 - `Source/GeoTrinity/Public/AbilitySystem/Abilities/Base/GeoGameplayAbility.h:358-366` — `bUseGeneralChargeTimeForFireDelay`, `FireDelay` private; `GeoGameplayAbility.cpp:278` `ScheduleFireTrigger`.
-- `Source/GeoTrinity/Public/AbilitySystem/Lib/GeoTarget.h`, `Private/.../GeoAbilitySystemLibrary.cpp:795` `PickTargets`; `Pattern.h:82` `GetTargetLocations`; `GeoAbilitySystemComponent.cpp:532` `FindPatternByClass`.
+- `Source/GeoTrinity/Public/AbilitySystem/Lib/GeoTarget.h`, `Source/GeoTrinity/Private/AbilitySystem/Lib/GeoAbilitySystemLibrary.cpp:795` `PickTargets`; `Pattern.h:82` `GetTargetLocations`; `GeoAbilitySystemComponent.cpp:532` `FindPatternByClass`.
 - `Source/GeoTrinity/Private/Characters/GeoCharacter.cpp:263` `Death()`; `EnemyCharacter.cpp:136` `DeathLogic`.
 - `Private/AbilitySystem/Lib/GeoGameplayTags.cpp:117` — native tag shape.
 - `Abilities/Base/GeoChannelBeamAbility.cpp:66` — an `OnGiveAbility` override. Engine: `AbilitySystemComponent_Abilities.cpp:550-558` creates the instance before `OnGiveAbility` (`ReplicateNo`); `AbilitySystemComponent.h:741` `GenericGameplayEventCallbacks` (exact tag).
 - `AI/Python/Tutorial/Level/tutorial_miniboss.py` — `build_summon_pattern`, `build_summon`, `build_summon_ally`, `summon_setup`, `build_tree`; `tutorial_encounters.py:75` `MINIBOSS_ABILITIES`; `AI/Python/Level/CLAUDE.md` map gate.
 - `Config/DefaultEngine.ini:197` — `[CoreRedirects]`.
-- Tests: `Tests/Gameplay/Characters/GeoSummonTests.cpp`, `Tests/Gameplay/Fake/GeoTestPatternAbility.h:7,10,327,374`, `Tests/Tutorial/GeoTutorialRoomStages.cpp:1460-1480`.
+- Tests: `Tests/Gameplay/Characters/GeoSummonTests.cpp`, `Source/GeoTrinityEditor/Private/Tests/Gameplay/Fake/GeoTestPatternAbility.h` (l.7,10,327,374), `Source/GeoTrinityEditor/Private/Tests/Tutorial/GeoTutorialRoomStages.cpp` (l.1460-1480).
 
 ## State (session stopped on the usage limit)
 Done, unbuilt and untested: all C++ below, `Event.Character.Dying` + `Ability.Spell.TutorialSpawnDummy` in the tag ini, the redirects, the test rewrite (`GeoSummonTests.cpp`: `SummonedDummy`, `Abilities.SpawnEnemyCharacter`, `Abilities.PatternTargets`; fakes in `GeoTestPatternAbility.h`), clang-format on touched files. Not done: scripts (`tutorial_miniboss.py` / `tutorial_encounters.py` untouched), build, quick suite, tutorial runs, audit. Next: build via `test-fixer` first (possible compile fixes: `ArbitraryCharacterZ` include in the new .cpp, `GenericGameplayEventCallbacks` access, test fakes). `has_state` for the `Land` patch needs `EditorData.SubTrees` readable from Python; verify when running. `GeoTutorialRoomStages.cpp` has a bot edit ("walks up to the boss") that is not from this task. "No-target launch keeps previous locations" is not tested (it only follows from `PatternAbility` skipping the multicast).

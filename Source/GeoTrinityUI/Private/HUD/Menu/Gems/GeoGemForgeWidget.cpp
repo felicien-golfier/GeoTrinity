@@ -408,7 +408,7 @@ void UGeoGemForgeWidget::HandleBreakAll()
 			EGeoColor::Heal);
 	}
 	BreakTiers.Empty();
-	CommitChanges();
+	SaveChanges();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -452,7 +452,7 @@ void UGeoGemForgeWidget::HandleBreak()
 		UGeoMessageSubsystem::Post(this, FText::Format(BrokenFormat, Shards, BreakQuantity, Gem->DisplayName.ToUpper()),
 								   EGeoColor::Heal);
 		BreakQuantity = 1;
-		CommitChanges();
+		SaveChanges();
 	}
 }
 
@@ -502,6 +502,6 @@ void UGeoGemForgeWidget::HandleCraft()
 		UGeoMessageSubsystem::Post(this, FText::Format(CraftedFormat, CraftQuantity, Gem->DisplayName.ToUpper(), Cost),
 								   EGeoColor::Heal);
 		CraftQuantity = 1;
-		CommitChanges();
+		SaveChanges();
 	}
 }

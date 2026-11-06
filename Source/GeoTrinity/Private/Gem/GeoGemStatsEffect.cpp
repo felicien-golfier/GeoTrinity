@@ -39,7 +39,8 @@ UGeoGemStatsEffect::UGeoGemStatsEffect()
 }
 
 FGameplayEffectSpecHandle UGeoGemStatsEffect::MakeSpec(UAbilitySystemComponent const& ASC,
-													   UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Loadout)
+													   UGeoGemCatalog const& Catalog, FGeoGemLoadout const& Loadout,
+														   int32 const EchoLevel)
 {
 	UGeoGemStatsEffect const* Effect = GetDefault<UGeoGemStatsEffect>();
 
@@ -79,7 +80,7 @@ FGameplayEffectSpecHandle UGeoGemStatsEffect::MakeSpec(UAbilitySystemComponent c
 	TOptional<EGeoGemTier> const EchoTier = Catalog.FindTier(Loadout.Echo);
 	if (EchoGem && EchoTier)
 	{
-		AddCopies(*EchoGem, Catalog.GetEchoCopies(*EchoTier, Loadout.EchoLevel));
+		AddCopies(*EchoGem, Catalog.GetEchoCopies(*EchoTier, EchoLevel));
 	}
 
 	FGameplayEffectSpecHandle SpecHandle = ASC.MakeOutgoingSpec(StaticClass(), 1.f, ASC.MakeEffectContext());

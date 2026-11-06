@@ -5,14 +5,15 @@ Gems menu over `UGeoGemSubsystem` (`GeoTrinity/Public/Gem/CLAUDE.md`). Opened fr
 | File | Role |
 |---|---|
 | `GeoGemsWidget.h` | Menu: `PageSwitcher` (`LoadoutPage`, `ForgePage`), page and class tabs, shard count |
-| `GeoGemPageWidget.h` | Base of both pages; the one way they edit the profile: `CommitChanges` (save + server + menu refresh) |
+| `GeoGemPageWidget.h` | Base of both pages; the one way they edit the profile: `CommitChanges` (save + server + menu refresh) or `SaveChanges` (save + menu refresh, no server) |
 | `GeoGemLoadoutWidget.h` | Socket board: clusters of tier rings around a centre |
 | `GeoGemForgeWidget.h` | Forge: tiers (select, break down free copies → shards), gem types with owned / free counts, shards → gems |
 | `GeoGemSocketButton.h` | Bare button drawn by its `UGeoGemGlyph`; says which socket it is on click |
 
 - Shard count (header, `ShardsFrame` key cap): `ShardIcon` = `DA_Icon_Gems_Shard`, the three-facet pink crystal of the design, 24 px, then the number and `SHARDS`.
 - Forge `BreakButton` / `CraftButton`: the same shard icon (`ShardIcon` on the page) sits after the `+Y` / `−X` of the label, through the button's `ButtonIcon` (`UGeoMenuButton::SetIcon`); hidden on the "no free copy" / "NEED n SHARDS" labels.
-- Loadout edits to the shown build's gems (slot, ALL, unequip, echo) go through `CommitSlotting`, not `CommitChanges`: save + server, then sockets, unequip button, stack rows, detail and totals update in place. Class / build / filter tabs and the stack rows are rebuilt only by `Refresh` (class, tier filter, build or owned gems changed). Stack rows are kept per gem id (`StackRows`: row, sub line, count, in-build mark) so `UpdateStacks` touches texts, tint and mark visibility only.
+- Loadout edits to the shown build's gems (slot, ALL, unequip, echo) go through `CommitSlotting`, not `CommitChanges`: save + the shown class's loadout to the server (`UGeoGemSubsystem::CommitChanges(ShownClass)`), then sockets, unequip button, stack rows, detail and totals update in place. Class / build / filter tabs and the stack rows are rebuilt only by `Refresh` (class, tier filter, build or owned gems changed). Stack rows are kept per gem id (`StackRows`: row, sub line, count, in-build mark) so `UpdateStacks` touches texts, tint and mark visibility only.
+- Forge craft / break change owned counts and shards only (a break takes free copies), so they save without a server send (`SaveChanges`) and keep the full `Refresh`; an in-place update is added only where a measure shows a hitch.
 - Glyph drawing and colours: `Style/Glyph/`; gem polygons and highlight from theme `GemStyle`.
 
 ## Unequip and tier filter (Loadout page)

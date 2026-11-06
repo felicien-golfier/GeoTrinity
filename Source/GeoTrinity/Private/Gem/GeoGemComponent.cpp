@@ -19,16 +19,21 @@ UGeoGemComponent::UGeoGemComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UGeoGemComponent::SendLoadoutsToServer(UGeoGemProfileSave const& Profile)
+void UGeoGemComponent::SendAllToServer(UGeoGemProfileSave const& Profile)
 {
+	ServerSetEchoLevel(Profile.GetEchoLevel());
 	for (uint8 i = static_cast<uint8>(EPlayerClass::None) + 1; i < static_cast<uint8>(EPlayerClass::All); i++)
 	{
-		EPlayerClass const PlayerClass = static_cast<EPlayerClass>(i);
-		ServerSetLoadout(PlayerClass, Profile.GetLoadout(PlayerClass));
+		SendLoadoutToServer(Profile, static_cast<EPlayerClass>(i));
 	}
 }
 
-void UGeoGemComponent::UpdateLoadoutAndResetAttributes(EPlayerClass const PlayerClass, FGeoGemLoadout const& Loadout)
+void UGeoGemComponent::SendLoadoutToServer(UGeoGemProfileSave const& Profile, EPlayerClass const PlayerClass)
+{
+	ServerSetLoadout(PlayerClass, Profile.GetLoadout(PlayerClass));
+}
+
+void UGeoGemComponent::SetLoadout(EPlayerClass const PlayerClass, FGeoGemLoadout const& Loadout)
 {
 	Loadouts.Add(PlayerClass, Loadout);
 
@@ -38,12 +43,19 @@ void UGeoGemComponent::UpdateLoadoutAndResetAttributes(EPlayerClass const Player
 	if (PlayerClass == PlayerState->GetPlayerClass() && GameState && !GameState->IsMatchInProgress() && Character
 		&& !Character->IsDead())
 	{
-		Character->ResetAttributes();
+		ApplyGems();
+		Character->RefillHealthAndAmmo();
 	}
 }
+
 void UGeoGemComponent::ServerSetLoadout_Implementation(EPlayerClass const PlayerClass, FGeoGemLoadout const& Loadout)
 {
-	UpdateLoadoutAndResetAttributes(PlayerClass, Loadout);
+	SetLoadout(PlayerClass, Loadout);
+}
+
+void UGeoGemComponent::ServerSetEchoLevel_Implementation(int32 const NewEchoLevel)
+{
+	SetEchoLevel(NewEchoLevel);
 }
 
 void UGeoGemComponent::ApplyGems()
@@ -55,29 +67,17 @@ void UGeoGemComponent::ApplyGems()
 		return;
 	}
 
-	// TEMP-TIMING: remove once the slowdown is found.
-	double T = FPlatformTime::Seconds();
-	auto Lap = [&T](TCHAR const* Step)
-	{
-		double const Now = FPlatformTime::Seconds();
-		UE_LOG(LogTemp, Warning, TEXT("GemTiming     ApplyGems %s: %.1f ms"), Step, (Now - T) * 1000.0);
-		T = Now;
-	};
 	UGeoAbilitySystemComponent* ASC = PlayerState->GetGeoAbilitySystemComponent();
 	ASC->RemoveActiveGameplayEffect(StatsEffectHandle);
-	Lap(TEXT("RemoveStatsEffect"));
 	FGameplayEffectSpecHandle const SpecHandle =
-		UGeoGemStatsEffect::MakeSpec(*ASC, *Catalog, Loadouts.FindRef(PlayerState->GetPlayerClass()));
-	Lap(TEXT("MakeSpec"));
+		UGeoGemStatsEffect::MakeSpec(*ASC, *Catalog, Loadouts.FindRef(PlayerState->GetPlayerClass()), EchoLevel);
 	StatsEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
-	Lap(TEXT("ApplyStatsEffect"));
 
 	for (FGameplayAbilitySpecHandle const& Handle : GrantedAbilityHandles)
 	{
 		ASC->ClearAbility(Handle);
 	}
 	GrantedAbilityHandles.Reset();
-	Lap(TEXT("ClearAbilities"));
 
 	for (FName const GemId : Loadouts.FindRef(PlayerState->GetPlayerClass()).Sockets)
 	{
@@ -87,10 +87,8 @@ void UGeoGemComponent::ApplyGems()
 			FGameplayAbilitySpecHandle const Handle = ASC->GiveAbility(FGameplayAbilitySpec(Gem->GrantedAbility, 1));
 			ASC->TryActivateAbility(Handle);
 			GrantedAbilityHandles.Add(Handle);
-			Lap(*Gem->DisplayName.ToString());
 		}
 	}
-	Lap(TEXT("end"));
 }
 
 TArray<FActiveGameplayEffectHandle> UGeoGemComponent::GetSurvivingEffectHandles() const

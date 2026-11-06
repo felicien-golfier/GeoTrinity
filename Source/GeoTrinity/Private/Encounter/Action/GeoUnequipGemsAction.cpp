@@ -20,7 +20,7 @@ void UGeoUnequipGemsAction::Execute_Implementation(FGeoEncounterPayload const& /
 	if (PlayerState && Gems && Catalog)
 	{
 		Gems->GetProfile()->UnequipTier(*Catalog, PlayerState->GetPlayerClass(), Tier);
-		Gems->CommitChanges();
+		Gems->CommitChanges(PlayerState->GetPlayerClass());
 	}
 	else
 	{

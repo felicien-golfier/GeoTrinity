@@ -44,19 +44,36 @@ UGeoGemProfileSave* UGeoGemPageWidget::GetProfile() const
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemPageWidget::CommitChanges()
+void UGeoGemPageWidget::CommitChanges(EPlayerClass const PlayerClass)
 {
-	CommitProfile();
+	CommitProfile(PlayerClass);
 	Refresh();
 	OnProfileChanged.Broadcast();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-void UGeoGemPageWidget::CommitProfile()
+void UGeoGemPageWidget::CommitProfile(EPlayerClass const PlayerClass)
 {
 	if (UGeoGemSubsystem* GemSubsystem = ULocalPlayer::GetSubsystem<UGeoGemSubsystem>(GetOwningLocalPlayer()))
 	{
-		GemSubsystem->CommitChanges();
+		GemSubsystem->CommitChanges(PlayerClass);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemPageWidget::SaveChanges()
+{
+	SaveProfile();
+	Refresh();
+	OnProfileChanged.Broadcast();
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+void UGeoGemPageWidget::SaveProfile()
+{
+	if (UGeoGemSubsystem* GemSubsystem = ULocalPlayer::GetSubsystem<UGeoGemSubsystem>(GetOwningLocalPlayer()))
+	{
+		GemSubsystem->SaveChanges();
 	}
 }
 

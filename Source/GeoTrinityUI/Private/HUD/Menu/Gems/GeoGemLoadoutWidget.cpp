@@ -126,34 +126,19 @@ void UGeoGemLoadoutWidget::Refresh()
 // ---------------------------------------------------------------------------------------------------------------------
 void UGeoGemLoadoutWidget::CommitSlotting()
 {
-	// TEMP-TIMING: remove once the slowdown is found.
-	double T = FPlatformTime::Seconds();
-	auto Lap = [&T](TCHAR const* Step)
-	{
-		double const Now = FPlatformTime::Seconds();
-		UE_LOG(LogGeoTrinity, Warning, TEXT("GemTiming %s: %.1f ms"), Step, (Now - T) * 1000.0);
-		T = Now;
-	};
 	UGeoGemProfileSave const* Profile = GetProfile();
 	UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
-	CommitProfile();
-	Lap(TEXT("CommitProfile"));
+	CommitProfile(ShownClass);
 	if (Profile && Catalog)
 	{
 		ShowSockets(*Profile, *Catalog);
-		Lap(TEXT("ShowSockets"));
 		ShowUnequipTier(*Profile, *Catalog);
-		Lap(TEXT("ShowUnequipTier"));
 		UpdateStacks(*Profile, *Catalog);
-		Lap(TEXT("UpdateStacks"));
 		ShowDetail(*Profile, *Catalog);
-		Lap(TEXT("ShowDetail"));
 		ShowTotals(*Profile, *Catalog);
-		Lap(TEXT("ShowTotals"));
 	}
 
 	OnProfileChanged.Broadcast();
-	Lap(TEXT("OnProfileChanged"));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -517,7 +502,7 @@ void UGeoGemLoadoutWidget::ChangeBuilds(TFunctionRef<void(UGeoGemProfileSave&)> 
 		Change(*Profile);
 		ClearPick();
 		bRenamingBuild = false;
-		CommitChanges();
+		CommitChanges(ShownClass);
 	}
 }
 
@@ -543,7 +528,7 @@ void UGeoGemLoadoutWidget::EndRename()
 	bRenamingBuild = false;
 	if (Profile)
 	{
-		CommitProfile();
+		SaveProfile();
 		ShowBuildTabs(*Profile);
 	}
 }

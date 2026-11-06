@@ -37,14 +37,14 @@ Actions and triggers never know about networking or the number of players.
 Open: a page has no timer, so one player leaving it open blocks the script. Add a limit with the first multiplayer encounter using pages.
 
 ## Read map
-- `Source/GeoTrinity/Public/Encounter/CLAUDE.md`, `Encounter/Action/CLAUDE.md`, `Encounter/Action/Cat/CLAUDE.md`, `Encounter/Trigger/CLAUDE.md` — design to rewrite
-- `Source/GeoTrinity/Private/Encounter/GeoEncounter.cpp`, `GeoEncounterAction.cpp`, `GeoEncounterSubsystem.cpp` — start gate, `GetLocalHUD`, abort, caster, lock
-- `Encounter/Action/`: `GeoCatSpeechAction`, `GeoQuestCardAction`, `GeoOpenGemsPageAction`, `GeoShowAbilityPageAction`, `GeoSetMovementLockedAction`, `GeoUnlockAbilityAction`, `Cat/GeoCatAction` — first-player and HUD sites
-- `Encounter/Trigger/`: `GeoAbilityActivatedTrigger`, `GeoGemProfileTrigger`, `GeoPlayerIdleTrigger`, `GeoVolumeEnteredTrigger`, `GeoActorDiedTrigger` — per-player bindings
-- `Actor/GeoCat.h/.cpp`, `Source/GeoTrinity/Public/Actor/CLAUDE.md` ("GeoCat") — orders to replicate
-- `Characters/GeoTrainingCat` (`Characters/CLAUDE.md`, "GeoTrainingCat") — sibling speaker: replicated speech, check before designing the presenter
-- `GameClasses/Player/GeoPlayerController.h/.cpp`, `GameClasses/Match/GeoPlayerState.cpp` — presenter host, HUD setup, pause to remove
-- `HUD/Interface/GeoHUDInterface.h`, `GeoTrinityUI/Private/HUD/GeoHUD.cpp`, `HUD/AbilityBar/GeoAbilityBarWidget.cpp` — UI seam, bar
+- `Source/GeoTrinity/Public/Encounter/CLAUDE.md`, `Source/GeoTrinity/Public/Encounter/Action/CLAUDE.md`, `Source/GeoTrinity/Public/Encounter/Action/Cat/CLAUDE.md`, `Source/GeoTrinity/Public/Encounter/Trigger/CLAUDE.md` — design to rewrite
+- `Source/GeoTrinity/Private/Encounter/GeoEncounter.cpp`, `Source/GeoTrinity/Private/Encounter/GeoEncounterAction.cpp`, `Source/GeoTrinity/Private/Encounter/GeoEncounterSubsystem.cpp` — start gate, `GetLocalHUD`, abort, caster, lock
+- `Source/GeoTrinity/Public/Encounter/Action/GeoCatSpeechAction.h`, `Source/GeoTrinity/Public/Encounter/Action/GeoQuestCardAction.h`, `Source/GeoTrinity/Public/Encounter/Action/GeoMenuGuideAction.h`, `Source/GeoTrinity/Public/Encounter/Action/GeoShowAbilityPageAction.h`, `Source/GeoTrinity/Public/Encounter/Action/GeoSetMovementLockedAction.h`, `Source/GeoTrinity/Public/Encounter/Action/GeoUnlockAbilityAction.h`, `Source/GeoTrinity/Public/Encounter/Action/Cat/GeoCatAction.h` — first-player and HUD sites (`GeoOpenGemsPageAction` no longer exists: `GeoMenuGuideAction` is the nearest; check)
+- `Source/GeoTrinity/Public/Encounter/Trigger/GeoAbilityActivatedTrigger.h`, `Source/GeoTrinity/Public/Encounter/Trigger/GeoGemProfileTrigger.h`, `Source/GeoTrinity/Public/Encounter/Trigger/GeoPlayerIdleTrigger.h`, `Source/GeoTrinity/Public/Encounter/Trigger/GeoVolumeEnteredTrigger.h`, `Source/GeoTrinity/Public/Encounter/Trigger/GeoActorDiedTrigger.h` — per-player bindings
+- `Source/GeoTrinity/Public/Actor/GeoCat.h`, `Source/GeoTrinity/Private/Actor/GeoCat.cpp`, `Source/GeoTrinity/Public/Actor/CLAUDE.md` ("GeoCat") — orders to replicate
+- `Source/GeoTrinity/Public/Characters/CLAUDE.md` ("GeoTrainingCat"; the class is documented, no GeoTrainingCat.h in the code yet) — sibling speaker: replicated speech, check before designing the presenter
+- `Source/GeoTrinity/Public/GameClasses/Player/GeoPlayerController.h`, `Source/GeoTrinity/Private/GameClasses/Player/GeoPlayerController.cpp`, `Source/GeoTrinity/Private/GameClasses/Match/GeoPlayerState.cpp` — presenter host, HUD setup, pause to remove
+- `Source/GeoTrinity/Public/HUD/Interface/GeoHUDInterface.h`, `Source/GeoTrinityUI/Private/HUD/GeoHUD.cpp`, `Source/GeoTrinityUI/Private/HUD/AbilityBar/GeoAbilityBarWidget.cpp` — UI seam, bar
 - `Source/GeoTrinityEditor/Private/Tests/Tutorial/` (all, with its `CLAUDE.md`) — bot to split into server and client worlds
 
 ## Before coding

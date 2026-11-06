@@ -248,11 +248,6 @@ struct FGeoGemLoadout
 	/** The gem in the echo socket, which opens at GeoGem::EchoUnlockLevel; NAME_None when empty. Outside Sockets. */
 	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
 	FName Echo;
-
-	/** The class's echo level when UGeoGemProfileSave::GetLoadout read this, so the server learns it with the loadout.
-	 *  Never read back from a saved build. */
-	UPROPERTY(BlueprintReadOnly, Category = "GeoGem")
-	int32 EchoLevel = 0;
 };
 
 namespace GeoGem

@@ -140,7 +140,7 @@ local-player-only bindings before `AddDynamic`. Exception: a binding made in `On
 ## Tests
 - A behaviour that can be automated gets a test file in the same step as the code, in the lightest layer that proves
   it (`AI/Testing.md`), next to the code it covers; the Pending file lists the files and the run command.
-- Run them headless (`Tools\Run_Tests.bat [filter]`) once built. A feature is not done without its tests unless they
+- Run them with the `test` skill (`/test <filter>`: build + headless run, root `CLAUDE.md` "Test skill"). A feature is not done without its tests unless they
   cannot be automated; say why.
 - A bug fix asks: can it come back silently? Yes (logic, ordering, replication, data wiring, tutorial flow) → a
   regression test that fails on the old code, added to the existing test of that area when one fits, else a new one;

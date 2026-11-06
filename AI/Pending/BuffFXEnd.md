@@ -10,7 +10,7 @@ Docs written: none yet (add the rule to `Source/GeoTrinity/Public/Characters/Com
 - AI/Python/Niagara/geo_aura_vfx.py — `HELD = 100000.0`: held layers never die, so a graceful `Deactivate` never completes (lingers to the 3 s cap, then cuts)
 - AI/Python/Niagara/buff_vfx.py — `NS_SwiftWake`, `NS_BulwarkShell` layers
 - AI/VFX.md — "Buff VFX" table
-- Config/DefaultGame.ini `BuffFX=/Game/Art/Data/DA_BuffFX` — systems used: `NS_ChargedHalo`, `NS_VitalHalo`, `NS_BulwarkShell`, `NS_SwiftWake` (body), `NS_ChargedTrail` (shot)
+- `Config/DefaultGame.ini` — `BuffFX=/Game/Art/Data/DA_BuffFX`, systems used: `NS_ChargedHalo`, `NS_VitalHalo`, `NS_BulwarkShell`, `NS_SwiftWake` (body), `NS_ChargedTrail` (shot)
 
 ## Code (to implement)
 - [ ] `Stop()` — ramp `User.EndFade` 1 → 0 over ~0.25 s (timer), then `DeactivateImmediate` + destroy; sound stays cut at once. Param name added to `Tool/Visual/GeoNiagaraParams.h`.

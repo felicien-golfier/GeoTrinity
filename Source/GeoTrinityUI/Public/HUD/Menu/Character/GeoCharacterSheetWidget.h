@@ -316,6 +316,9 @@ private:
 	/** A text the sheet builds, in Role at RowTextSize. */
 	UTextBlock* MakeText(EGeoTextRole Role, FText const& Text) const;
 
+	/** Pending ShowStats: one effect changes many stats in a row, the table is rebuilt once after them. */
+	FTimerHandle StatsRefreshTimer;
+
 	FTimerHandle FightRefreshTimer;
 
 	/** The ability whose details are open; null when closed. */

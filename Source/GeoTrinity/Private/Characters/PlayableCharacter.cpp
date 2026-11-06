@@ -472,12 +472,13 @@ void APlayableCharacter::ResetAttributes()
 		return;
 	}
 
-	// TEMP-TIMING: remove once the slowdown is found.
-	double const Start = FPlatformTime::Seconds();
 	AbilitySystemComponent->ApplyEffectToSelf(DefaultAttributes);
-	UE_LOG(LogTemp, Warning, TEXT("GemTiming   ResetAttributes default effect: %.1f ms"),
-		   (FPlatformTime::Seconds() - Start) * 1000.0);
 	GetPlayerState<AGeoPlayerState>()->GetGemComponent()->ApplyGems();
+	RefillHealthAndAmmo();
+}
+
+void APlayableCharacter::RefillHealthAndAmmo()
+{
 	AbilitySystemComponent->SetNumericAttributeBase(
 		UGeoAttributeSetBase::GetHealthAttribute(),
 		AbilitySystemComponent->GetNumericAttribute(UGeoAttributeSetBase::GetMaxHealthAttribute()));

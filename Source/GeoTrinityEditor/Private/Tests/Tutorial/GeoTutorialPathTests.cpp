@@ -2,6 +2,7 @@
 
 #include "GeoTutorialBot.h"
 #include "GeoTutorialRoomStages.h"
+#include "GeoTutorialWaveSpotStages.h"
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
@@ -64,6 +65,31 @@ namespace GeoTutorialPaths
 				 AddZonesStages(Bot, true);
 			 }},
 			{TEXT("ZonesCamp"), GeoTutorial::Zones, &AddZonesCampStages},
+			{TEXT("WaveSpotsFirst"), GeoTutorial::Zones,
+			 [](FGeoTutorialBot& Bot)
+			 {
+				 AddWaveSpotStages(Bot, 1, false);
+			 }},
+			{TEXT("WaveSpotsFirstAfterColors"), GeoTutorial::Zones,
+			 [](FGeoTutorialBot& Bot)
+			 {
+				 AddWaveSpotStages(Bot, 1, true);
+			 }},
+			{TEXT("WaveSpotsSecond"), GeoTutorial::Zones,
+			 [](FGeoTutorialBot& Bot)
+			 {
+				 AddWaveSpotStages(Bot, 2, false);
+			 }},
+			{TEXT("WaveSpotsThird"), GeoTutorial::Zones,
+			 [](FGeoTutorialBot& Bot)
+			 {
+				 AddWaveSpotStages(Bot, 3, false);
+			 }},
+			{TEXT("WaveSpotsFourth"), GeoTutorial::Zones,
+			 [](FGeoTutorialBot& Bot)
+			 {
+				 AddWaveSpotStages(Bot, 4, false);
+			 }},
 			{TEXT("MinibossWipe"), GeoTutorial::Miniboss, &AddMinibossWipeStages},
 			{TEXT("MinibossWaveLanes"), GeoTutorial::Miniboss, &AddMinibossWaveLaneStages},
 			{TEXT("GemsForge"), GeoTutorial::Miniboss, &AddGemsForgePathStages},

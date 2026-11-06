@@ -93,6 +93,7 @@ right-click entry runs:
 See [`BuildPackage.md`](BuildPackage.md).
 
 ## Build and test beside an open editor
+`Tools\Run_Gate.ps1` (`AI/Testing.md`, "Running") applies these rules itself; the commands below are the manual path.
 - An open DebugGame editor blocks `Tools\Build_Editor.bat` only: UBT stops on its Live Coding mutex (`Unable to build while Live Coding is active`, keyed on the exe path), and the editor locks those DLLs anyway. Never close the editor for this; use Development.
 - No code change since the last DebugGame build: `Tools\Run_Tests.bat` as usual, its own process, no window, no focus.
 - Code changed: Development build (~8 min from an old tree, ~1 min incremental: `run_in_background`), then the tests on `UnrealEditor-Cmd.exe`, which loads those DLLs (`Run_Tests.bat` would load the stale DebugGame ones):

@@ -27,12 +27,21 @@ public:
 	/** Replicated so the owning client can reach ServerSetLoadout. */
 	UGeoGemComponent();
 
-	/** Owning client: sends every class's loadout in Profile to the server. */
-	void SendLoadoutsToServer(UGeoGemProfileSave const& Profile);
-	void UpdateLoadoutAndResetAttributes(EPlayerClass PlayerClass, FGeoGemLoadout const& Loadout);
+	/** Owning client: sends the echo level and every class's loadout in Profile to the server. */
+	void SendAllToServer(UGeoGemProfileSave const& Profile);
+
+	/** Owning client: sends PlayerClass's loadout in Profile to the server. */
+	void SendLoadoutToServer(UGeoGemProfileSave const& Profile, EPlayerClass PlayerClass);
+
+	/** Server: stores the shared echo level; the gem stats follow at the next SetLoadout or ApplyGems. */
+	void SetEchoLevel(int32 NewEchoLevel) { EchoLevel = NewEchoLevel; }
+
+	/** Server: stores PlayerClass's loadout. For the current class, with no fight running and a live pawn, re-applies
+	 *  the gems and refills Health / Ammo (never the class's default attributes). */
+	void SetLoadout(EPlayerClass PlayerClass, FGeoGemLoadout const& Loadout);
 
 	/** Server: replaces the gem stats and the gem passive abilities on the owner's ASC with those of the current
-	 * class's loadout. Called by APlayableCharacter::ResetAttributes, which refills Health and Ammo after it. */
+	 * class's loadout. Called by APlayableCharacter::ResetAttributes and SetLoadout. */
 	void ApplyGems();
 
 	/** Server: the effects of the gems on the owner's ASC that death must not remove (the stats GE). Empty on a client.
@@ -42,17 +51,20 @@ public:
 	/** Server: the level the owning client last sent for PlayerClass; 1 until it has sent one. */
 	int32 GetClassLevel(EPlayerClass const PlayerClass) const { return Loadouts.FindRef(PlayerClass).Level; }
 
-	/** Server: the echo level the owning client last sent with PlayerClass's loadout; 0 until it has sent one. */
-	int32 GetEchoLevel(EPlayerClass const PlayerClass) const { return Loadouts.FindRef(PlayerClass).EchoLevel; }
+	/** Server: the shared echo level the owning client last sent; 0 until it has sent one. */
+	int32 GetEchoLevel() const { return EchoLevel; }
 
 	/** Server: hands Reward to the owning client, whose profile keeps the gems and the class XP. */
 	void GrantReward(FGeoGemReward const& Reward);
 
 private:
-	/** Stores PlayerClass's loadout, applied right away when it is the current class's and no fight is running; one
-	 *  sent mid-fight waits for the next GiveLife. */
+	/** SetLoadout on the server; one sent mid-fight waits for the next GiveLife. */
 	UFUNCTION(Server, Reliable)
 	void ServerSetLoadout(EPlayerClass PlayerClass, FGeoGemLoadout const& Loadout);
+
+	/** SetEchoLevel on the server. */
+	UFUNCTION(Server, Reliable)
+	void ServerSetEchoLevel(int32 NewEchoLevel);
 
 	/** Adds Reward to the owning player's profile and saves it. */
 	UFUNCTION(Client, Reliable)
@@ -60,6 +72,8 @@ private:
 
 	UPROPERTY()
 	TMap<EPlayerClass, FGeoGemLoadout> Loadouts;
+
+	int32 EchoLevel = 0;
 
 	FActiveGameplayEffectHandle StatsEffectHandle;
 

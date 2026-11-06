@@ -1919,8 +1919,8 @@ namespace GeoTutorialStages
 		AddGuideClickStage(Bot, TEXT("Gems: then at the Gems button"), EGeoMenuGuideGoal::EquipChip,
 						   IsNamed("GemLoadoutButton"));
 		AddPrepareStage(Bot, TEXT("Gems: the page opens on the Chip tier"), EGeoMenuGuideGoal::EquipChip);
-		AddGuideClickStage(Bot, TEXT("Gems: then at the whole stack list (any chip may be picked)"),
-						   EGeoMenuGuideGoal::EquipChip, IsNamed("StackGrid"));
+		AddGuideClickStage(Bot, TEXT("Gems: then at the guided chip row of the stack list"),
+						   EGeoMenuGuideGoal::EquipChip, IsOfClass<UGeoListRowWidget>());
 		AddGuideClickStage(Bot, TEXT("Gems: then at a Chip socket"), EGeoMenuGuideGoal::EquipChip,
 						   IsOfClass<UGeoGemSocketButton>());
 		Bot.AddLineStage(TEXT("Gems: the slotted chip ends the step"), GemsDoneLine);
@@ -1929,7 +1929,7 @@ namespace GeoTutorialStages
 						   IsOfClass<UGeoListRowWidget>());
 		AddPrepareStage(Bot, TEXT("Forge: the page opens on the Chip tier"), EGeoMenuGuideGoal::ForgeChip);
 		AddGuideClickStage(Bot, TEXT("Forge: then at the gem list (the player chooses the chip)"),
-						   EGeoMenuGuideGoal::ForgeChip, IsNamed("GemListBox"));
+						   EGeoMenuGuideGoal::ForgeChip, IsOfClass<UGeoListRowWidget>());
 		AddGuideClickStage(Bot, TEXT("Forge: then at CRAFT"), EGeoMenuGuideGoal::ForgeChip, IsNamed("CraftButton"));
 		Bot.AddStage(TEXT("Forge: the crafted chip opens the final exit"),
 					 [&Bot](bool)

@@ -23,10 +23,11 @@ Docs written: list of CLAUDE.md files that describe it.
 - [ ] Asset `/Game/...` — property = value, component, node to add
 
 ## Verify
-- [ ] How to see it work (test, bridge script, PIE only if asked)
+- [ ] How to see it work (`/test <filters>` [+ `quick`, bot sessions], bridge script, PIE only if asked)
 ```
 
 - Concrete asset paths, property names, values; no prose.
+- Start a Pending file with the skill `/implement [name]` (empty = top of "Order"): `AI/Python/Tools/pending_context.py` inlines the file, its docs, `CodingStyle.md` and every Read-map file in full, so step 4 starts in one turn (invoking it is the go). It reads each Read-map line as `- `path` — why`: path in backticks, project-relative or `Public|Private/...`, `Foo.h/.cpp` pair allowed, `(l.12-40)` ignored; the load report lists entries it could not resolve.
 - Read map: the files the step 3 decisions rest on, so step 4 does not explore again. Wrong or incomplete in step 4 → fix it there.
 - A step an editor script can do becomes a script row; the rest stays here for the user.
 

@@ -25,30 +25,38 @@ UGeoGemProfileSave* UGeoGemSubsystem::GetFirstLocalProfile(UWorld const* World)
 	return GemSubsystem ? GemSubsystem->GetProfile() : nullptr;
 }
 
-void UGeoGemSubsystem::CommitChanges()
+void UGeoGemSubsystem::SaveChanges()
 {
-	// TEMP-TIMING: remove once the slowdown is found.
-	double T = FPlatformTime::Seconds();
-	auto Lap = [&T](TCHAR const* Step)
-	{
-		double const Now = FPlatformTime::Seconds();
-		UE_LOG(LogGeoTrinity, Warning, TEXT("GemTiming   subsystem %s: %.1f ms"), Step, (Now - T) * 1000.0);
-		T = Now;
-	};
-	ULocalPlayer const* LocalPlayer = GetLocalPlayerChecked();
-	Profile->Save(LocalPlayer->GetLocalPlayerIndex());
-	Lap(TEXT("Save"));
+	Profile->Save(GetLocalPlayerChecked()->GetLocalPlayerIndex());
+	OnProfileCommitted.Broadcast();
+}
 
-	APlayerController const* PlayerController = LocalPlayer->GetPlayerController(GetWorld());
-	if (AGeoPlayerState const* PlayerState =
-			PlayerController ? PlayerController->GetPlayerState<AGeoPlayerState>() : nullptr)
+AGeoPlayerState const* UGeoGemSubsystem::GetLocalPlayerState() const
+{
+	APlayerController const* PlayerController = GetLocalPlayerChecked()->GetPlayerController(GetWorld());
+	return PlayerController ? PlayerController->GetPlayerState<AGeoPlayerState>() : nullptr;
+}
+
+void UGeoGemSubsystem::CommitChanges(EPlayerClass const PlayerClass)
+{
+	Profile->Save(GetLocalPlayerChecked()->GetLocalPlayerIndex());
+	if (AGeoPlayerState const* PlayerState = GetLocalPlayerState())
 	{
-		PlayerState->GetGemComponent()->SendLoadoutsToServer(*Profile);
+		PlayerState->GetGemComponent()->SendLoadoutToServer(*Profile, PlayerClass);
 	}
-	Lap(TEXT("SendLoadoutsToServer"));
 
 	OnProfileCommitted.Broadcast();
-	Lap(TEXT("OnProfileCommitted"));
+}
+
+void UGeoGemSubsystem::CommitAll()
+{
+	Profile->Save(GetLocalPlayerChecked()->GetLocalPlayerIndex());
+	if (AGeoPlayerState const* PlayerState = GetLocalPlayerState())
+	{
+		PlayerState->GetGemComponent()->SendAllToServer(*Profile);
+	}
+
+	OnProfileCommitted.Broadcast();
 }
 
 void UGeoGemSubsystem::GrantReward(FGeoGemReward const& Reward)
@@ -69,7 +77,7 @@ void UGeoGemSubsystem::GrantReward(FGeoGemReward const& Reward)
 	Profile->AddShards(Reward.Shards);
 	UE_LOG(LogGeoTrinity, Display, TEXT("Gems: %s +%d XP (+%d level), %d gem(s), %d shard(s)"),
 		   *UEnum::GetValueAsString(Reward.PlayerClass), Reward.Xp, LevelsGained, GemCount, Reward.Shards);
-	CommitChanges();
+	CommitAll();
 }
 
 #if !UE_BUILD_SHIPPING
@@ -116,7 +124,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsGrantCommand(
 						}
 					}
 				}
-				Gems->CommitChanges();
+				Gems->CommitAll();
 			}
 		}));
 
@@ -133,7 +141,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsSetLevelCommand(
 				EPlayerClass const PlayerClass =
 					Args.Num() == 2 ? ParsePlayerClass(Args[0]) : GetFirstLocalPlayerClass(World);
 				Gems->GetProfile()->SetClassLevel(PlayerClass, FCString::Atoi(*Args.Last()));
-				Gems->CommitChanges();
+				Gems->CommitAll();
 			}
 		}));
 
@@ -148,7 +156,7 @@ static FAutoConsoleCommandWithWorldAndArgs
 									 if (Gems && Catalog && Args.Num() == 1)
 									 {
 										 Gems->GetProfile()->SetEchoLevel(*Catalog, FCString::Atoi(*Args[0]));
-										 Gems->CommitChanges();
+										 Gems->CommitAll();
 									 }
 								 }));
 
@@ -163,7 +171,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsAddXpCommand(
 			if (Gems && Catalog && Args.Num() == 2)
 			{
 				Gems->GetProfile()->AddClassXp(*Catalog, ParsePlayerClass(Args[0]), FCString::Atoi(*Args[1]));
-				Gems->CommitChanges();
+				Gems->CommitAll();
 			}
 		}));
 
@@ -190,7 +198,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsEchoCommand(
 						   bEchoed ? TEXT("echoed") : TEXT("refused"));
 				}
 
-				Gems->CommitChanges();
+				Gems->CommitChanges(PlayerClass);
 			}
 		}));
 
@@ -205,10 +213,10 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsFillCommand(
 			UGeoGemCatalog const* Catalog = UGeoGemCatalog::Get();
 			if (Gems && Catalog && Args.Num() == 2)
 			{
-				int32 const Filled =
-					Gems->GetProfile()->FillSockets(*Catalog, ParsePlayerClass(Args[0]), FName(Args[1]));
+				EPlayerClass const PlayerClass = ParsePlayerClass(Args[0]);
+				int32 const Filled = Gems->GetProfile()->FillSockets(*Catalog, PlayerClass, FName(Args[1]));
 				UE_LOG(LogGeoTrinity, Display, TEXT("Geo.Gems.Fill: %d socket(s) filled"), Filled);
-				Gems->CommitChanges();
+				Gems->CommitChanges(PlayerClass);
 			}
 		}));
 
@@ -220,11 +228,12 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsUnequipAllCommand(
 			UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World);
 			if (Gems && Args.Num() == 1)
 			{
+				EPlayerClass const PlayerClass = ParsePlayerClass(Args[0]);
 				for (int32 SocketIndex = 0; SocketIndex < GeoGem::GetSockets().Num(); ++SocketIndex)
 				{
-					Gems->GetProfile()->Unequip(ParsePlayerClass(Args[0]), SocketIndex);
+					Gems->GetProfile()->Unequip(PlayerClass, SocketIndex);
 				}
-				Gems->CommitChanges();
+				Gems->CommitChanges(PlayerClass);
 			}
 		}));
 
@@ -266,7 +275,7 @@ static FAutoConsoleCommandWithWorldAndArgs GGemsClearCommand(
 			{
 				Profile->AddShards(-Profile->GetShards());
 			}
-			Gems->CommitChanges();
+			Gems->CommitAll();
 		}));
 
 static FAutoConsoleCommandWithWorld GGemsResetAllCommand(
@@ -278,7 +287,7 @@ static FAutoConsoleCommandWithWorld GGemsResetAllCommand(
 			if (UGeoGemSubsystem* Gems = GetFirstLocalGemSubsystem(World))
 			{
 				Gems->GetProfile()->ResetAll();
-				Gems->CommitChanges();
+				Gems->CommitAll();
 			}
 		}));
 

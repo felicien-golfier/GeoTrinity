@@ -35,8 +35,11 @@ Use the lightest layer that can prove the behaviour.
 ## Running
 
 ```
-Tools\Run_Tests.bat [filter]        # default filter GeoTrinity. = every test; GEO_NO_PAUSE=1 for unattended
+Tools\Run_Gate.ps1 [tokens]         # agent entry (/test skill): process check + build + tests, one GATE: line
+Tools\Run_Tests.bat [filter]        # manual run, no build; default filter GeoTrinity. = every test; GEO_NO_PAUSE=1 for unattended
 ```
+
+`Run_Gate.ps1` tokens: none / `quick` = quick suite (read from the test sources: one filter per area, the tutorial area without its bot sessions), `bots` = every bot session, `GeoTrinity.<filter>`, `nobuild`, `dry` (print the plan, run nothing). All filters go into one editor launch (`A+B+…`); each explicit filter must match a test (`Read-TestReport.ps1 -Filters`). Picks Development + `UnrealEditor-Cmd.exe` beside an open DebugGame editor; another `-Cmd` run or a build → `BLOCKED` (exit 2). Output copy: `AI/Output/Gate/last.txt`.
 
 It runs `UnrealEditor-Win64-DebugGame-Cmd.exe` headless, wipes and refills `AI/Output/Tests` (report, HTML viewer,
 `run.log`), then `Tools\Read-TestReport.ps1` prints each failure with its first errors and decides the result: only
@@ -80,7 +83,7 @@ Also check that the expected tests **actually ran**: an empty filter match "succ
 ## Tutorial runs (optional)
 
 Headless play-in-editor runs of the real `/Game/Maps/Tutorial`, a bot playing it: `Source/GeoTrinityEditor/Private/Tests/Tutorial/` (bot, branches, coverage table: its `CLAUDE.md`). `GeoTrinity.Tutorial.FullRun` plays every room in order; `GeoTrinity.Tutorial.Path.*` and `GeoTrinity.Tutorial.Jump.*` play every other branch, one session each. Mandatory when the change puts their behaviour at risk, else optional (`CLAUDE.md` "Tutorial runs at risk", "Tutorial runs"). The other `GeoTrinity.Tutorial.` tests need no map or session: quick suite.
-- Run: `Tools\Build_Editor.bat` (editor open: `Commands.md`, "Build and test beside an open editor"), then `Tools\Run_Tests.bat GeoTrinity.Tutorial.FullRun`; every test of the area, instant ones included, with `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
+- Run: `Tools\Run_Gate.ps1 GeoTrinity.Tutorial.FullRun` (or `bots` for every session; it handles an open editor); by hand, `Tools\Build_Editor.bat` then `Tools\Run_Tests.bat GeoTrinity.Tutorial.`.
 - Map loaded with `FAutomationEditorCommonUtils::LoadMap`, never `AutomationOpenMap`: in the editor that starts its own standalone play session, which the listen one then replaces under the bot. Play session: listen server, one client process (`FGeoStartListenPlayCommand`).
 - A new room, step or branch adds its stages and its coverage row in the same change.
 
@@ -110,7 +113,7 @@ Model: `GeoTrinity.Deployable.StartHealth` in `Tests/Gameplay/Deployable/GeoDepl
 
 ## Agent loop
 
-Write or extend the test next to the change (lightest layer), then hand the build, run and fix loop to the `test-fixer` agent (`.claude/agents/test-fixer.md`): its steps, limits and report format live there.
+Write or extend the test next to the change (lightest layer), then `/test` (`.claude/skills/test/SKILL.md`): green ends there; red goes to the `test-fixer` agent (`.claude/agents/test-fixer.md`) with the gate output, for the fix loop: its steps, limits and report format live there.
 
 ## Next steps
 
